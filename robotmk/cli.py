@@ -13,7 +13,7 @@ import robotmk.rmk as rmk
 @click.group(invoke_without_command=True)
 @click.pass_context
 def main(context):
-    print("(cli main) Hello World!")
+    # print("(cli main) Hello World!")
     if context.invoked_subcommand is None:
         rmk.run_output()
     else:

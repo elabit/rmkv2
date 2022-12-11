@@ -1,6 +1,3 @@
-print(__file__ + " loaded")
-
-
 def run_robot():
     print("Robotmk is starting the robot routine!")
 

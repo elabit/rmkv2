@@ -10,7 +10,6 @@ from pathlib import Path
 import re
 
 daemon_py = "daemon.py"
-print(__file__ + " loaded")
 
 
 class ForkStrategy(ABC):
