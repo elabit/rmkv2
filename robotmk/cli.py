@@ -19,7 +19,8 @@ def main(context):
     else:
         # if context.opts["verbose"]:
         #     print(f"robotmk_agent version: {__version__}")
-        print(f"Invoked subcommand: {context.invoked_subcommand}")
+        # print(f"Invoked subcommand: {context.invoked_subcommand}")
+        pass
 
 
 # --------------------------------------------------

@@ -30,7 +30,7 @@ function IsRCCEnvReady {
 	# $catalog = $rcc_catalogs | Where-Object { $_.blueprint -eq "dc9a047d0b412ec3" }
 	
 	# FIXME: Only for debugging
-	$catalog = $false
+	$catalog = $true
 	if ($catalog -eq $true) {
 		return $true
 	}
@@ -161,7 +161,9 @@ function StartDaemon {
 			$Binary = $PyExe
 			# FIXME: start daemon in RCC!
 			# rcc run -t robotmk-agent
-			$Arguments = "$PyExe daemon.py start"
+			$Binary = $RCCExe
+			#$Arguments = "$RCCExe task run -t robotmk-agent -r $RobotmkRCCdir\robot.yaml --silent"			
+			$Arguments = "$RCCExe task run -t robotmk-agent -r $RobotmkRCCdir\robot.yaml"			
 		}
 		else {
 			Write-Host "RCC environment is not ready to use, creating it"
