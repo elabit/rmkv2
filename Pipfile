@@ -5,7 +5,7 @@ name = "pypi"
 
 [packages]
 click = "*"
-robotmk-agent = {editable = true, path = "."}
+robotmk = {editable = true, path = "."}
 
 [dev-packages]
 black = "*"

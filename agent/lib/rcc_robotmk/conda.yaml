@@ -4,5 +4,6 @@ dependencies:
 - python=3.9.13
 - pip=22.1.2
 - yaml
+- click
 - pip:
   - mergedeep

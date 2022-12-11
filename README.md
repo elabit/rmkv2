@@ -123,6 +123,10 @@ DONE:
 - Wie kann der Special Agent parametrisiert werden? (JSON ist gesetzt, aber STDIN/commandline args?)
 - Kann robotmk-ctrl.ps1 %ROBOCORP_HOME% im system setzen? Windows? Linux? 
 
+# Setup 
+
+pipenv install -e . 
+pipenv shell 
 
 
 

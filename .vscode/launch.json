@@ -13,10 +13,22 @@
             "justMyCode": false
         },
         {
+            "name": "python -m robotmk agent start",
+            "type": "python",
+            "request": "launch",
+            "module": "robotmk",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "agent",
+                "start"
+            ]
+        },
+        {
             "name": "RMK --version",
             "type": "python",
             "request": "launch",
-            "program": "robotmk_agent/cli.py",
+            "program": "robotmk/cli.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [
@@ -27,9 +39,9 @@
             "name": "RMK agent start",
             "type": "python",
             "request": "launch",
-            "program": "robotmk_agent/cli.py",
+            "program": "robotmk/cli.py",
             "console": "integratedTerminal",
-            "justMyCode": true,
+            "justMyCode": false,
             "args": [
                 "agent",
                 "start"
@@ -39,7 +51,7 @@
             "name": "RMK specialagent",
             "type": "python",
             "request": "launch",
-            "program": "robotmk_agent/cli.py",
+            "program": "robotmk/cli.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [
@@ -50,7 +62,7 @@
             "name": "RMK robot",
             "type": "python",
             "request": "launch",
-            "program": "robotmk_agent/cli.py",
+            "program": "robotmk/cli.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [

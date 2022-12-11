@@ -160,6 +160,7 @@ function StartDaemon {
 			# start python daemon
 			$Binary = $PyExe
 			# FIXME: start daemon in RCC!
+			# rcc run -t robotmk-agent
 			$Arguments = "$PyExe daemon.py start"
 		}
 		else {

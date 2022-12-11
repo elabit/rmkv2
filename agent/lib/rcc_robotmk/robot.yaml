@@ -4,7 +4,7 @@
 tasks:
   # TODO: Specify robotmk lib call here
   robotmk-agent:
-    shell: python -m robot --report NONE --outputdir output --logtitle "Task log" tasks.robot
+    shell: python -m robotmk agent start
 
 condaConfigFile: conda.yaml
 
