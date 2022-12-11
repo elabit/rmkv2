@@ -1,0 +1,68 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": false
+        },
+        {
+            "name": "RMK --version",
+            "type": "python",
+            "request": "launch",
+            "program": "robotmk_agent/cli.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "--version"
+            ]
+        },
+        {
+            "name": "RMK agent start",
+            "type": "python",
+            "request": "launch",
+            "program": "robotmk_agent/cli.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "agent",
+                "start"
+            ]
+        },
+        {
+            "name": "RMK specialagent",
+            "type": "python",
+            "request": "launch",
+            "program": "robotmk_agent/cli.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "specialagent"
+            ]
+        },
+        {
+            "name": "RMK robot",
+            "type": "python",
+            "request": "launch",
+            "program": "robotmk_agent/cli.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "robot"
+            ]
+        },
+        {
+            "name": "PowerShell Launch Current File",
+            "type": "PowerShell",
+            "request": "launch",
+            "script": "${file}",
+            "cwd": "${cwd}"
+        }
+    ]
+}

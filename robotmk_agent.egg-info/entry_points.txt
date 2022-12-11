@@ -1,0 +1,2 @@
+[console_scripts]
+robotmk = robotmk_agent.cli:main
