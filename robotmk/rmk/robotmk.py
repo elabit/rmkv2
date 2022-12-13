@@ -1,5 +1,5 @@
 def main(mode):
-    print("This is mode {mode}")
+    print(__name__ + ": " + "This is mode {mode}")
 
 
 class RobotmkAgent:
@@ -13,4 +13,4 @@ if __name__ == "__main__":
 
 
 def run_agent():
-    print("Robotmk is starting the agent routine!")
+    print(__name__ + ": " + "Robotmk is starting the agent routine!")

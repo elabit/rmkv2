@@ -3,4 +3,4 @@ import click
 
 @click.command()
 def yyyy():
-    print("(cli robot): xxxx")
+    print(__name__ + ": " + "(cli robot): xxxx")

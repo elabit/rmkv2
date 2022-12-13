@@ -8,8 +8,129 @@ import platform
 from abc import ABC, abstractmethod
 from pathlib import Path
 import re
+import click
 
-daemon_py = "daemon.py"
+
+class Daemon:
+    def __init__(self, name="robotmk_agent_daemon", pidfile=None):
+        self.name = name
+        if not pidfile:
+            # TODO: find a path that is accessible from insice RCC and outside
+            pidfile = "%s.pid" % self.name
+            self.tmpdir = (
+                Path(
+                    os.getenv(
+                        "CMK_AGENT_DIR",
+                        "C:\\Users\\vagrant\\Documents\\01_dev\\rmkv2\\agent",
+                    )
+                )
+                / "tmp"
+            )
+            print(__name__ + ": (Daemon init) " + "tmpdir is: %s" % self.tmpdir)
+            self.pidfile = self.tmpdir / pidfile
+            print(__name__ + ": (Daemon init) " + "Pidfile is: %s" % self.pidfile)
+        else:
+            self.pidfile = Path(pidfile)
+        if platform.system() == "Linux":
+            self.fork_strategy = LinuxStrategy(self)
+        elif platform.system() == "Windows":
+            self.fork_strategy = WindowsStrategy(self)
+
+    def daemonize(self):
+        self.fork_strategy.daemonize()
+        self.write_and_register_pidfile()
+
+    @property
+    def pid(self):
+        return str(os.getpid())
+
+    def get_pid_from_file(self):
+        try:
+            with open(self.pidfile, "r") as pf:
+                pid = int(pf.read().strip())
+        except IOError:
+            pid = None
+        return pid
+
+    def delpid(self):
+        os.remove(self.pidfile)
+
+    def write_and_register_pidfile(self):
+        with open(self.pidfile, "w+") as f:
+            f.write(self.pid + "\n")
+        # Attention: pidfile gets not deleted if daemon was started with Debugger!
+        atexit.register(self.delpid)
+
+    def start(self):
+        # Check for a pidfile to see if the daemon already runs
+        pid = self.get_pid_from_file()
+
+        if pid:
+            msg = "One instance of %s is already running (PID: %d).\n" % (
+                self.name,
+                int(pid),
+            )
+            print(__name__ + ": " + msg.format(self.pidfile))
+            sys.exit(1)
+        else:
+            # daemonize according to the strategy
+            self.daemonize()
+            # Do the work
+            print(__name__ + ": (start) " + "Starting %s" % self.name)
+            self.run()
+
+    def run(self):
+        print(__name__ + ": " + "Daemon is running ... ")
+        # sys.exit()
+        import datetime
+
+        while True:
+            # DUMMY DAEMON CODE
+            print(__name__ + ": " + "Daemon is running ... ")
+            for i in range(20):
+                if i == 19:
+                    # remove all files
+                    for file in self.tmpdir.glob("robotmk_output_*.txt"):
+                        file.unlink()
+                else:
+                    filename = "robotmk_output_%d.txt" % i
+                    with open(self.tmpdir / filename, "w") as f:
+                        f.write("foobar output")
+                    time.sleep(0.2)
+
+    def stop(self):
+        # Check for a pidfile to see if the daemon already runs
+        pid = self.get_pid_from_file()
+
+        if not pid:
+            message = "pidfile {0} does not exist. " + "Daemon does not seem to run.\n"
+            print(__name__ + ": " + message.format(self.pidfile))
+            return  # not an error in a restart
+
+        # Try killing the daemon process
+        try:
+            while 1:
+                os.kill(pid, signal.SIGTERM)
+                time.sleep(0.1)
+        except OSError as err:
+            e = str(err.args)
+            os.remove(self.pidfile)
+            sys.exit()
+            # delete
+            # e = "(22, 'Falscher Parameter', None, 87, None)"
+            # kommt manchmal - abfangen: (13, 'Zugriff verweigert', None, 5, None)
+            if e.find("No such process") > 0 or re.match(".*22.*87", e):
+                if os.path.exists(self.pidfile):
+                    os.remove(self.pidfile)
+            else:
+                print(__name__ + ": " + str(err.args))
+                sys.exit(1)
+
+    def restart(self):
+        """Restart the daemon."""
+        print(__name__ + ": " + "Restarting daemon ... ")
+        self.stop()
+        self.start()
 
 
 class ForkStrategy(ABC):
@@ -67,122 +188,5 @@ class LinuxStrategy(ForkStrategy):
 class WindowsStrategy(ForkStrategy):
     def daemonize(self):
         # On Windows, use ProcessCreationFlags to detach this process from the caller
+        print(__name__ + ": " + "On windows, there is nothing to daemonize....")
         pass
-
-
-class Daemon:
-    def __init__(self, pidfile=None):
-        if not pidfile:
-            tmpdir = Path(os.getenv("TEMP", "/tmp"))
-            pidfile = "%s.pid" % daemon_py
-            self.pidfile = tmpdir / pidfile
-        else:
-            self.pidfile = Path(pidfile)
-        if platform.system() == "Linux":
-            self.fork_strategy = LinuxStrategy(self)
-        elif platform.system() == "Windows":
-            self.fork_strategy = WindowsStrategy(self)
-
-    def daemonize(self):
-        self.fork_strategy.daemonize()
-        self.write_and_register_pidfile()
-
-    @property
-    def pid(self):
-        return str(os.getpid())
-
-    def get_pid_from_file(self):
-        try:
-            with open(self.pidfile, "r") as pf:
-                pid = int(pf.read().strip())
-        except IOError:
-            pid = None
-        return pid
-
-    def delpid(self):
-        os.remove(self.pidfile)
-
-    def write_and_register_pidfile(self):
-        with open(self.pidfile, "w+") as f:
-            f.write(self.pid + "\n")
-        atexit.register(self.delpid)
-
-    def start(self):
-        # Check for a pidfile to see if the daemon already runs
-        pid = self.get_pid_from_file()
-
-        if pid:
-            msg = "One instance of %s is already running (PID: %d).\n" % (
-                daemon_py,
-                int(pid),
-            )
-            sys.stderr.write(msg.format(self.pidfile))
-            sys.exit(1)
-        else:
-            # daemonize according to the strategy
-            self.daemonize()
-            # Do the work
-            self.run()
-
-    def run(self):
-        while True:
-            # DUMMY DAEMON CODE
-            print("Daemon is running ... ")
-            time.sleep(1)
-
-    def stop(self):
-        # Check for a pidfile to see if the daemon already runs
-        pid = self.get_pid_from_file()
-
-        if not pid:
-            message = "pidfile {0} does not exist. " + "Daemon does not seem to run.\n"
-            sys.stderr.write(message.format(self.pidfile))
-            return  # not an error in a restart
-
-        # Try killing the daemon process
-        try:
-            while 1:
-                os.kill(pid, signal.SIGTERM)
-                time.sleep(0.1)
-        except OSError as err:
-            e = str(err.args)
-            os.remove(self.pidfile)
-            sys.exit()
-            # delete
-            # e = "(22, 'Falscher Parameter', None, 87, None)"
-            # kommt manchmal - abfangen: (13, 'Zugriff verweigert', None, 5, None)
-            if e.find("No such process") > 0 or re.match(".*22.*87", e):
-                if os.path.exists(self.pidfile):
-                    os.remove(self.pidfile)
-            else:
-                print(str(err.args))
-                sys.exit(1)
-
-    def restart(self):
-        """Restart the daemon."""
-        self.stop()
-        self.start()
-
-    def run(self):
-        """You should override this method when you subclass Daemon.
-
-        It will be called after the process has been daemonized by
-        start() or restart()."""
-
-
-if __name__ == "__main__":
-    daemon = Daemon()
-    if len(sys.argv) == 2:
-        if "start" == sys.argv[1]:
-            daemon.start()
-        elif "stop" == sys.argv[1]:
-            daemon.stop()
-        elif "restart" == sys.argv[1]:
-            daemon.restart()
-        else:
-            usage()
-            sys.exit(2)
-        sys.exit(0)
-    else:
-        usage()
-        sys.exit(2)

@@ -1,5 +1,5 @@
-
-
+Hereiwas: Bestimmen, wie viele Prozesse von agent laufen 
+x
 # Robotmk V2
 
 ## I. Robotmk as Agent Plugin 
@@ -106,11 +106,13 @@ III) RMK startet mit `output` ODER interner call im Special Agent
   - Validieren eines einsatzfähigen RCC-ENVs
   - holotree.zip shippen
 - apscheduler: loop/oneshot mode 
-- Robot-Definition für Robotmk-RCC (conda, robot.yml ... )
+- robotmk auf pypi
 - Conf2Env
 
 DONE: 
 - RobotmkModul => start als commandline tool `robotmk`
+- Robot-Definition für Robotmk-RCC (conda, robot.yml ... )
+
 
 # Open Questions
 
@@ -121,7 +123,12 @@ DONE:
 - holotree.zip für welche Plattformen
 - hat robotmk-ctrl die Zeit das RCC-Env zu bauen? Wird es weggeräumt ? (async)
 - Wie kann der Special Agent parametrisiert werden? (JSON ist gesetzt, aber STDIN/commandline args?)
-- Kann robotmk-ctrl.ps1 %ROBOCORP_HOME% im system setzen? Windows? Linux? 
+- %ROBOCORP_HOME%: Parametrisierbar? Wo ist der Default? 
+- Über Bakery auch rcc's settings.yaml konfigurieren 
+  - proxy 
+  - logo
+- Verlässliches TMP-File für RCC? 
+
 
 # Setup 
 

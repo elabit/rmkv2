@@ -5,6 +5,7 @@ from robotmk.rmk.specialagent import cli as specialagent_cli
 from robotmk.rmk.robot import cli as robot_cli
 from robotmk.rmk.output import cli as output_cli
 
+
 import robotmk.rmk as rmk
 
 # TODO: options do not work here
@@ -13,13 +14,13 @@ import robotmk.rmk as rmk
 @click.group(invoke_without_command=True)
 @click.pass_context
 def main(context):
-    # print("(cli main) Hello World!")
+    print(__name__ + ": " + "(cli main)")
     if context.invoked_subcommand is None:
         rmk.run_output()
     else:
         # if context.opts["verbose"]:
-        #     print(f"robotmk_agent version: {__version__}")
-        # print(f"Invoked subcommand: {context.invoked_subcommand}")
+        #     print(__name__ + ": " + f"robotmk_agent version: {__version__}")
+        # print(__name__ + ": " + f"Invoked subcommand: {context.invoked_subcommand}")
         pass
 
 
@@ -34,6 +35,7 @@ def main(context):
 )
 # do not execute without subcommand
 def cli_agent():
+    print(__name__ + ": " + "(cli_agent)")
     pass
 
 
@@ -89,6 +91,5 @@ def cli_robot():
 cli_specialagent.add_command(robot_cli.yyyy)
 
 # --------------------------------------------------
-
 if __name__ == "__main__":
     main()

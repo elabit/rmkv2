@@ -3,4 +3,4 @@ import click
 
 @click.command()
 def yyyy():
-    print("(cli specialagent): xxxx")
+    print(__name__ + ": " + "(cli specialagent): xxxx")

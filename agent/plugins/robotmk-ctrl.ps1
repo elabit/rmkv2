@@ -6,32 +6,35 @@
 #   - check if process is running
 # - If not running, start daemon
 
+$UseRCC = $true
 $PyName = "python"
 $PyExe = "C:\Python310\python.exe"
 $DaemonName = "daemon.py"
+
+
 # TODO: Determine Agent dir
 #$CMKAgentDir = "C:\ProgramData\check_mk\agent"
-$CMKAgentDir = "C:\Users\vagrant\Documents\01_dev\rmkv2\agent"
+$CMKAgentDir = if ($env:CMK_AGENT_DIR) { $env:CMK_AGENT_DIR } else { "C:\Users\vagrant\Documents\01_dev\rmkv2\agent" };
 $RCCExe = $CMKAgentDir + "\bin\rcc.exe"
 $RobotmkRCCdir = $CMKAgentDir + "\lib\rcc_robotmk"
 $CMKtempdir = $CMKAgentDir + "\tmp"
 
+$DaemonPidfile = "robotmk_agent_daemon"
+$pidfile = $CMKtempdir + "\" + $DaemonPidfile + ".pid"
+# TODO: How to set system env vars globally? Needed?
+[System.Environment]::SetEnvironmentVariable('ROBOCORP_HOME', 'C:\rcc')
+
 
 function IsRCCEnvReady {
-	# TODO: Blueprint check not working
-	
 	# # Get the blueprint hash for conda.yaml
-	# $condahash = & $RCCExe ht hash $RobotmkRobotdir\conda.yaml 2>&1
-	# $condahash -match "Blueprint hash for.*is (?<blueprint>[A-Za-z0-9]*)\."
-	# $blueprint = $Matches.blueprint
+	$condahash = & $RCCExe ht hash $RobotmkRCCdir\conda.yaml 2>&1
+	$condahash -match "Blueprint hash for.*is (?<blueprint>[A-Za-z0-9]*)\."
+	$blueprint = $Matches.blueprint
 	
 	# # Check if the blueprint is already in the RCC catalog
-	# $rcc_catalogs = & $RCCExe ht catalogs -j | ConvertFrom-Json
-	# $catalog = $rcc_catalogs | Where-Object { $_.blueprint -eq "dc9a047d0b412ec3" }
-	
-	# FIXME: Only for debugging
-	$catalog = $true
-	if ($catalog -eq $true) {
+	$rcc_catalogs = & $RCCExe ht catalogs 2>&1
+	$catalogstring = [string]::Concat($rcc_catalogs)
+	if ($catalogstring -match "$blueprint") {
 		return $true
 	}
 	else {
@@ -40,14 +43,10 @@ function IsRCCEnvReady {
 }
 
 function main() {
-	# Red pidfile from tmp dir
-	$pidfile = "C:\Users\vagrant\AppData\Local\Temp\daemon.py.pid"
-	$daemon_pid = IsDaemonRunning -PyName $PyName -DaemonName $DaemonName
+	
+	$daemon_pid = IsDaemonRunning
 	if (-Not ($daemon_pid)) {
-		# delete pidfile if exists
-		if (Test-Path $pidfile) {
-			Remove-Item $pidfile
-		}
+		Write-Host "Starting the Daemon"
 		StartDaemon -Binary $PyExe -Arguments "$PyExe daemon.py start" -CreationFlags 0x00000000 -ShowWindow 0x0001 -StartF 0x1 
 	}
 	else {
@@ -138,70 +137,94 @@ function StartDaemon {
 	# convert to int 
 	$CreationFlagsInt = [int]$CreationFlags
 	
-	# TODO: 
-	# - Check if RCC is desired: 
-	#   - if no, start Python process natively without RCC	
-	#   - if yes, loop: check if RCC environment is ready to use
-	#  		- if no, create RCC environment
-	#       - if yes, start Python process with RCC
-	#   -  
-	# Call CreateProcess
-
-	# check if state file is present
-	if (Test-Path ($CMKtempdir + "\rcc_env_in_creation")) {
-		Write-Host "RCC environment creation in progress, exiting script"
-		return
-	}
-	else {
-		if (IsRCCEnvReady -eq $True) {
-			Write-Host "RCC environment is ready to use"
-			# delete state file
-			Remove-Item ($CMKtempdir + "\rcc_env_in_creation") -Force -ErrorAction SilentlyContinue
-			# start python daemon
-			$Binary = $PyExe
-			# FIXME: start daemon in RCC!
-			# rcc run -t robotmk-agent
-			$Binary = $RCCExe
-			#$Arguments = "$RCCExe task run -t robotmk-agent -r $RobotmkRCCdir\robot.yaml --silent"			
-			$Arguments = "$RCCExe task run -t robotmk-agent -r $RobotmkRCCdir\robot.yaml"			
+	# TODO: How to make RCC execution an optional feature?
+	if ($UseRCC) {
+		# check if state file is present
+		if (Test-Path ($CMKtempdir + "\rcc_env_in_creation")) {
+			Write-Host "RCC environment creation in progress, exiting script"
+			return
 		}
 		else {
-			Write-Host "RCC environment is not ready to use, creating it"
-			# TODO: ENABLE THIS LATER
-			New-Item -ItemType File -Path ($CMKtempdir + "\rcc_env_in_creation") -Force			
-			if (Test-Path ($RobotmkRCCdir + "\hololib.zip")) {
-				Write-Host "> hololib.zip found, importing it"
+			if ( IsRCCEnvReady ) {
+				Write-Host "RCC environment is ready to use"
+				# delete state file
+				Remove-Item ($CMKtempdir + "\robotmk_rcc_env_in_creation") -Force -ErrorAction SilentlyContinue
 				$Binary = $RCCExe
-				$Arguments = "$RCCExe holotree import $RobotmkRCCdir\hololib.zip --silent"
+				$Arguments = "$RCCExe task run -t robotmk-agent -r $RobotmkRCCdir\robot.yaml --silent"			
 			}
 			else {
-				Write-Host "> hololib.zip not found, creating catalog from network"				
-				$Binary = $RCCExe
-				# Start RCC to create the env
-				$Arguments = "$RCCExe holotree vars -r $RobotmkRCCdir\robot.yaml --silent"
-			}
-		}		
-	}
-	Write-host ">>> Executing detached: $Arguments"
-	# TODO: How to disable black cms windows? 
-	[Kernel32]::CreateProcess($Binary, $Arguments, [ref] $SecAttr, [ref] $SecAttr, $false, $CreationFlagsInt, [IntPtr]::Zero, $GetCurrentPath, [ref] $StartupInfo, [ref] $ProcessInfo) | out-null
-	#[System.Runtime.InteropServices.Marshal]::GetLastWin32Error()
-}
-
-function IsDaemonRunning {
-	param (
-		[Parameter(Mandatory = $true)][string]$PyName,
-		[Parameter(Mandatory = $true)][string]$DaemonName
-	)
-	$processes = Get-CimInstance Win32_Process -Filter "name='python.exe'" -ErrorAction SilentlyContinue
-	if ($processes) {
-		foreach ($process in $processes) {
-			if ($process.CommandLine -match $DaemonName) {
-				return $process.ProcessId
-			}
+				Write-Host "RCC environment is not ready to use, creating it"
+				# create state file 
+				New-Item -ItemType File -Path ($CMKtempdir + "\robotmk_rcc_env_in_creation") -Force			
+				if (Test-Path ($RobotmkRCCdir + "\hololib.zip")) {
+					Write-Host "> hololib.zip found, importing it"
+					$Binary = $RCCExe
+					$Arguments = "$RCCExe holotree import $RobotmkRCCdir\hololib.zip --silent"
+				}
+				else {
+					Write-Host "> hololib.zip not found, creating catalog from network"				
+					$Binary = $RCCExe
+					# Start RCC to create the env
+					# TODO: capture log output
+					$Arguments = "$RCCExe holotree vars -r $RobotmkRCCdir\robot.yaml"
+				}
+			}		
 		}
 	}
-	return 0
+ else {
+		# TODO: finalize native python execution
+		$Binary = $PythonExe
+		$Arguments = "$PythonExe $RobotmkAgent"
+	}
+
+	Write-host ">>> Executing detached: $Arguments"
+	# TODO: How to disable black command windows?
+	#[Kernel32]::CreateProcess($Binary, $Arguments, [ref] $SecAttr, [ref] $SecAttr, $false, $CreationFlagsInt, [IntPtr]::Zero, $GetCurrentPath, [ref] $StartupInfo, [ref] $ProcessInfo) | out-null
+	[Kernel32]::CreateProcess($Binary, $Arguments, [ref] $SecAttr, [ref] $SecAttr, $false, $CreationFlagsInt, [IntPtr]::Zero, $GetCurrentPath, [ref] $StartupInfo, [ref] $ProcessInfo) 
+}
+
+
+
+
+function IsDaemonRunning {
+	# Try to read the PID of agent
+	$processId = GetDaemonProcess -Cmdline "%python.exe -m robotmk agent start"
+	if ( $processId -eq $null) {
+		Write-Host ">>> No processes are running"
+		if (Test-Path $pidfile) {
+			Write-Host ">>> PID file found, removing it"
+			Remove-Item $pidfile -Force
+		}
+		return $false
+	}
+ else {
+		# read PID of daemon
+		if (Test-path $pidfile) {
+			$DaemonPid = Get-Content $pidfile
+			Write-Host ">>> One instance of $DaemonName is already running (PID: $DaemonPid)"
+			return $true
+		}
+		else {
+			Write-Host ">>> One instance of $DaemonName is already running, but no PID file found."
+			Write-Host ">>> Cleaning up."
+			# Instance without PID file
+			Stop-Process -Id $processId -Force
+			return $false
+		}
+	}
+
+}
+
+
+function GetDaemonProcess {
+	param (
+		[Parameter(Mandatory = $True)]
+		[string]$Cmdline
+	)
+	$processId = Get-WmiObject -Query "SELECT * FROM Win32_Process WHERE CommandLine like '$Cmdline'" | Select ProcessId
+	Write-Host ">>> ProcessId: $processId"
+	return $processId.processId
+
 }
 
 main
