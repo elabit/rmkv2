@@ -102,8 +102,7 @@ III) RMK startet mit `output` ODER interner call im Special Agent
 
 # Prototyping 
 
-- Shell/PS1 basierter Aufbau eines RCC-Environments
-  - Validieren eines einsatzfähigen RCC-ENVs
+- PS1 Über CMK-Agenten aufrufen, Timing-Probleme? 
   - holotree.zip shippen
 - apscheduler: loop/oneshot mode 
 - robotmk auf pypi
@@ -112,6 +111,11 @@ III) RMK startet mit `output` ODER interner call im Special Agent
 DONE: 
 - RobotmkModul => start als commandline tool `robotmk`
 - Robot-Definition für Robotmk-RCC (conda, robot.yml ... )
+- Shell/PS1 basierter Aufbau eines RCC-Environments
+  - Validieren eines einsatzfähigen RCC-ENVs
+- robotmk-ctrl.ps1 schreibt jedes mal ``robotmk_controller_last_execution` - wenn zu alt, Ende von Agent-Daemon
+
+
 
 
 # Open Questions

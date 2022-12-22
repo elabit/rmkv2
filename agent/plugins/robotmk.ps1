@@ -6,9 +6,9 @@
 #   - check if process is running
 # - If not running, start daemon
 
-$DEBUG = $true
+$DEBUG = $false
 #$CONTROLLER = if ($env:RMK_CTRL) { $env:RMK_CTRL } else { 1 };
-$CONTROLLER = 1
+$CONTROLLER = 0
 
 $UseRCC = $true
 $PyName = "python"
@@ -27,10 +27,7 @@ $DaemonPidfile = "robotmk_agent_daemon"
 $pidfile = $CMKtempdir + "\" + $DaemonPidfile + ".pid"
 $lastexecfile = $CMKtempdir + "\robotmk_controller_last_execution"
 # TODO: How to set system env vars globally? Needed?
-#[System.Environment]::SetEnvironmentVariable('ROBOCORP_HOME', 'C:\rcc')
-#[System.Environment]::SetEnvironmentVariable('ROBOCORP_HOME', 'C:\Users\vagrant\Documents\rc_homes\rcc1')
-$ROBOCORP_HOME = if ($env:ROBOCORP_HOME) { $env:ROBOCORP_HOME } else { "C:\Users\vagrant\Documents\rc_homes\rcc1" };
-
+[System.Environment]::SetEnvironmentVariable('ROBOCORP_HOME', 'C:\rcc')
 
 
 function main() {
@@ -40,12 +37,13 @@ function main() {
 	# to be run by the agent. 
 	# CONTROLLER is a helper variable for prototyping and switching between
 	# the two behaviours
-	if (-Not $CONTROLLER) {
+	if ($CONTROLLER) {
 		AgentOutput
 	}
  else {
 		$daemon_pid = IsDaemonRunning
 		if (-Not ($daemon_pid)) {
+			debug "Starting the Daemon"
 			AgentDaemon -Binary $PyExe -Arguments "$PyExe daemon.py start" -CreationFlags 0x00000000 -ShowWindow 0x0001 -StartF 0x1 
 		}
 		else {
@@ -62,10 +60,9 @@ function debug() {
 }
 
 function IsRCCEnvReady {
-	
 	# # Get the blueprint hash for conda.yaml
 	$condahash = & $RCCExe ht hash $RobotmkRCCdir\conda.yaml 2>&1
-	$m = $condahash -match "Blueprint hash for.*is (?<blueprint>[A-Za-z0-9]*)\."
+	$condahash -match "Blueprint hash for.*is (?<blueprint>[A-Za-z0-9]*)\."
 	$blueprint = $Matches.blueprint
 	
 	# # Check if the blueprint is already in the RCC catalog
@@ -73,10 +70,10 @@ function IsRCCEnvReady {
 	#$catalogstring = [string]::Concat($rcc_catalogs)
 	$catalogstring = $rcc_catalogs -join "\n"
 	if ($catalogstring -match "$blueprint") {
-		return $true
+		return 1
 	}
 	else {
-		return $false
+		return 0
 	}
 }
 
@@ -190,26 +187,23 @@ function AgentDaemon {
 	
 	# TODO: How to make RCC execution an optional feature?
 	if ($UseRCC) {
-		debug "ROBOCORP_HOME = $ROBOCORP_HOME"
 		# check if state file is present
 		if (Test-Path ($CMKtempdir + "\rcc_env_in_creation")) {
 			debug "RCC environment creation in progress, exiting script"
 			return
 		}
 		else {
-			if ( IsRCCEnvReady) {
-				debug "> RCC environment is ready to use"
-				debug "> Starting the Daemon!"
+			if ( IsRCCEnvReady ) {
+				debug "RCC environment is ready to use"
 				# delete state file
 				Remove-Item ($CMKtempdir + "\robotmk_rcc_env_in_creation") -Force -ErrorAction SilentlyContinue
 				$Binary = $RCCExe
 				$Arguments = "$RCCExe task run -t robotmk-agent -r $RobotmkRCCdir\robot.yaml --silent"
 			}
 			else {
-				
-				debug "> RCC environment is not ready to use, creating it"
+				debug "RCC environment is not ready to use, creating it"
 				# create state file 
-				New-Item -ItemType File -Path ($CMKtempdir + "\robotmk_rcc_env_in_creation") -Force *>$nul
+				New-Item -ItemType File -Path ($CMKtempdir + "\robotmk_rcc_env_in_creation") -Force			
 				if (Test-Path ($RobotmkRCCdir + "\hololib.zip")) {
 					debug "> hololib.zip found, importing it"
 					$Binary = $RCCExe

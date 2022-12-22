@@ -70,10 +70,19 @@
             ]
         },
         {
-            "name": "PowerShell Launch Current File",
+            "name": "PowerShell robotmk-ctrl.ps1",
             "type": "PowerShell",
             "request": "launch",
-            "script": "${file}",
+            "script": "agent/plugins/robotmk-ctrl.ps1",
+            //"script": "${file}",
+            "cwd": "${cwd}"
+        },
+        {
+            "name": "PowerShell robotmk.ps1",
+            "type": "PowerShell",
+            "request": "launch",
+            "script": "agent/plugins/robotmk.ps1",
+            //"script": "${file}",
             "cwd": "${cwd}"
         }
     ]

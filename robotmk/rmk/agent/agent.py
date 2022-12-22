@@ -55,6 +55,15 @@ class Daemon:
     def delpid(self):
         os.remove(self.pidfile)
 
+    def ctrl_file_is_fresh(self):
+        lastexecfile_path = self.tmpdir / "robotmk_controller_last_execution"
+        mtime = os.path.getmtime(lastexecfile_path)
+        now = time.time()
+        if now - mtime < 10:
+            return True
+        else:
+            return False
+
     def write_and_register_pidfile(self):
         with open(self.pidfile, "w+") as f:
             f.write(self.pid + "\n")
@@ -81,8 +90,6 @@ class Daemon:
 
     def run(self):
         print(__name__ + ": " + "Daemon is running ... ")
-        # sys.exit()
-        import datetime
 
         while True:
             # DUMMY DAEMON CODE
@@ -97,6 +104,13 @@ class Daemon:
                     with open(self.tmpdir / filename, "w") as f:
                         f.write("foobar output")
                     time.sleep(0.2)
+            if self.ctrl_file_is_fresh():
+                print(__name__ + ": " + "Controller file is fresh")
+            else:
+                print(
+                    __name__ + ": " + "Controller file is OUTDATED. Exiting, too. Bye."
+                )
+                break
 
     def stop(self):
         # Check for a pidfile to see if the daemon already runs
