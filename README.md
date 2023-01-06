@@ -1,36 +1,46 @@
-Hereiwas: Bestimmen, wie viele Prozesse von agent laufen 
-x
 # Robotmk V2
 
-## I. Robotmk as Agent Plugin 
 
-### a) "Output" mode 
+## I. Robotmk als Agent Plugin  
 
-- (RCC env creation done in b) )
-- `robotmk.ps1` (sync)
-  - steht das RCC-env für robotmk bereit?
-    - nein 
-      - exit (Aufbau erledigt async-Teil) 
-    - ja
-      - `rcc task run -t robotmk-output` => startet `robotmk.py --mode output`
-        - Config aus File 
-        - iteriere über Robots, lese Ergebnisse, printe Output 
+### a) Robotmk-Plugin im "Agent" mode
 
+Dem Aufruf von `robotmk.py` (in RCC oder nativ über das OS-Python) wird ein Facade-Plugin `robotmk-ctrl.ps1` vorgeschaltet (Windows: Powershell, Linux: Bash).
+Es verbirgt die Logik der Erzeugung des RCC-Environments (sofern noch nicht vorhanden).
 
-### b) "Agent" mode
+Außerdem abstrahiert das Facade-Plugin die unter Windows und Linux unterschiedliche Entkoppelung des Robotmk-Daemon-Prozesses vom Agenten-Prozess, der ihn startet. 
+Windows = "early decoupling": `robotmk-ctrl.ps1` kann den Robotmk-Pythonprozess theoretisch direkt entkoppelt erzeugen (-> POCESS_CREATION_FLAGS) und starten. 
 
- 
-- `robotmk-ctrl.ps1` (Process and environment creation, async) 
-  - steht das RCC-env für robotmk bereit?
-    - nein => RCC env creation
-      - Create DETACHED_PROCESS
-      - RCC-Env aufbauen: `rcc ht vars` 
-      - exit 
-    - ja
-      - Create DETACHED_PROCESS
-      - `rcc task run -t robotmk-agent` => startet `bin/robotmk.py --mode agent` 
-- `robotmk agent`
-  - Config aus File 
+Linux = "late decoupling": `robotmk-ctrl.sh` müsste die Entkoppelung an den Child-Prozess delegieren, der sich mittels "Double-Forking" vom Parent löst. 
+Problem: Der Child-Code ist entweder das nativ gestartete Pythonscript `robotmk.py` oder das Binary `rcc.exe`. 
+Dort jeweils müsste auch die Logik des Double-Forking eingebaut werden. Das führt zu Code duplication - und ist im Fall von RCC auch nicht möglich (3rd Party).
+
+TODO: ohne RCC?
+
+Obwohl das Problem nur unter Linux existiert (und die Facade-Plugins ohnehin in unterschiedlichen Sprachen programmiert werden müssen), wird eine einheitliche Architektur angestrebt: 
+Wird das Facade-Plugin vom Agenten gestartet, entkoppelt es sich grundsätzlich durch einen Aufruf von sich selbst. 
+
+Im Detail:
+- Agent startet `robotmk-ctrl.ps1/sh` (Facade-Plugin)
+- Entkoppelung: 
+  - Windows: 
+    - Facade-Plugin startet sich selbst als bereits entkoppelter Prozess mit Parameter "start": `robotmk-ctrl.ps1 start`
+  - Linux: 
+    - Facade-Plugin startet sich selbst als Subprozess mit Parameter "start": `robotmk-ctrl.sh start`
+    - zusätzlicher Schritt: Subprozess entkoppelt sich durch Double-Fork
+- In beiden Fällen (ps1/sh) läuft `robotmk-ctrl` nun als entkoppelter Prozess. Anhand des Parameters "start" erkennt das Script, dass keine Entkoppelung mehr notwendig ist. 
+  - läuft der Robotmk-Prozess bereits || existiert Statefile `robotmk_rcc_env_in_creation`? 
+    - ja => exit
+    - nein => robotmk-RCC-env bereit?
+      - ja => Starte Robotmk: `rcc task run -t robotmk-agent` => LOOP ... ... (s.u.)
+      - nein => robotmk-RCC-env bauen: 
+        - Anlagen v. Statefile: `robotmk_rcc_env_in_creation`
+        - hololib-zip vorhanden? 
+          - ja => `rc ht import hololib.zip` (lokal)
+          - nein => `rcc ht vars` (Internet)
+
+Robotmk-LOOP: 
+  - Liest Config aus File 
   - apscheduler loop: stetes Ausführen von due Robots
   - foreach "due robot": `Robot Runner` (multiprocessing)
     - Config: 
@@ -47,7 +57,19 @@ x
   - end of loop: refresh config 
 
 
+### b) Robotmk-Plugin im "Output" mode 
+
+Das Facade-Plugin `robotmk.ps1` ruft Robotmk im "output" mode auf. Es wird synchron über den Agenten gestartet. 
+
+- Agent startet `robotmk-ctrl.ps1/sh` (Facade-Plugin)
+- steht das robotmk-RCC-env bereit?
+  - ja => Starte Robotmk: `rcc task run -t robotmk-output`
+    - liest Config aus File 
+    - iteriert über Robots, liest Ergebnisse, printet Output   
+  - nein => exit (Aufbau wird von robotmk-ctrl erledigt)
+
 ## II. Robotmk im Robot-Mode
+
 `ROBOTMK_mode=robot` bzw `--mode=robot`=> Ausführung eines einzelnen Robots (im OS- oder RCC-Python)
 
 - `robotmk`
@@ -57,8 +79,6 @@ x
     - Aufruf von `robot --param1 ... --name suiteA robotmk.robot`
       - `--name` sorgt dafür, dass die toplevel suite nicht "Robotmk" heißt, sondern so wie die suite
   - Schreiben des Results
-
-
 
 
 ## Robotmk as Special Agent 
@@ -120,6 +140,7 @@ DONE:
 
 # Open Questions
 
+- RCC als Enterprise-Feature? 
 - Wie kann `robotmk.ps1` feststellen, dass das RCC-Env da ist?  
 - Wie groß ist ein Robotmk-RCC?
   - 51 MB (standard)

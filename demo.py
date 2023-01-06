@@ -1,10 +1,28 @@
 #!/usr/bin/env python
 
-# Demonstate the use
+# This script demonstrates the creation of RCC environment via internet and via hololib.zip for Robotmk.
 
 # Preparations:
-# 1. open "C:\\Users\\vagrant\\Documents\\01_dev\\rmkv2\\agent" in explorer
+# 1. open "C:/Users/vagrant/Documents/rc_homes" *) in explorer, watch it beside this script.
+#    This is where the RCC environments will be created.
+# 2. CD into this directory and run "pipenv install -e ." to install the dependencies.
+# 3. Run "pipenv shell" to activate the virtual environment.
+# 4. Run "python demo.py" to run the script.
 
+# The script will create two RCC environments:
+# 1. rcc_via_internet - RCC environment created via internet.
+# 2. rcc_hololib_zip - RCC environment created via internet, then exported to hololib.zip and imported to RCC environment.
+
+# Time is measured how long it takes to create the RCC environment and get ready to use it.
+# 1. rcc_via_internet - download and install all the dependencies.
+# 2. rcc_hololib_zip -  import hololib.zip to RCC environment.
+
+# The RCC environment definition for RObotmk can be found in the agent folder (/lib/rcc_robotmk).
+# This is where the hololib.zip is created.
+# To avoid that hololib.zip gets respected during env creation with Internet, it is renamed to hololib._zip and only
+# renamed back to hololib.zip when the RCC environment should be created via hololib.zip.
+
+# *) RCC_HOMES can be set to an arbitrary dir; it gets set as ROBOCORP_HOME for all RCC commands.
 
 import os
 import sys
@@ -16,14 +34,26 @@ import subprocess
 from timeit import default_timer
 from datetime import timedelta
 
-CMK_AGENT_DIR = Path(
-    os.getenv("CMK_AGENT_DIR", "C:\\Users\\vagrant\\Documents\\01_dev\\rmkv2\\agent")
-)
+# get OS Documents folder
+if sys.platform == "win32":
+    import winreg
+    from winreg import HKEY_CURRENT_USER as HKCU
+
+    key = winreg.OpenKey(
+        HKCU, r"Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders"
+    )
+    DOCS = Path(winreg.QueryValueEx(key, "Personal")[0])
+else:
+    DOCS = Path(os.path.expanduser("~/Documents"))
+
+RCC_HOMES = DOCS / "rc_homes"
+ROOT = Path(os.path.dirname(os.path.realpath(__file__)))
+CMK_AGENT_DIR = Path(os.getenv("CMK_AGENT_DIR", ROOT / "agent"))
 AGENT_TMP_DIR = CMK_AGENT_DIR / "tmp"
 RCC_DIR = Path(os.getenv("ROBOCORP_HOME"))
 ROBOTMK_RCCLIBDIR = CMK_AGENT_DIR / "lib/rcc_robotmk"
 RCCEXE = CMK_AGENT_DIR / "bin/rcc.exe"
-RCC_HOMES = Path("C:/Users/vagrant/Documents/rc_homes")
+ROBOTMK_CTRL = CMK_AGENT_DIR / "plugins/robotmk-ctrl.ps1"
 
 
 def main():
@@ -65,6 +95,9 @@ def rcc_ht_check():
 def set_rcc_home(dir):
     os.environ["ROBOCORP_HOME"] = str(RCC_HOMES / dir)
     log("ROBOCORP_HOME = %s" % os.environ["ROBOCORP_HOME"])
+    # create directory if it does not exist
+    if not os.path.exists(os.environ["ROBOCORP_HOME"]):
+        os.makedirs(os.environ["ROBOCORP_HOME"])
 
 
 def rcc_ht_hash(conda_yaml):
@@ -199,7 +232,7 @@ def robotmk_agent():
 
 
 def robotmk():
-    os.system("powershell.exe -File %s" % (CMK_AGENT_DIR / "plugins/robotmk-ctrl.ps1"))
+    os.system("powershell.exe -File %s" % (ROBOTMK_CTRL))
 
 
 def tabula_rasa():
