@@ -9,15 +9,15 @@ Dem Aufruf von `robotmk.py` (in RCC oder nativ über das OS-Python) wird ein Fac
 Es verbirgt die Logik der Erzeugung des RCC-Environments (sofern noch nicht vorhanden).
 
 Außerdem abstrahiert das Facade-Plugin die unter Windows und Linux unterschiedliche Entkoppelung des Robotmk-Daemon-Prozesses vom Agenten-Prozess, der ihn startet. 
-Windows = "early decoupling": `robotmk-ctrl.ps1` kann den Robotmk-Pythonprozess theoretisch direkt entkoppelt erzeugen (-> POCESS_CREATION_FLAGS) und starten. 
+**Windows** = "*early decoupling*": `robotmk-ctrl.ps1` kann den Robotmk-Pythonprozess theoretisch direkt entkoppelt (-> POCESS_CREATION_FLAGS) starten. 
 
-Linux = "late decoupling": `robotmk-ctrl.sh` müsste die Entkoppelung an den Child-Prozess delegieren, der sich mittels "Double-Forking" vom Parent löst. 
-Problem: Der Child-Code ist entweder das nativ gestartete Pythonscript `robotmk.py` oder das Binary `rcc.exe`. 
-Dort jeweils müsste auch die Logik des Double-Forking eingebaut werden. Das führt zu Code duplication - und ist im Fall von RCC auch nicht möglich (3rd Party).
+**Linux** = "*late decoupling*": `robotmk-ctrl.sh` müsste die Entkoppelung an den Child-Prozess delegieren, der sich mittels "Double-Forking" vom Parent löst. 
+Problem: Der Child-Prozess ist entweder das nativ gestartete Pythonscript `robotmk.py` oder das Binary `rcc.exe`. 
+Dort jeweils müsste auch die Logik des Double-Forking eingebaut werden. Das führt zu Code duplication - und ist im Fall von RCC auch nicht möglich (3rd Party Code).
 
 TODO: ohne RCC?
 
-Obwohl das Problem nur unter Linux existiert (und die Facade-Plugins ohnehin in unterschiedlichen Sprachen programmiert werden müssen), wird eine einheitliche Architektur angestrebt: 
+Obwohl dieses Problem nur unter Linux existiert (und die Facade-Plugins ohnehin in unterschiedlichen Sprachen programmiert werden müssen), wird eine einheitliche Architektur angestrebt: 
 Wird das Facade-Plugin vom Agenten gestartet, entkoppelt es sich grundsätzlich durch einen Aufruf von sich selbst. 
 
 Im Detail:
@@ -28,11 +28,11 @@ Im Detail:
   - Linux: 
     - Facade-Plugin startet sich selbst als Subprozess mit Parameter "start": `robotmk-ctrl.sh start`
     - zusätzlicher Schritt: Subprozess entkoppelt sich durch Double-Fork
-- In beiden Fällen (ps1/sh) läuft `robotmk-ctrl` nun als entkoppelter Prozess. Anhand des Parameters "start" erkennt das Script, dass keine Entkoppelung mehr notwendig ist. 
+- `robotmk-ctrl.ps/sh` läuft nun als entkoppelter Prozess. Anhand des Parameters `start` erkennt das Script, dass keine Entkoppelung mehr notwendig ist. 
   - läuft der Robotmk-Prozess bereits || existiert Statefile `robotmk_rcc_env_in_creation`? 
     - ja => exit
     - nein => robotmk-RCC-env bereit?
-      - ja => Starte Robotmk: `rcc task run -t robotmk-agent` => LOOP ... ... (s.u.)
+      - ja => **Starte Robotmk-Task**: `rcc task run -t robotmk-agent` => LOOP ... ... (s.u.)
       - nein => robotmk-RCC-env bauen: 
         - Anlagen v. Statefile: `robotmk_rcc_env_in_creation`
         - hololib-zip vorhanden? 
@@ -59,18 +59,16 @@ Robotmk-LOOP:
 
 ### b) Robotmk-Plugin im "Output" mode 
 
-Das Facade-Plugin `robotmk.ps1` ruft Robotmk im "output" mode auf. Es wird synchron über den Agenten gestartet. 
-
-- Agent startet `robotmk-ctrl.ps1/sh` (Facade-Plugin)
+- Agent startet Facade-Plugin `robotmk-ctrl.ps1/sh` (synchron)
 - steht das robotmk-RCC-env bereit?
-  - ja => Starte Robotmk: `rcc task run -t robotmk-output`
+  - ja => **Starte Robotmk-Task**: `rcc task run -t robotmk-output`
     - liest Config aus File 
     - iteriert über Robots, liest Ergebnisse, printet Output   
   - nein => exit (Aufbau wird von robotmk-ctrl erledigt)
 
 ## II. Robotmk im Robot-Mode
 
-`ROBOTMK_mode=robot` bzw `--mode=robot`=> Ausführung eines einzelnen Robots (im OS- oder RCC-Python)
+`ROBOTMK_mode=robot` bzw `--mode=robot`=> Ausführung **eines einzelnen Robots** (im OS- oder RCC-Python)
 
 - `robotmk`
   - Config aus Environment (alternativ: `-c path/to/robotmk.json --mode robot --run suiteA`)
@@ -81,7 +79,7 @@ Das Facade-Plugin `robotmk.ps1` ruft Robotmk im "output" mode auf. Es wird synch
   - Schreiben des Results
 
 
-## Robotmk as Special Agent 
+## III. Robotmk as Special Agent 
 
 ### Trigger Robots 
 
@@ -120,10 +118,13 @@ III) RMK startet mit `output` ODER interner call im Special Agent
 
 
 
-# Prototyping 
+## Prototyping 
 
-- PS1 Über CMK-Agenten aufrufen, Timing-Probleme? 
-  - holotree.zip shippen
+- Robotmk als Python-Modul
+- Facade-Plugin 
+  - Powershell 
+  - Bash 
+- holotree.zip shippen
 - apscheduler: loop/oneshot mode 
 - robotmk auf pypi
 - Conf2Env
@@ -138,7 +139,7 @@ DONE:
 
 
 
-# Open Questions
+## Open Questions
 
 - RCC als Enterprise-Feature? 
 - Wie kann `robotmk.ps1` feststellen, dass das RCC-Env da ist?  
@@ -155,14 +156,15 @@ DONE:
 - Verlässliches TMP-File für RCC? 
 
 
-# Setup 
+## Setup 
 
+pipenv install 
 pipenv install -e . 
 pipenv shell 
 
 
-
-# robotmk.yml
+## Notizen 
+### robotmk.yml
 
 
 ```

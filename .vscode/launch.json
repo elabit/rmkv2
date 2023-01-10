@@ -13,7 +13,7 @@
             "justMyCode": false
         },
         {
-            "name": "python -m robotmk agent start",
+            "name": "python -m robotmk agent bg",
             "type": "python",
             "request": "launch",
             "module": "robotmk",
@@ -21,8 +21,26 @@
             "justMyCode": true,
             "args": [
                 "agent",
-                "start"
-            ]
+                "bg"
+            ],
+            "env": {
+                "CMK_AGENT_DIR": "/home/simonmeggle/Documents/01_dev/rmkv2/agent"
+            }
+        },
+        {
+            "name": "python -m robotmk agent fg",
+            "type": "python",
+            "request": "launch",
+            "module": "robotmk",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "agent",
+                "fg"
+            ],
+            "env": {
+                "CMK_AGENT_DIR": "/home/simonmeggle/Documents/01_dev/rmkv2/agent"
+            }
         },
         {
             "name": "RMK --version",
@@ -45,7 +63,10 @@
             "args": [
                 "agent",
                 "start"
-            ]
+            ],
+            "env": {
+                "CMK_AGENT_DIR": "/home/simonmeggle/Documents/01_dev/rmkv2/agent"
+            }
         },
         {
             "name": "RMK specialagent",

@@ -20,7 +20,7 @@ setup(
         "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
         "Operating System :: OS Independent",
     ],
-    # install_requires=["mergedeep"],
+    install_requires=["click"],
     packages=find_packages(),
     python_requires=">=3.6",
     entry_points={

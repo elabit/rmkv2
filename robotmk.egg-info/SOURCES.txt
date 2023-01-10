@@ -7,6 +7,7 @@ robotmk.egg-info/PKG-INFO
 robotmk.egg-info/SOURCES.txt
 robotmk.egg-info/dependency_links.txt
 robotmk.egg-info/entry_points.txt
+robotmk.egg-info/requires.txt
 robotmk.egg-info/top_level.txt
 robotmk/rmk/__init__.py
 robotmk/rmk/robotmk.py

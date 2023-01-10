@@ -30,7 +30,7 @@ def main(context):
 
 @main.group(
     name="agent",
-    help="Execute Robotmk as daemonized agent (Windows/Linux).",
+    help="Execute Robotmk agent (Windows/Linux).",
     invoke_without_command=False,
 )
 # do not execute without subcommand
@@ -39,9 +39,10 @@ def cli_agent():
     pass
 
 
-cli_agent.add_command(agent_cli.start)
-cli_agent.add_command(agent_cli.stop)
-cli_agent.add_command(agent_cli.restart)
+cli_agent.add_command(agent_cli.fg)
+cli_agent.add_command(agent_cli.bg)
+# cli_agent.add_command(agent_cli.stop)
+# cli_agent.add_command(agent_cli.restart)
 
 # --------------------------------------------------
 # SPECIAL AGENT

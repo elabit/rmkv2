@@ -11,34 +11,38 @@ import re
 import click
 
 
-class Daemon:
-    def __init__(self, name="robotmk_agent_daemon", pidfile=None):
+class RMKAgent:
+    def __init__(self, name="robotmk_agent_daemon", pidfile=None, controlled=False):
         self.name = name
         if not pidfile:
             # TODO: find a path that is accessible from insice RCC and outside
             pidfile = "%s.pid" % self.name
-            self.tmpdir = (
-                Path(
-                    os.getenv(
-                        "CMK_AGENT_DIR",
-                        "C:\\Users\\vagrant\\Documents\\01_dev\\rmkv2\\agent",
-                    )
-                )
-                / "tmp"
-            )
+
             print(__name__ + ": (Daemon init) " + "tmpdir is: %s" % self.tmpdir)
             self.pidfile = self.tmpdir / pidfile
             print(__name__ + ": (Daemon init) " + "Pidfile is: %s" % self.pidfile)
         else:
             self.pidfile = Path(pidfile)
-        if platform.system() == "Linux":
-            self.fork_strategy = LinuxStrategy(self)
-        elif platform.system() == "Windows":
-            self.fork_strategy = WindowsStrategy(self)
+        self.controlled = controlled
+        self.lastexecfile_path = self.tmpdir / "robotmk_controller_last_execution"
 
-    def daemonize(self):
-        self.fork_strategy.daemonize()
-        self.write_and_register_pidfile()
+        # if platform.system() == "Linux":
+        #     self.fork_strategy = LinuxStrategy(self)
+        # elif platform.system() == "Windows":
+        #     self.fork_strategy = WindowsStrategy(self)
+
+    # def daemonize(self):
+    #     self.fork_strategy.daemonize()
+    #     self.write_and_register_pidfile()
+
+    @property
+    def tmpdir(self):
+        # if env var does not exist, throw exception
+        if not os.getenv("CMK_AGENT_DIR"):
+            raise Exception(
+                "TBD: Environment variable CMK_AGENT_DIR not set. Please set it to the path of the agent directory."
+            )
+        return Path(os.environ.get("CMK_AGENT_DIR")) / "tmp"
 
     @property
     def pid(self):
@@ -55,9 +59,14 @@ class Daemon:
     def delpid(self):
         os.remove(self.pidfile)
 
+    def running_allowed(self):
+        if self.controlled:
+            return self.ctrl_file_is_fresh()
+        else:
+            return True
+
     def ctrl_file_is_fresh(self):
-        lastexecfile_path = self.tmpdir / "robotmk_controller_last_execution"
-        mtime = os.path.getmtime(lastexecfile_path)
+        mtime = os.path.getmtime(self.lastexecfile_path)
         now = time.time()
         if now - mtime < 10:
             return True
@@ -83,15 +92,13 @@ class Daemon:
             sys.exit(1)
         else:
             # daemonize according to the strategy
-            self.daemonize()
+            # self.daemonize()
             # Do the work
-            print(__name__ + ": (start) " + "Starting %s" % self.name)
             self.run()
 
     def run(self):
-        print(__name__ + ": " + "Daemon is running ... ")
-
-        while True:
+        print(__name__ + ": (start) " + "Starting %s" % self.name)
+        while self.running_allowed():
             # DUMMY DAEMON CODE
             print(__name__ + ": " + "Daemon is running ... ")
             for i in range(20):
@@ -104,13 +111,13 @@ class Daemon:
                     with open(self.tmpdir / filename, "w") as f:
                         f.write("foobar output")
                     time.sleep(0.2)
-            if self.ctrl_file_is_fresh():
-                print(__name__ + ": " + "Controller file is fresh")
-            else:
-                print(
-                    __name__ + ": " + "Controller file is OUTDATED. Exiting, too. Bye."
-                )
+            if self.exit_without_controller():
                 break
+        print(
+            __name__
+            + ": "
+            + f"I am not supposed to run (reason: controller file {self.lastexecfile_path} is OUTDATED). Exiting, Bye."
+        )
 
     def stop(self):
         # Check for a pidfile to see if the daemon already runs
@@ -147,60 +154,60 @@ class Daemon:
         self.start()
 
 
-class ForkStrategy(ABC):
-    def __init__(self, daemon):
-        self.daemon = daemon
+# class ForkStrategy(ABC):
+#     def __init__(self, daemon):
+#         self.daemon = daemon
 
-    @abstractmethod
-    def daemonize(self):
-        pass
-
-
-class LinuxStrategy(ForkStrategy):
-    def daemonize(self):
-
-        try:
-            # FORK I) the child process
-            pid = os.fork()
-            if pid > 0:
-                # exit the parent process
-                sys.exit(0)
-        except OSError as err:
-            sys.stderr.write("fork #1 failed: {0}\n".format(err))
-            sys.exit(1)
-
-        # executed as child process
-        # decouple from parent environment, start new session
-        # with no controlling terminals
-        os.chdir("/")
-        os.setsid()
-        os.umask(0)
-
-        # FORK II) the grandchild process
-        try:
-            pid = os.fork()
-            if pid > 0:
-                # exit the child process
-                sys.exit(0)
-        except OSError as err:
-            sys.stderr.write("fork #2 failed: {0}\n".format(err))
-            sys.exit(1)
-
-        # here we are the grandchild process,
-        # daemonize it, connect fds to /dev/null stream
-        sys.stdout.flush()
-        sys.stderr.flush()
-        si = open(os.devnull, "r")
-        so = open(os.devnull, "a+")
-        se = open(os.devnull, "a+")
-
-        os.dup2(si.fileno(), sys.stdin.fileno())
-        os.dup2(so.fileno(), sys.stdout.fileno())
-        os.dup2(se.fileno(), sys.stderr.fileno())
+#     @abstractmethod
+#     def daemonize(self):
+#         pass
 
 
-class WindowsStrategy(ForkStrategy):
-    def daemonize(self):
-        # On Windows, use ProcessCreationFlags to detach this process from the caller
-        print(__name__ + ": " + "On windows, there is nothing to daemonize....")
-        pass
+# class LinuxStrategy(ForkStrategy):
+#     def daemonize(self):
+
+#         try:
+#             # FORK I) the child process
+#             pid = os.fork()
+#             if pid > 0:
+#                 # exit the parent process
+#                 sys.exit(0)
+#         except OSError as err:
+#             sys.stderr.write("fork #1 failed: {0}\n".format(err))
+#             sys.exit(1)
+
+#         # executed as child process
+#         # decouple from parent environment, start new session
+#         # with no controlling terminals
+#         os.chdir("/")
+#         os.setsid()
+#         os.umask(0)
+
+#         # FORK II) the grandchild process
+#         try:
+#             pid = os.fork()
+#             if pid > 0:
+#                 # exit the child process
+#                 sys.exit(0)
+#         except OSError as err:
+#             sys.stderr.write("fork #2 failed: {0}\n".format(err))
+#             sys.exit(1)
+
+#         # here we are the grandchild process,
+#         # daemonize it, connect fds to /dev/null stream
+#         sys.stdout.flush()
+#         sys.stderr.flush()
+#         si = open(os.devnull, "r")
+#         so = open(os.devnull, "a+")
+#         se = open(os.devnull, "a+")
+
+#         os.dup2(si.fileno(), sys.stdin.fileno())
+#         os.dup2(so.fileno(), sys.stdout.fileno())
+#         os.dup2(se.fileno(), sys.stderr.fileno())
+
+
+# class WindowsStrategy(ForkStrategy):
+#     def daemonize(self):
+#         # On Windows, use ProcessCreationFlags to detach this process from the caller
+#         print(__name__ + ": " + "On windows, there is nothing to daemonize....")
+#         pass
