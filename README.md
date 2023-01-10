@@ -154,7 +154,8 @@ DONE:
   - proxy 
   - logo
 - Verlässliches TMP-File für RCC? 
-
+- Playwright nur 1 Browser? 
+- 
 
 ## Setup 
 
