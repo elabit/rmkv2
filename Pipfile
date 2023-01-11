@@ -5,10 +5,14 @@ name = "pypi"
 
 [packages]
 click = "*"
-robotmk = {editable = true, path = "."}
+bumpversion = "*"
 
 [dev-packages]
 black = "*"
+flit = "*"
+pip = "*"
+ipython = "*"
+ipdb = "*"
 
 [requires]
 python_version = "3.10"

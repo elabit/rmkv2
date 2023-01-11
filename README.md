@@ -192,3 +192,30 @@ suites:
 ROBOTMK_global_mode=suite
 ROBOTMK_suites_suiteA_use_rcc=yes
 ```
+
+
+## FLit / bumpversion workflow
+
+Start with a clean bash:
+
+```bash
+# enter project dir
+cd rmkv2
+# install dependencies
+pipenv sync --dev
+# install editable robotmk
+cd robotmk-agent 
+flit install -s
+```
+
+git add .. ; git commit --amend -m "flit will es "; bumpversion patch; git add . ; git commit --amend -m "flit will es"
+
+
+```
+[bumpversion]
+current_version = 0.0.7
+commit = False
+tag = False
+
+[bumpversion:file:robotmk/__init__.py]
+```
