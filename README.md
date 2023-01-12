@@ -208,6 +208,9 @@ cd robotmk-agent
 flit install -s
 ```
 
+Release: 
+```
+cd robotmk-agent
 git add .. ; git commit --amend -m "flit will es "; bumpversion patch; git add . ; git commit --amend -m "flit will es"
 
 
