@@ -6,5 +6,7 @@ dependencies:
 - yaml
 - click
 - pip:
+  - robotmk
   - mergedeep
+  - bumpversion
   - ipdb

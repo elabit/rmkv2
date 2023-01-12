@@ -123,6 +123,7 @@ III) RMK startet mit `output` ODER interner call im Special Agent
 - Robotmk als Python-Modul
 - Facade-Plugin 
   - Powershell 
+    - TODO: Entfernen des Flagfiles im RCC-Postscript?
   - Bash 
 - holotree.zip shippen
 - apscheduler: loop/oneshot mode 
@@ -211,8 +212,8 @@ flit install -s
 Release: 
 ```
 cd robotmk-agent
-git add .. ; git commit --amend -m "flit will es "; bumpversion patch; git add . ; git commit --amend -m "flit will es"
-
+git add .. ; git commit -m "flit will es "; bumpversion patch; git add .. ; git commit -m "flit will es"
+flit publish --repository testpypi 
 
 ```
 [bumpversion]
