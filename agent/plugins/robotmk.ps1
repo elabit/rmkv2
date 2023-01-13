@@ -24,6 +24,7 @@ $CMKtempdir = $CMKAgentDir + "\tmp"
 $DaemonPidfile = "robotmk_agent_daemon"
 $pidfile = $CMKtempdir + "\" + $DaemonPidfile + ".pid"
 $Flagfile_controller_last_execution = $CMKtempdir + "\robotmk_controller_last_execution"
+# This flagfile indicates that both there is a usable holotree space for "robotmk agent/output"
 $Flagfile_RCC_env_robotmk_ready = $CMKtempdir + "\rcc_env_robotmk_agent_ready"
 # IMPORTANT! All other Robot subprocesses must respect this file and not start if it is present!
 # (There is only ONE RCC creation allowed at a time.)
@@ -45,12 +46,18 @@ function main() {
 	# robotmk-ctrl.ps1 : start Robotmk to control the daemon
 	# Both scripts will be mostly identical, but must be separate files in order
 	# to be run by the agent. 
+
 	# CONTROLLER is a helper variable for prototyping and switching between
 	# the two behaviours
-	if (-Not $CONTROLLER) {
+	# if name of this script is robotmk-ctrl.ps1, then CONTROLLER is set to 1
+	# if name of this script is robotmk.ps1, then CONTROLLER is set to 0
+	# get name of this script
+	
+	$scriptname = $MyInvocation.ScriptName
+	if ($scriptname -match ".*robotmk.ps1") {
 		StartAgentOutput
 	}
-	else {
+	elseif ($scriptname -match ".*robotmk-ctrl.ps1") {
 		$daemon_pid = IsDaemonRunning
 		if (-Not ($daemon_pid)) {
 			DaemonController($mode)
@@ -58,7 +65,10 @@ function main() {
 		else {
 			debug "Daemon is already running with PID: $daemon_pid"
 		}
-		CreateFlagfile $Flagfile_controller_last_execution
+		CreateFlagfile $Flagfile_controller_last_execution		
+	}
+ else {
+		Write-Host "ERROR: Unknown script name: $scriptname"
 	}
 }
 
@@ -168,8 +178,9 @@ function IsFlagfileYoungerThanMinutes {
 
 function StartAgentOutput {
 	if ($UseRCC) {
-		
-		if ( IsRCCEnvReady ) {
+		$blueprint = GetCondaBlueprint $RobotmkRCCdir\conda.yaml		
+		debug "> Conda Blueprint: $blueprint"	
+		if ( IsRCCEnvReady $blueprint ) {
 			debug "RCC environment is ready to use"
 			RunTaskRobotmkOutput
 			#$output_str = [string]::Concat($output)
@@ -320,9 +331,41 @@ function RCCTaskRun {
 		[string]$controller,
 		[Parameter(Mandatory = $True)]
 		[string]$space			
-	)  
-	$Arguments = "task run --controller $controller --space $space -t $task -r $robot_yml --silent"
-	Start-Process -FilePath $RCCExe -ArgumentList $Arguments
+	) 
+	# TODO: --silent needed? 
+	# TODO: -NoNewWindow needed?
+	$Arguments = "task run --controller $controller --space $space -t $task -r $robot_yml"
+	debug "Executing: $RCCExe $Arguments"
+	$p = Execute-Command -commandTitle "RCC.exe" -commandPath $RCCExe -commandArguments $Arguments
+	# $p = Start-Process -Wait -FilePath $RCCExe -ArgumentList $Arguments
+	# $stdout = $p.StandardOutput.ReadToEnd()
+	# $stderr = $p.StandardError.ReadToEnd()
+	$exitCode = $p.ExitCode
+
+}
+
+Function Execute-Command ($commandTitle, $commandPath, $commandArguments) {
+	Try {
+		$pinfo = New-Object System.Diagnostics.ProcessStartInfo
+		$pinfo.FileName = $commandPath
+		$pinfo.RedirectStandardError = $true
+		$pinfo.RedirectStandardOutput = $true
+		$pinfo.UseShellExecute = $false
+		$pinfo.Arguments = $commandArguments
+		$p = New-Object System.Diagnostics.Process
+		$p.StartInfo = $pinfo
+		$p.Start() | Out-Null
+		[pscustomobject]@{
+			commandTitle = $commandTitle
+			stdout       = $p.StandardOutput.ReadToEnd()
+			stderr       = $p.StandardError.ReadToEnd()
+			ExitCode     = $p.ExitCode
+		}
+		$p.WaitForExit()
+	}
+	Catch {
+		exit
+	}
 }
 
 function RCCEnvironmentCreate {
