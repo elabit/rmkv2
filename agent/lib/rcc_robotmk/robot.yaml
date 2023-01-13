@@ -3,7 +3,7 @@
 
 tasks:
   robotmk-agent:
-    shell: robotmk agent start
+    shell: robotmk agent bg
   robotmk-output:
     shell: robotmk output
 

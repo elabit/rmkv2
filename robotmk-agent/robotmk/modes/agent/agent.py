@@ -111,12 +111,12 @@ class RMKAgent:
                     with open(self.tmpdir / filename, "w") as f:
                         f.write("foobar output")
                     time.sleep(0.2)
-            if self.exit_without_controller():
-                break
+            # if self.exit_without_controller():
+            #     break
         print(
             __name__
             + ": "
-            + f"I am not supposed to run (reason: controller file {self.lastexecfile_path} is OUTDATED). Exiting, Bye."
+            + f"I am not supposed to run anymore (reason: controller file {self.lastexecfile_path} is OUTDATED). Exiting, Bye."
         )
 
     def stop(self):
