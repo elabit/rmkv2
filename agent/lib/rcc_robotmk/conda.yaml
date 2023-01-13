@@ -6,8 +6,4 @@ dependencies:
 - yaml
 - click
 - pip:
-  - robotmk
-  - mergedeep
-  - bumpversion
-  - ipdb
-  - robotframework
+  - robotmk==0.0.25

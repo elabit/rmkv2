@@ -30,7 +30,7 @@ $Flagfile_RCC_env_robotmk_ready = $CMKtempdir + "\rcc_env_robotmk_agent_ready"
 # (There is only ONE RCC creation allowed at a time.)
 $Flagfile_RCC_env_creation_in_progress = $CMKtempdir + "\rcc_env_creation_in_progress.lock"
 # how many minutes to wait for a/any single RCC env creation to be finished
-$RCC_env_max_creation_minutes = 2
+$RCC_env_max_creation_minutes = 1
 
 # TODO: How to set system env vars globally? Needed?
 #[System.Environment]::SetEnvironmentVariable('ROBOCORP_HOME', 'C:\rcc')
@@ -54,6 +54,8 @@ function main() {
 	# get name of this script
 	
 	$scriptname = $MyInvocation.ScriptName
+	# only for debugging
+	$scriptname = "robotmk-ctrl.ps1"
 	if ($scriptname -match ".*robotmk.ps1") {
 		StartAgentOutput
 	}
@@ -106,8 +108,10 @@ function GetCondaBlueprint {
 		[Parameter(Mandatory = $True)]
 		[string]$conda_yaml
 	)	
-	$condahash = & $RCCExe ht hash $conda_yaml 2>&1
-	$m = $condahash -match "Blueprint hash for.*is (?<blueprint>[A-Za-z0-9]*)\."
+	$ret = Invoke-Process -FilePath $RCCExe -ArgumentList "ht hash $conda_yaml"
+	$out = $ret.Output
+	#$condahash = & $RCCExe ht hash $conda_yaml 2>&1
+	$m = $out -match "Blueprint hash for.*is (?<blueprint>[A-Za-z0-9]*)\."
 	$blueprint = $Matches.blueprint
 	return $blueprint
 }
@@ -118,7 +122,9 @@ function CatalogContainsAgentBlueprint {
 		[string]$blueprint
 	)
 	# # Check if the blueprint is already in the RCC catalog
-	$rcc_catalogs = & $RCCExe ht catalogs 2>&1
+	$ret = Invoke-Process -FilePath $RCCExe -ArgumentList "ht catalogs"
+	$rcc_catalogs = $ret.Output
+	#	$rcc_catalogs = & $RCCExe ht catalogs 2>&1
 	#$catalogstring = [string]::Concat($rcc_catalogs)
 	$catalogstring = $rcc_catalogs -join "\n"
 
@@ -139,7 +145,8 @@ function HolotreeContainsAgentSpaces {
 		[string]$blueprint
 	)  	
 	# Example: rcc.robotmk  output  c939e5d2d8b335f9
-	$holotree_spaces = & $RCCExe ht list 2>&1
+	$ret = Invoke-Process -FilePath $RCCExe -ArgumentList "ht list"
+	$holotree_spaces = $ret.Output
 	$spaces_string = $holotree_spaces -join "\n"
 	$agent_match = ($spaces_string -match "rcc.$rcc_ctrl_rmk\s+$rcc_space_rmk_agent\s+$blueprint")
 	$output_match = ($spaces_string -match "rcc.$rcc_ctrl_rmk\s+$rcc_space_rmk_output\s+$blueprint")
@@ -182,7 +189,7 @@ function StartAgentOutput {
 		debug "> Conda Blueprint: $blueprint"	
 		if ( IsRCCEnvReady $blueprint ) {
 			debug "RCC environment is ready to use"
-			RunTaskRobotmkOutput
+			RunRobotmkTask "output"
 			#$output_str = [string]::Concat($output)
 			foreach ($line in $output) {
 				Write-Host $line 
@@ -257,7 +264,7 @@ function StartRobotmkDaemon {
 		if ( IsRCCEnvReady $blueprint) {
 			# if started without "start", we need to detach first
 			debug "> RCC environment is ready to use, Daemon can run"
-			RunTaskRobotmkAgent
+			RunRobotmkTask "agent"
 		}
 		else {	
 			if (IsFlagfileYoungerThanMinutes $Flagfile_RCC_env_creation_in_progress $RCC_env_max_creation_minutes) {
@@ -310,61 +317,72 @@ function StartRobotmkDecoupled {
 	debug "> Exiting... (Daemon will run in background now)"
 }
 
-function RunTaskRobotmkAgent {
-	# Runs the Robotmk agent
-	RCCTaskRun "robotmk-agent" "$RobotmkRCCdir\robot.yaml" $rcc_ctrl_rmk $rcc_space_rmk_agent
-}
-
-function RunTaskRobotmkOutput {
-	# Runs the Robotmk output
-	RCCTaskRun "robotmk-output" "$RobotmkRCCdir\robot.yaml" $rcc_ctrl_rmk $rcc_space_rmk_output
-}
-
-function RCCTaskRun {
-	# Runs a RCC task with given controller (app) and space (mode)
+function RunRobotmkTask {
 	param (
 		[Parameter(Mandatory = $True)]
-		[string]$task,
-		[Parameter(Mandatory = $True)]
-		[string]$robot_yml,
-		[Parameter(Mandatory = $True)]
-		[string]$controller,
-		[Parameter(Mandatory = $True)]
-		[string]$space			
-	) 
-	# TODO: --silent needed? 
-	# TODO: -NoNewWindow needed?
-	$Arguments = "task run --controller $controller --space $space -t $task -r $robot_yml"
-	debug "Executing: $RCCExe $Arguments"
-	$p = Execute-Command -commandTitle "RCC.exe" -commandPath $RCCExe -commandArguments $Arguments
-	# $p = Start-Process -Wait -FilePath $RCCExe -ArgumentList $Arguments
-	# $stdout = $p.StandardOutput.ReadToEnd()
-	# $stderr = $p.StandardError.ReadToEnd()
-	$exitCode = $p.ExitCode
-
+		[string]$mode
+	)	
+	# Runs the Robotmk agent
+	#RCCTaskRun "robotmk-agent" "$RobotmkRCCdir\robot.yaml" $rcc_ctrl_rmk $rcc_space_rmk_agent
+	$space = (Get-Variable -Name "rcc_space_rmk_$mode").Value
+	$Arguments = "task run --controller $rcc_ctrl_rmk --space $space -t robotmk-$mode -r $RobotmkRCCdir\robot.yaml"
+	debug "> Running Robotmk task: $RCCExe $Arguments"
+	Invoke-Process -FilePath $RCCExe -ArgumentList $Arguments
 }
 
-Function Execute-Command ($commandTitle, $commandPath, $commandArguments) {
-	Try {
-		$pinfo = New-Object System.Diagnostics.ProcessStartInfo
-		$pinfo.FileName = $commandPath
-		$pinfo.RedirectStandardError = $true
-		$pinfo.RedirectStandardOutput = $true
-		$pinfo.UseShellExecute = $false
-		$pinfo.Arguments = $commandArguments
-		$p = New-Object System.Diagnostics.Process
-		$p.StartInfo = $pinfo
-		$p.Start() | Out-Null
-		[pscustomobject]@{
-			commandTitle = $commandTitle
-			stdout       = $p.StandardOutput.ReadToEnd()
-			stderr       = $p.StandardError.ReadToEnd()
-			ExitCode     = $p.ExitCode
+
+
+function Invoke-Process {
+	<#
+	.GUID b787dc5d-8d11-45e9-aeef-5cf3a1f690de
+	.AUTHOR Adam Bertram
+	.COMPANYNAME Adam the Automator, LLC
+	.TAGS Processes
+	#>	
+	[CmdletBinding(SupportsShouldProcess)]
+	param
+	(
+		[Parameter(Mandatory)]
+		[ValidateNotNullOrEmpty()]
+		[string]$FilePath,
+
+		[Parameter()]
+		[ValidateNotNullOrEmpty()]
+		[string]$ArgumentList
+	)
+
+	$ErrorActionPreference = 'Stop'
+
+	try {
+		$stdOutTempFile = "$env:TEMP\$((New-Guid).Guid)"
+		$stdErrTempFile = "$env:TEMP\$((New-Guid).Guid)"
+
+		$startProcessParams = @{
+			FilePath               = $FilePath
+			ArgumentList           = $ArgumentList
+			RedirectStandardError  = $stdErrTempFile
+			RedirectStandardOutput = $stdOutTempFile
+			Wait                   = $true;
+			PassThru               = $true;
+			NoNewWindow            = $true;
 		}
-		$p.WaitForExit()
+		if ($PSCmdlet.ShouldProcess("Process [$($FilePath)]", "Run with args: [$($ArgumentList)]")) {
+			$cmd = Start-Process @startProcessParams
+			$cmdOutput = Get-Content -Path $stdOutTempFile -Raw
+			$cmdError = Get-Content -Path $stdErrTempFile -Raw
+			return @{
+				ExitCode = $cmd.ExitCode
+				Stdout   = $cmdOutput
+				Stderr   = $cmdError
+				Output   = $cmdOutput + $cmdError
+			}
+		}
 	}
-	Catch {
-		exit
+ catch {
+		$PSCmdlet.ThrowTerminatingError($_)
+	}
+ finally {
+		Remove-Item -Path $stdOutTempFile, $stdErrTempFile -Force -ErrorAction Ignore
 	}
 }
 
@@ -380,7 +398,8 @@ function RCCEnvironmentCreate {
 	)  
 	$Arguments = "holotree vars --controller $controller --space $space -r $robot_yml"
 	debug "Executing: $RCCExe $Arguments"
-	Start-Process -Wait -FilePath $RCCExe -ArgumentList $Arguments
+	$ret = Invoke-Process -FilePath $RCCExe -ArgumentList $Arguments
+	# TODO: error handling
 }
 
 function RCCImportHololib {
@@ -396,111 +415,6 @@ function RCCImportHololib {
 }
 
 
-# function AgentDaemon {
-# 	param (
-# 		[Parameter(Mandatory = $True)]
-# 		[string]$Binary,
-# 		[Parameter(Mandatory = $False)]
-# 		[string]$Arguments = $null,
-# 		[Parameter(Mandatory = $True)]
-# 		[string]$CreationFlags,
-# 		[Parameter(Mandatory = $True)]
-# 		[string]$ShowWindow,
-# 		[Parameter(Mandatory = $True)]
-# 		[string]$StartF
-# 	)  
-
-# 	# Define all the structures for CreateProcess
-# 	Add-Type -TypeDefinition @"
-# 	using System;
-# 	using System.Diagnostics;
-# 	using System.Runtime.InteropServices;
-	
-# 	[StructLayout(LayoutKind.Sequential)]
-# 	public struct PROCESS_INFORMATION
-# 	{
-# 		public IntPtr hProcess; public IntPtr hThread; public uint dwProcessId; public uint dwThreadId;
-# 	}
-	
-# 	[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-# 	public struct STARTUPINFO
-# 	{
-# 		public uint cb; public string lpReserved; public string lpDesktop; public string lpTitle;
-# 		public uint dwX; public uint dwY; public uint dwXSize; public uint dwYSize; public uint dwXCountChars;
-# 		public uint dwYCountChars; public uint dwFillAttribute; public uint dwFlags; public short wShowWindow;
-# 		public short cbReserved2; public IntPtr lpReserved2; public IntPtr hStdInput; public IntPtr hStdOutput;
-# 		public IntPtr hStdError;
-# 	}
-	
-# 	[StructLayout(LayoutKind.Sequential)]
-# 	public struct SECURITY_ATTRIBUTES
-# 	{
-# 		public int length; public IntPtr lpSecurityDescriptor; public bool bInheritHandle;
-# 	}
-	
-# 	public static class Kernel32
-# 	{
-# 		[DllImport("kernel32.dll", SetLastError=true)]
-# 		public static extern bool CreateProcess(
-# 			string lpApplicationName, string lpCommandLine, ref SECURITY_ATTRIBUTES lpProcessAttributes, 
-# 			ref SECURITY_ATTRIBUTES lpThreadAttributes, bool bInheritHandles, uint dwCreationFlags, 
-# 			IntPtr lpEnvironment, string lpCurrentDirectory, ref STARTUPINFO lpStartupInfo, 
-# 			out PROCESS_INFORMATION lpProcessInformation);
-# 	}
-# "@
-	
-# 	# StartupInfo Struct
-# 	$StartupInfo = New-Object STARTUPINFO
-# 	$StartupInfo.dwFlags = $StartF # StartupInfo.dwFlag
-# 	$StartupInfo.wShowWindow = $ShowWindow # StartupInfo.ShowWindow
-# 	# TODO: Close stdin, stdout, stderr (doesnotwork)
-# 	#$StartupInfo.hStdInput = $null 
-# 	#$StartupInfo.hStdOutput = [System.Runtime.InteropServices.Marshal]::
-# 	#$StartupInfo.hStdError = [System.Runtime.InteropServices.Marshal]::null
-# 	$StartupInfo.cb = [System.Runtime.InteropServices.Marshal]::SizeOf($StartupInfo) # Struct Size
-	
-# 	# ProcessInfo Struct
-# 	$ProcessInfo = New-Object PROCESS_INFORMATION
-	
-# 	# SECURITY_ATTRIBUTES Struct (Process & Thread)
-# 	$SecAttr = New-Object SECURITY_ATTRIBUTES
-# 	$SecAttr.Length = [System.Runtime.InteropServices.Marshal]::SizeOf($SecAttr)
-	
-# 	# CreateProcess --> lpCurrentDirectory
-# 	$GetCurrentPath = (Get-Item -Path ".\" -Verbose).FullName
-	
-# 	# TODO: does not work properly - if assigned, process is not created
-# 	$DETACHED_PROCESS = 0x00000008 
-# 	$CREATE_NEW_PROCESS_GROUP = 0x00000200 
-# 	$CREATE_NO_WINDOW = 0x08000000 
-# 	# merge creation flags
-# 	$CreationFlags = $CreationFlags -bor $DETACHED_PROCESS -bor $CREATE_NEW_PROCESS_GROUP -bor $CREATE_NO_WINDOW
-	
-# 	# convert to int 
-# 	$CreationFlagsInt = [int]$CreationFlags
-
-# 	#	$Binary = $RCCExe
-# 	#	$Arguments = "$RCCExe holotree import $RobotmkRCCdir\hololib.zip --silent"	
-
-# 	debug ">>> Executing detached: $Arguments"
-# 	# TODO: How to disable black command windows?
-# 	#[Kernel32]::CreateProcess($Binary, $Arguments, [ref] $SecAttr, [ref] $SecAttr, $false, $CreationFlagsInt, [IntPtr]::Zero, $GetCurrentPath, [ref] $StartupInfo, [ref] $ProcessInfo) | out-null
-# 	#[Kernel32]::CreateProcess($Binary, $Arguments, [ref] $SecAttr, [ref] $SecAttr, $false, $CreationFlagsInt, [IntPtr]::Zero, $GetCurrentPath, [ref] $StartupInfo, [ref] $ProcessInfo) 
-# 	[Kernel32]::CreateProcess(
-# 		$null, 
-# 		$Arguments, 
-# 		$null, 
-# 		$null, 
-# 		$false, 
-# 		[CreationFlags]::CREATE_NEW_PROCESS_GROUP -bor [CreationFlags]::DETACHED_PROCESS -bor [CreationFlags]::CREATE_NO_WINDOW, 
-# 		$null, 
-# 		$GetCurrentPath, 
-# 		[ref] $StartupInfo, 
-# 		[ref] $ProcessInfo
-# 	) 
-# 	[System.Runtime.InteropServices.Marshal]::GetLastWin32Error()
-# 	$ProcessInfo	
-# }
 
 function DetachProcess {
 	param (
