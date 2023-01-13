@@ -13,10 +13,35 @@
             "justMyCode": false
         },
         {
-            "name": "python -m robotmk agent bg",
+            "name": "robotmk (w/o arguments)",
             "type": "python",
             "request": "launch",
             "module": "robotmk",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "env": {
+                "CMK_AGENT_DIR": "/home/simonmeggle/Documents/01_dev/rmkv2/agent"
+            }
+        },
+        {
+            "name": "robotmk output",
+            "type": "python",
+            "request": "launch",
+            "module": "robotmk",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "args": [
+                "output"
+            ],
+            "env": {
+                "CMK_AGENT_DIR": "/home/simonmeggle/Documents/01_dev/rmkv2/agent"
+            }
+        },
+        {
+            "name": "robotmk agent bg",
+            "type": "python",
+            "request": "launch",
+            "program": "robotmk",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [
@@ -28,10 +53,10 @@
             }
         },
         {
-            "name": "python -m robotmk agent fg",
+            "name": "robotmk agent fg",
             "type": "python",
             "request": "launch",
-            "module": "robotmk",
+            "program": "robotmk",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [
@@ -52,21 +77,6 @@
             "args": [
                 "--version"
             ]
-        },
-        {
-            "name": "RMK agent start",
-            "type": "python",
-            "request": "launch",
-            "program": "robotmk/cli.py",
-            "console": "integratedTerminal",
-            "justMyCode": false,
-            "args": [
-                "agent",
-                "start"
-            ],
-            "env": {
-                "CMK_AGENT_DIR": "/home/simonmeggle/Documents/01_dev/rmkv2/agent"
-            }
         },
         {
             "name": "RMK specialagent",

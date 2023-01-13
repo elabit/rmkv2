@@ -53,7 +53,7 @@ cli_agent.add_command(agent_cli.bg)
     invoke_without_command=True,
 )
 def cli_specialagent():
-    rmk.run_specialagent()
+    modes.run_specialagent()
 
 
 cli_specialagent.add_command(specialagent_cli.yyyy)
@@ -69,7 +69,7 @@ cli_specialagent.add_command(specialagent_cli.yyyy)
     invoke_without_command=True,
 )
 def cli_output():
-    rmk.run_output()
+    modes.run_output()
 
 
 cli_output.add_command(output_cli.yyyy)
@@ -85,7 +85,7 @@ cli_output.add_command(output_cli.yyyy)
     invoke_without_command=True,
 )
 def cli_robot():
-    rmk.run_robot()
+    modes.run_robot()
 
 
 cli_specialagent.add_command(robot_cli.yyyy)

@@ -204,7 +204,7 @@ Start with a clean bash:
 cd rmkv2
 # install dependencies
 pipenv sync --dev
-# install editable robotmk
+# install editable robotmk to develop 
 cd robotmk-agent 
 flit install -s
 ```

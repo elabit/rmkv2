@@ -3,9 +3,9 @@
 
 tasks:
   robotmk-agent:
-    shell: python -m robotmk agent start
+    shell: robotmk agent start
   robotmk-output:
-    shell: python -m robotmk output
+    shell: robotmk output
 
 condaConfigFile: conda.yaml
 
