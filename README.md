@@ -209,13 +209,21 @@ cd robotmk-agent
 flit install -s
 ```
 
+
 Release: 
 ```
 cd robotmk-agent
-git add .. ; git commit -m "flit will es "; bumpversion patch; git add .. ; git commit -m "flit will es"
+git add .. ; git commit -m "xxxxx"; bumpversion patch; git add .. ; git commit -m "xxxx"
 flit publish --repository testpypi 
-
+flit publish
 ```
+
+conda.yaml anpassen auf neue Version 
+
+robotmk-ctrl.ps1 => neues RCC env bauen
+
+
+
 [bumpversion]
 current_version = 0.0.7
 commit = False
