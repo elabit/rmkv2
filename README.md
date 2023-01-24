@@ -120,27 +120,30 @@ III) RMK startet mit `output` ODER interner call im Special Agent
 
 ## Prototyping 
 
-- Robotmk als Python-Modul
+- Detached from agent? 
 - Facade-Plugin 
   - Powershell 
     - TODO: Entfernen des Flagfiles im RCC-Postscript?
   - Bash 
 - holotree.zip shippen
 - apscheduler: loop/oneshot mode 
-- robotmk auf pypi
 - Conf2Env
 
 DONE: 
+- Ps1-Facade-Plugin
+- Robotmk als Python-Modul
 - RobotmkModul => start als commandline tool `robotmk`
 - Robot-Definition für Robotmk-RCC (conda, robot.yml ... )
 - Shell/PS1 basierter Aufbau eines RCC-Environments
   - Validieren eines einsatzfähigen RCC-ENVs
 - robotmk-ctrl.ps1 schreibt jedes mal ``robotmk_controller_last_execution` - wenn zu alt, Ende von Agent-Daemon
+- robotmk auf pypi
 
 
 
 
 ## Open Questions
+
 
 - RCC als Enterprise-Feature? 
 - Wie kann `robotmk.ps1` feststellen, dass das RCC-Env da ist?  

@@ -68,7 +68,7 @@ class RMKAgent:
     def ctrl_file_is_fresh(self):
         mtime = os.path.getmtime(self.lastexecfile_path)
         now = time.time()
-        if now - mtime < 70:
+        if now - mtime < 300:
             return True
         else:
             return False

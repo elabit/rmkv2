@@ -1,7 +1,7 @@
 
 # Credits to https://github.com/FuzzySecurity/PowerShell-Suite/blob/master/Invoke-CreateProcess.ps1
 
-# read mode from arrgs or set to 0
+# read mode from args or set to 0
 $mode = if ($args[0]) { $args[0] } else { $nul };
 
 $DEBUG = $true
@@ -45,7 +45,10 @@ $rcc_ctrl_rmk = "robotmk"
 $rcc_space_rmk_agent = "agent"
 $rcc_space_rmk_output = "output"
 
-
+# Execution phase: 
+# 1 = started by Agent, with parent process
+# 2 = started by itself detached, without parent process
+$EXEC_PHASE = "-"
 
 function main() {
 	# robotmk.ps1 : start Robotmk to produce output
@@ -68,14 +71,11 @@ function main() {
 		StartAgentOutput
 	}
 	elseif ($scriptname -match ".*robotmk-ctrl") {
-		$daemon_pid = IsRobotmkAgentRunning
-		if (-Not ($daemon_pid)) {
+		CreateFlagfile $Flagfile_controller_last_execution	
+		if (-Not (IsRobotmkAgentRunning)) {
+		
 			DaemonController($mode)
 		}
-		else {
-			LogInfo "Daemon is already running with PID: $daemon_pid"
-		}
-		CreateFlagfile $Flagfile_controller_last_execution		
 	}
  else {
 		Write-Host "ERROR: Unknown script name: $scriptname"
@@ -110,7 +110,7 @@ function GetCondaBlueprint {
 		[Parameter(Mandatory = $True)]
 		[string]$conda_yaml
 	)	
-	LogDebug "!! Executing: rcc ht hash $conda_yaml"
+	LogDebug "!!  rcc ht hash $conda_yaml"
 	$ret = Invoke-Process -FilePath $RCCExe -ArgumentList "ht hash $conda_yaml"
 	$out = $ret.Output
 	LogDebug $out
@@ -125,8 +125,8 @@ function CatalogContainsAgentBlueprint {
 		[Parameter(Mandatory = $True)]
 		[string]$blueprint
 	)
-	LogInfo "Checking if blueprint $blueprint is in RCC catalog..."
-	LogDebug "!! Executing: rcc ht catalogs"
+	LogDebug "Checking if blueprint $blueprint is in RCC catalog..."
+	LogDebug "!!  rcc ht catalogs"
 	$ret = Invoke-Process -FilePath $RCCExe -ArgumentList "ht catalogs"
 	$rcc_catalogs = $ret.Output
 	#	$rcc_catalogs = & $RCCExe ht catalogs 2>&1
@@ -134,9 +134,11 @@ function CatalogContainsAgentBlueprint {
 	$catalogstring = $rcc_catalogs -join "\n"
 	LogDebug "Catalogs:\n $rcc_catalogs"
 	if ($catalogstring -match "$blueprint") {
+		LogDebug "Blueprint $blueprint is in RCC catalog."
 		return $true
 	}
  else {
+		LogWarn "Blueprint $blueprint is NOT in RCC catalog."
 		return $false
 	}
 }
@@ -150,7 +152,8 @@ function HolotreeContainsAgentSpaces {
 		[string]$blueprint
 	)  	
 	# Example: rcc.robotmk  output  c939e5d2d8b335f9
-	LogDebug "!! Executing: rcc ht list"
+	LogDebug "Checking if holotree spaces contain both, a line for AGENT and OUTPUT space..."
+	LogDebug "!!  rcc ht list"
 	$ret = Invoke-Process -FilePath $RCCExe -ArgumentList "ht list"
 	$holotree_spaces = $ret.Output
 	$spaces_string = $holotree_spaces -join "\n"
@@ -261,7 +264,7 @@ function DaemonController {
 
 	}
  elseif ($mode -eq "start") {
-		LogInfo "---- Script was started with mode 'start'; I am obviously already daemonized and can start Robotmk now... "
+		LogInfo "---- Script was started with mode 'start'; obviously I am already daemonized and can start Robotmk now... "
 		StartRobotmkDaemon
 	}
  elseif ($mode -eq "stop") {
@@ -348,17 +351,28 @@ function StartRobotmkDecoupled {
 function RunRobotmkTask {
 	param (
 		[Parameter(Mandatory = $True)]
-		[string]$mode
+		[string]$rmkmode
 	)	
-	# Runs the Robotmk agent
+	
 	#RCCTaskRun "robotmk-agent" "$RobotmkRCCdir\robot.yaml" $rcc_ctrl_rmk $rcc_space_rmk_agent
-	$space = (Get-Variable -Name "rcc_space_rmk_$mode").Value
-	$Arguments = "task run --controller $rcc_ctrl_rmk --space $space -t robotmk-$mode -r $RobotmkRCCdir\robot.yaml"
-	LogInfo "Running Robotmk task: $RCCExe $Arguments"
-	Invoke-Process -FilePath $RCCExe -ArgumentList $Arguments
+	$space = (Get-Variable -Name "rcc_space_rmk_$rmkmode").Value
+	LogDebug "Running Robotmk task '$rmkmode' in Holotree space '$rcc_ctrl_rmk/$space'"
+	$Arguments = "task run --controller $rcc_ctrl_rmk --space $space -t robotmk-$rmkmode -r $RobotmkRCCdir\robot.yaml"
+	LogDebug "!!  $RCCExe $Arguments"
+	# As the script waits "forever", there is no PID known here. Next execution of 
+	# the controller will create it. 
+	$ret = Invoke-Process -FilePath $RCCExe -ArgumentList $Arguments
+	# -------------------------------------
+	# --- ROBOTMK AGENT IS RUNNING HERE ---
+	# ------------- DAEMONIZED ------------
+	# -------------------------------------
+	# We should not come here!
+	$rc = $ret.ExitCode
+	if (($rc -gt 0) -or (-Not (IsRobotmkAgentRunning))) {		
+		LogInfo "Robotmk task '$rmkmode' ended (rc: $rc). Exiting Phase 2."
+	}
+ 
 }
-
-
 
 function Invoke-Process {
 	<#
@@ -406,10 +420,10 @@ function Invoke-Process {
 			}
 		}
 	}
- catch {
+	catch {
 		$PSCmdlet.ThrowTerminatingError($_)
 	}
- finally {
+	finally {
 		Remove-Item -Path $stdOutTempFile, $stdErrTempFile -Force -ErrorAction Ignore
 	}
 }
@@ -426,7 +440,7 @@ function RCCEnvironmentCreate {
 	)  
 	LogInfo "Creating Holotree space '$controller/$space' for Robotmk agent."
 	$Arguments = "holotree vars --controller $controller --space $space -r $robot_yml"
-	LogInfo "!! Executing: $RCCExe $Arguments"
+	LogInfo "!!  $RCCExe $Arguments"
 	$ret = Invoke-Process -FilePath $RCCExe -ArgumentList $Arguments
 	$rc = $ret.ExitCode
 	LogDebug $ret.Output
@@ -555,7 +569,7 @@ function DetachProcess {
 
 
 	# $binary must be an absolute path!!
-	LogInfo "!! Executing detached: $Binary $Arguments"
+	LogInfo "!! $Binary $Arguments"
 	
 	# TODO: How to disable black command windows?
 	#[Kernel32]::CreateProcess($Binary, $Arguments, [ref] $SecAttr, [ref] $SecAttr, $false, $CreationFlagsInt, [IntPtr]::Zero, $cwd, [ref] $StartupInfo, [ref] $ProcessInfo) | out-null
@@ -573,7 +587,7 @@ function DetachProcess {
 		[ref] $StartupInfo, 
 		[ref] $ProcessInfo
 	) 
-	Write-Host $ProcessInfo.dwProcessId
+	#Write-Host $ProcessInfo.dwProcessId
 }
 
 function IsRobotmkAgentRunning {
@@ -581,28 +595,30 @@ function IsRobotmkAgentRunning {
 	# TODO: if more than 1 robotmk.exe is running, kill all!
 	$processId = GetDaemonProcess -Cmdline "%robotmk.exe agent bg"
 	if ( $processId -eq $null) {
-		LogInfo "No processes are running (searched for 'robotmk.exe agent bg')"
 		if (Test-Path $pidfile) {
-			LogInfo "But PID file $pidfile found, removing it"
+			LogInfo "No process 'robotmk.exe agent bg' is running, removing stale PID file $pidfile."
 			Remove-Item $pidfile -Force
 		}
 		return $false
 	}
 	else {
-		# read PID of daemon
+		# Process runs, try to read PID from file
+		LogDebug "One instance of 'robotmk.exe agent bg' is already running (PID: $processId)"
 		if (Test-path $pidfile) {
-			$DaemonPid = Get-Content $pidfile
-			LogInfo "One instance of $DaemonName is already running (PID: $DaemonPid)"
-			return $true
+			$pidfromfile = Get-Content $pidfile
+			if ($pidfromfile -ne $processId) {
+				LogWarn "PID file $pidfile found, but the PID in it ($pidfromfile) does not match the running process $processId!"		
+			}
+			else {
+				LogDebug "Current PID $processId found in pidfile $pidfile."
+			}
 		}
 		else {
-			LogInfo "One instance of $DaemonName is already running, but no PID file found."
-			# creating PID file
-			$processId | Out-File $pidfile		
-			# Instance without PID file
-			#Stop-Process -Id $processId -Force
-			return $true
-		}
+			LogWarn "No PID file for running process found."
+		}	
+		LogDebug "Writing current PID $processId to $pidfile"
+		$processId | Out-File $pidfile	
+		return $true
 	}
 
 }
@@ -668,20 +684,29 @@ function Log {
 		[ValidateNotNullOrEmpty()]
 		[string]$file = "$RMKlogfile"		
 	)
-	$LogTime = Get-Date -Format "MM-dd-yy hh:mm:ss"
-	$PadLevel = $Level.PadRight(6)
+	$LogTime = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss.fffK")
+	$PaddedLevel = $Level.PadRight(6)
 	$mypid = $PID.ToString()
-	$PadPID = "[${mypid}]".PadRight(8)
+	$PaddedPID = "[${mypid}]".PadRight(8)
 	$MsgArr = $Message.Split([System.Environment]::NewLine, [System.StringSplitOptions]::RemoveEmptyEntries)
+	if (($mode -eq "") -or ($mode -eq $nul)) {
+		$EXEC_PHASE = "P1"
+	}
+	elseif ($mode -eq "start") {
+		$EXEC_PHASE = "P2"
+	}
+	else {
+		$EXEC_PHASE = "P-"
+	}
 	# if length of $MsgArr is more than 1, then we have a multiline message
 	if ($MsgArr.Length -gt 1) {
 		$prefix = ">    "
 	}
- else {
+	else {
 		$prefix = ""
 	}
-	$MsgArr | ForEach-Object { "$LogTime - $PadLevel ${PadPID} ${prefix}$_" >> "$file" } 
-	#"$logTime - $PadLevel ${PadPID} $Message" >> "$file"
+	$MsgArr | ForEach-Object { "$LogTime ${PaddedPID} ${EXEC_PHASE} ${PaddedLevel}  ${prefix}$_" >> "$file" } 
+	#"$logTime - $PadLevel ${PaddedPID} $Message" >> "$file"
 }
 
 function LogInfo {
@@ -694,7 +719,6 @@ function LogInfo {
 		[string]$file = "$RMKlogfile"		
 	)
 	Log "INFO" $Message $file
-	Write-Host $Message
 }
 
 function LogDebug {
