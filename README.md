@@ -157,7 +157,8 @@ DONE:
 - Verlässliches TMP-File für RCC? 
 - Playwright nur 1 Browser? 
 - Run-UUID und State in Name von HTML/XML einbauen? 
-- 
+- Vermeide RW-Konflikt, wenn Resultfiles geschrieben werden und gleichzeitig gelesen!
+- `rcc interactive configuration` => yaml Profile erzeugen (http proxy, PEM certificates etc. )
 
 ## Setup 
 
