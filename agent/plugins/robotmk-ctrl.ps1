@@ -60,7 +60,7 @@ function main() {
 		StartAgentOutput
 	}
 	elseif ($scriptname -match ".*robotmk-ctrl.ps1") {
-		$daemon_pid = IsDaemonRunning
+		$daemon_pid = IsRobotmkAgentRunning
 		if (-Not ($daemon_pid)) {
 			DaemonController($mode)
 		}
@@ -539,9 +539,10 @@ function DetachProcess {
 	Write-Host $ProcessInfo.dwProcessId
 }
 
-function IsDaemonRunning {
+function IsRobotmkAgentRunning {
 	# Try to read the PID of agent
-	$processId = GetDaemonProcess -Cmdline "%robotmk agent start"
+	# TODO: if more than 1 robotmk.exe is running, kill all!
+	$processId = GetDaemonProcess -Cmdline "%robotmk.exe agent bg"
 	if ( $processId -eq $null) {
 		debug ">>> No processes are running"
 		if (Test-Path $pidfile) {
@@ -559,10 +560,11 @@ function IsDaemonRunning {
 		}
 		else {
 			debug ">>> One instance of $DaemonName is already running, but no PID file found."
-			debug ">>> Cleaning up."
+			# creating PID file
+			$processId | Out-File $pidfile		
 			# Instance without PID file
-			Stop-Process -Id $processId -Force
-			return $false
+			#Stop-Process -Id $processId -Force
+			return $true
 		}
 	}
 

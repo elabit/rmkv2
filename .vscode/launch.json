@@ -105,8 +105,17 @@
             "type": "PowerShell",
             "request": "launch",
             "script": "agent/plugins/robotmk-ctrl.ps1",
-            //"script": "${file}",
             "cwd": "${cwd}"
+        },
+        {
+            "name": "PowerShell robotmk-ctrl.ps1 start",
+            "type": "PowerShell",
+            "request": "launch",
+            "script": "agent/plugins/robotmk-ctrl.ps1",
+            "cwd": "${cwd}",
+            "args": [
+                "start"
+            ]
         },
         {
             "name": "PowerShell robotmk.ps1",

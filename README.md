@@ -156,6 +156,7 @@ DONE:
   - logo
 - Verlässliches TMP-File für RCC? 
 - Playwright nur 1 Browser? 
+- Run-UUID und State in Name von HTML/XML einbauen? 
 - 
 
 ## Setup 
