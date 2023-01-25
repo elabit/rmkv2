@@ -4,3 +4,5 @@ __pycache__
 robotmk_output_*
 robotmk.egg-info
 robotmk-agent/dist/*
+agent/tmp/*
+agent/log/*

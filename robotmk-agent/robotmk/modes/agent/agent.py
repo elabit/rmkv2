@@ -118,6 +118,8 @@ class RMKAgent:
             + ": "
             + f"I am not supposed to run anymore (reason: controller file {self.lastexecfile_path} is OUTDATED). Exiting, Bye."
         )
+        sys.exit(200)
+        # TODO: Exit code 200 should signal the controller the reason (so that outdated flag file gets logged)
 
     def stop(self):
         # Check for a pidfile to see if the daemon already runs

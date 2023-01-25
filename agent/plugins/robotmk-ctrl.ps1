@@ -7,8 +7,6 @@ $mode = if ($args[0]) { $args[0] } else { $nul };
 $DEBUG = $true
 #$DEBUG = $false
 $scriptname = (Get-Item -Path $MyInvocation.MyCommand.Path).BaseName
-#$CONTROLLER = if ($env:RMK_CTRL) { $env:RMK_CTRL } else { 1 };
-$CONTROLLER = 1
 
 $UseRCC = $true
 $PyName = "python"
@@ -53,21 +51,14 @@ $EXEC_PHASE = "-"
 function main() {
 	# robotmk.ps1 : start Robotmk to produce output
 	# robotmk-ctrl.ps1 : start Robotmk to control the daemon
-	# Both scripts will be mostly identical, but must be separate files in order
-	# to be run by the agent. 
-
-	# CONTROLLER is a helper variable for prototyping and switching between
-	# the two behaviours
-	# if name of this script is robotmk-ctrl.ps1, then CONTROLLER is set to 1
-	# if name of this script is robotmk.ps1, then CONTROLLER is set to 0
-	# get name of this script
 	
 	Ensure-Directory $RMKlogdir
 	Ensure-Directory $CMKtempdir
 	Ensure-Directory $ROBOCORP_HOME
+	LogConfig
 	# TODO: only for debugging
 	#$scriptname = "robotmk-ctrl.ps1"
-	if ($scriptname -match ".*robotmk.ps1") {
+	if ($scriptname -match ".*robotmk$") {
 		StartAgentOutput
 	}
 	elseif ($scriptname -match ".*robotmk-ctrl") {
@@ -209,11 +200,11 @@ function IsFlagfileYoungerThanMinutes {
 }
 
 function StartAgentOutput {
+	LogInfo "--- Starting Robotmk Agent Output mode"
 	if ($UseRCC) {
 		$blueprint = GetCondaBlueprint $RobotmkRCCdir\conda.yaml		
-		LogInfo "Conda Blueprint: $blueprint"	
 		if ( IsRCCEnvReady $blueprint ) {
-			LogInfo "RCC environment is ready to use"
+			LogInfo "Robotmk RCC environment is ready to use, Output can be generated"
 			RunRobotmkTask "output"
 			#$output_str = [string]::Concat($output)
 			foreach ($line in $output) {
@@ -221,7 +212,7 @@ function StartAgentOutput {
 			}
 		}
 		else {
-			LogInfo "RCC environment is not ready to use. Exiting."	
+			LogInfo "RCC environment is NOT ready to use. Waiting for Controller to build the environment. Exiting."	
 			#TODO: As long as the RCC env is not ready, we should output something interesting
 		}
 	}
@@ -257,7 +248,6 @@ function DaemonController {
 		[Parameter(Mandatory = $False)]
 		[string]$mode = $null
 	)  
-	LogConfig
 	if ($mode -eq "") {
 		LogInfo "---- Script was started without mode (by Agent?); have to start myself again to damonize."
 		StartRobotmkDecoupled
@@ -284,13 +274,10 @@ function DaemonController {
 
 function StartRobotmkDaemon {
 	# Starts the Robotmk process with RCC or native Python
-	$blueprint = GetCondaBlueprint $RobotmkRCCdir\conda.yaml		
-	#LogInfo "Conda hash: $blueprint ($RobotmkRCCdir\conda.yaml)"	
 	# TODO: How to make RCC execution an optional feature?
 	if ($UseRCC) {
-		
+		$blueprint = GetCondaBlueprint $RobotmkRCCdir\conda.yaml			
 		if ( IsRCCEnvReady $blueprint) {
-			# if started without "start", we need to detach first
 			LogInfo "Robotmk RCC environment is ready to use, Daemon can run"
 			RunRobotmkTask "agent"
 		}
@@ -769,13 +756,26 @@ function LogConfig {
 		[ValidateNotNullOrEmpty()]
 		[string]$file = "$RMKlogfile"		
 	)
-	LogDebug "##########################"
+	LogDebug "--- 8< --------------------"
 	LogDebug "CONFIGURATION:"
-	LogDebug "ENV:ROBOCORP_HOME=$ROBOCORP_HOME"
-	LogDebug "RCC holotree spaces:"
-	LogDebug "- Robotmk agent: rcc.$rcc_ctrl_rmk/$rcc_space_rmk_agent"
-	LogDebug "- Robotmk output: rcc.$rcc_ctrl_rmk/$rcc_space_rmk_output"
-	LogDebug "##########################"
+	LogDebug "- CMKAgentDir: $CMKAgentDir"
+	LogDebug "- CMKtempdir: $CMKtempdir"
+	LogDebug "- RobotmkLogfile: $RMKLogfile"
+	LogDebug "- Use RCC: $UseRCC"
+	if ($UseRCC) {
+		LogRCCConfig
+	}
+	LogDebug "-------------------- >8 ---"
+}
+
+function LogRCCConfig {
+	LogDebug "RCC CONFIGURATION:"
+	LogDebug "- ENV:ROBOCORP_HOME=$ROBOCORP_HOME"	
+	LogDebug "- RCCEXE: $RCCEXE"	
+	LogDebug "- RobotmkRCCdir: $RobotmkRCCdir"
+	LogDebug "- Robotmk RCC holotree spaces:"
+	LogDebug "  - Robotmk agent: rcc.$rcc_ctrl_rmk/$rcc_space_rmk_agent"
+	LogDebug "  - Robotmk output: rcc.$rcc_ctrl_rmk/$rcc_space_rmk_output"
 }
 
 main
