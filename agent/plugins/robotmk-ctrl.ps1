@@ -592,28 +592,49 @@ function IsRobotmkAgentRunning {
 	if ( $processId -eq $null) {
 		if (Test-Path $pidfile) {
 			LogInfo "No process 'robotmk.exe agent bg' is running, removing stale PID file $pidfile."
-			Remove-Item $pidfile -Force
+			Remove-Item $pidfile -Force -ErrorAction SilentlyContinue
 		}
 		return $false
 	}
 	else {
 		# Process runs, try to read PID from file
-		LogDebug "One instance of 'robotmk.exe agent bg' is already running (PID: $processId)"
-		if (Test-path $pidfile) {
-			$pidfromfile = Get-Content $pidfile
-			if ($pidfromfile -ne $processId) {
-				LogWarn "PID file $pidfile found, but the PID in it ($pidfromfile) does not match the running process $processId!"		
+		# TODO: if >1 robotmk.exe is running, kill all!
+		# split processId variable into array
+		$processId = $processId.split(" ")
+		# get length of array
+		$processCount = $processId.Length
+
+		if ($processCount -gt 1) {
+			LogError "More than one instance of 'robotmk.exe agent bg' is running, killing all!"
+			# kill all processes
+			$processId | ForEach-Object {
+				Stop-Process -Id $_ -Force
 			}
-			else {
-				LogDebug "Current PID $processId found in pidfile $pidfile."
-			}
+			# Remove silly pidfile
+			Remove-Item $pidfile -Force -ErrorAction SilentlyContinue
+			return $false
 		}
 		else {
-			LogWarn "No PID file for running process found."
-		}	
-		LogDebug "Writing current PID $processId to $pidfile"
-		$processId | Out-File $pidfile	
-		return $true
+			# only one process is running
+			$processId = $processId[0]
+			LogDebug "One instance of 'robotmk.exe agent bg' is already running (PID: $processId)"
+			if (Test-path $pidfile) {
+				$pidfromfile = Get-Content $pidfile
+				if ($pidfromfile -ne $processId) {
+					LogWarn "PID file $pidfile found, but the PID in it ($pidfromfile) does not match the running process $processId!"		
+				}
+				else {
+					LogDebug "Current PID $processId found in pidfile $pidfile."
+				}
+			}
+			else {
+				LogWarn "No PID file for running process found."
+			}	
+			LogDebug "Writing current PID $processId to $pidfile"
+			$processId | Out-File -encoding ascii $pidfile	
+			return $true
+		}
+		
 	}
 
 }

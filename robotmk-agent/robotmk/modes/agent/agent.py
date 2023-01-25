@@ -78,8 +78,9 @@ class RMKAgent:
                 return False
 
     def write_and_register_pidfile(self):
-        with open(self.pidfile, "w+") as f:
+        with open(self.pidfile, "w+", encoding="ascii") as f:
             f.write(self.pid + "\n")
+
         # Attention: pidfile gets not deleted if daemon was started with Debugger!
         atexit.register(self.delpid)
 
