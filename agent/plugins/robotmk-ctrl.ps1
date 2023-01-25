@@ -21,7 +21,7 @@ $RCCExe = $CMKAgentDir + "\bin\rcc.exe"
 $RobotmkRCCdir = $CMKAgentDir + "\lib\rcc_robotmk"
 $CMKtempdir = $CMKAgentDir + "\tmp"
 $RMKlogdir = $CMKAgentDir + "\log\robotmk"
-$RMKlogfile = $RMKlogdir + "\$scriptname.log"
+$RMKlogfile = $RMKlogdir + "\${scriptname}-plugin.log"
 
 $DaemonPidfile = "robotmk_agent_daemon"
 $pidfile = $CMKtempdir + "\" + $DaemonPidfile + ".pid"
@@ -586,8 +586,7 @@ function DetachProcess {
 }
 
 function IsRobotmkAgentRunning {
-	# Try to read the PID of agent
-	# TODO: if more than 1 robotmk.exe is running, kill all!
+	# TODO: can only see own processes! 
 	$processId = GetDaemonProcess -Cmdline "%robotmk.exe agent bg"
 	if ( $processId -eq $null) {
 		if (Test-Path $pidfile) {

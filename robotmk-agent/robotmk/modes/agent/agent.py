@@ -78,6 +78,7 @@ class RMKAgent:
                 return False
 
     def write_and_register_pidfile(self):
+        # TODO: file gets not written! (at least not on windows)
         with open(self.pidfile, "w+", encoding="ascii") as f:
             f.write(self.pid + "\n")
 

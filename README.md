@@ -120,6 +120,9 @@ III) RMK startet mit `output` ODER interner call im Special Agent
 
 ## Prototyping 
 
+- Logging f. agent.py
+- agent.py schreibt kein pid file
+- Process-ID kann nicht ermittelt werden, wenn 
 - Detached from agent? 
 - Facade-Plugin 
   - Powershell 

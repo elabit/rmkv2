@@ -355,9 +355,17 @@ function RunRobotmkTask {
 	# -------------------------------------
 	# We should not come here!
 	$rc = $ret.ExitCode
-	if (($rc -gt 0) -or (-Not (IsRobotmkAgentRunning))) {		
-		LogInfo "Robotmk task '$rmkmode' ended (rc: $rc). Exiting Phase 2."
+	if ($rc -eq 200) {
+		LogInfo "Robotmk Agent exited gracefully with RC 200 (stale controller state file - perhaps CMK Agent stopped)"
 	}
+ else {
+		LogInfo "Robotmk Agent exited with RC $rc"
+		LogDebug "Output: \n" + $rc.Output
+	}
+
+	# if (($rc -gt 0) -or (-Not (IsRobotmkAgentRunning))) {		
+	# 	LogInfo "Robotmk task '$rmkmode' ended (rc: $rc). Exiting Phase 2."
+	# }
  
 }
 
@@ -584,12 +592,31 @@ function IsRobotmkAgentRunning {
 	if ( $processId -eq $null) {
 		if (Test-Path $pidfile) {
 			LogInfo "No process 'robotmk.exe agent bg' is running, removing stale PID file $pidfile."
-			Remove-Item $pidfile -Force
+			Remove-Item $pidfile -Force -ErrorAction SilentlyContinue
 		}
 		return $false
 	}
 	else {
 		# Process runs, try to read PID from file
+		# TODO: if >1 robotmk.exe is running, kill all!
+		# split processId variable into array
+		$processId = $processId.split(" ")
+		# get length of array
+		$processCount = $processId.Length
+
+		if ($processCount -gt 1) {
+			LogError "More than one instance of 'robotmk.exe agent bg' is running, killing all!"
+			# kill all processes
+			$processId | ForEach-Object {
+				Stop-Process -Id $_ -Force
+			}
+			# Remove silly pidfile
+			Remove-Item $pidfile -Force -ErrorAction SilentlyContinue
+			return $false
+		}
+		else {
+			# only one process is running
+			$processId = $processId[0]
 		LogDebug "One instance of 'robotmk.exe agent bg' is already running (PID: $processId)"
 		if (Test-path $pidfile) {
 			$pidfromfile = Get-Content $pidfile
@@ -604,9 +631,11 @@ function IsRobotmkAgentRunning {
 			LogWarn "No PID file for running process found."
 		}	
 		LogDebug "Writing current PID $processId to $pidfile"
-		$processId | Out-File $pidfile	
+			$processId | Out-File -encoding ascii $pidfile	
 		return $true
 	}
+
+}
 
 }
 
