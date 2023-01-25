@@ -355,9 +355,17 @@ function RunRobotmkTask {
 	# -------------------------------------
 	# We should not come here!
 	$rc = $ret.ExitCode
-	if (($rc -gt 0) -or (-Not (IsRobotmkAgentRunning))) {		
-		LogInfo "Robotmk task '$rmkmode' ended (rc: $rc). Exiting Phase 2."
+	if ($rc -eq 200) {
+		LogInfo "Robotmk Agent exited gracefully with RC 200 (stale controller state file - perhaps CMK Agent stopped)"
 	}
+ else {
+		LogInfo "Robotmk Agent exited with RC $rc"
+		LogDebug "Output: \n" + $rc.Output
+	}
+
+	# if (($rc -gt 0) -or (-Not (IsRobotmkAgentRunning))) {		
+	# 	LogInfo "Robotmk task '$rmkmode' ended (rc: $rc). Exiting Phase 2."
+	# }
  
 }
 

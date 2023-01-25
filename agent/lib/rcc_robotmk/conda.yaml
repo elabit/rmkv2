@@ -6,6 +6,4 @@ dependencies:
 - yaml
 - click
 - pip:
-  - robotmk==0.0.28
-  - six
-  - mergedeep
+  - robotmk==0.0.29

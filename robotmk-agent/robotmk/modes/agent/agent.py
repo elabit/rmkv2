@@ -66,12 +66,16 @@ class RMKAgent:
             return True
 
     def ctrl_file_is_fresh(self):
-        mtime = os.path.getmtime(self.lastexecfile_path)
-        now = time.time()
-        if now - mtime < 300:
-            return True
-        else:
+        # if exists
+        if not self.lastexecfile_path.exists():
             return False
+        else:
+            mtime = os.path.getmtime(self.lastexecfile_path)
+            now = time.time()
+            if now - mtime < 300:
+                return True
+            else:
+                return False
 
     def write_and_register_pidfile(self):
         with open(self.pidfile, "w+") as f:
