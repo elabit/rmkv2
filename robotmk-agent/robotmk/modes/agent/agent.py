@@ -17,7 +17,6 @@ class RMKAgent:
     ):
         self.name = name
         # match a python call for robotmk agent fg/bg, but not if the VS Code debugger is attached
-        # self.proc_pattern = "python(?:(?!debugpy).)*(robotmk|cli).*agent\s[bf]g"
         self.proc_pattern = "(?:(?!debugpy).)*(robotmk|cli).*agent\s[bf]g"
         if not pidfile:
             # TODO: find a path that is accessible from insice RCC and outside
@@ -30,15 +29,7 @@ class RMKAgent:
             self.pidfile = Path(pidfile)
         self.ctrl_file_controlled = ctrl_file_controlled
         self.lastexecfile_path = self.tmpdir / "robotmk_controller_last_execution"
-
-        # if platform.system() == "Linux":
-        #     self.fork_strategy = LinuxStrategy(self)
-        # elif platform.system() == "Windows":
-        #     self.fork_strategy = WindowsStrategy(self)
-
-    # def daemonize(self):
-    #     self.fork_strategy.daemonize()
-    #     self.write_and_register_pidfile()
+        # FIXME: create self.last_exitcode to signal the controller the reason for exiting
 
     @property
     def tmpdir(self):
@@ -96,15 +87,7 @@ class RMKAgent:
         except IOError:
             print(__name__ + ": " + "Could not write PID file %s" % self.pidfile)
             sys.exit(1)
-
-        # with open(
-        #     "C:\\Users\\vagrant\\Documents\\01_dev\\rmkv2\\agent\\tmp\\foo.pid",
-        #     "w+",
-        #     encoding="ascii",
-        # ) as f:
-        #     f.write(str(self.pidfile) + "\n")
-
-        # FIXME: pidfile gets not deleted if daemon was started with Debugger!
+        # deletes the pidfile on exit
         atexit.register(self.unlink_pidfile)
 
     def start(self):

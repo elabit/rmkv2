@@ -8,9 +8,12 @@ authors = [{name = "Simon Meggle", email = "simon.meggle@elabit.de"}]
 classifiers = ["License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)"]
 dynamic = ["version", "description"]
 readme = "robotmk/README.md"
+dependencies = [
+    "psutil"
+]
+
 
 [project.scripts]
 robotmk = "robotmk.cli:main"
 
-[dependencies]
-psutil = "*"
+
