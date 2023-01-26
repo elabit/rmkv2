@@ -11,3 +11,6 @@ readme = "robotmk/README.md"
 
 [project.scripts]
 robotmk = "robotmk.cli:main"
+
+[dependencies]
+psutil = "*"

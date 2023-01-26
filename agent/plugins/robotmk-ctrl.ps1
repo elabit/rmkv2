@@ -63,10 +63,10 @@ function main() {
 	}
 	elseif ($scriptname -match ".*robotmk-ctrl") {
 		CreateFlagfile $Flagfile_controller_last_execution	
-		if (-Not (IsRobotmkAgentRunning)) {
+		# FIXME: start Daemoncontroller in any case. It must also check if the conda blueprint 
+		# changed meanwhile. If so, it must restart the daemon.
+		DaemonController($mode)
 		
-			DaemonController($mode)
-		}
 	}
  else {
 		Write-Host "ERROR: Unknown script name: $scriptname"
@@ -125,7 +125,7 @@ function CatalogContainsAgentBlueprint {
 	$catalogstring = $rcc_catalogs -join "\n"
 	LogDebug "Catalogs:\n $rcc_catalogs"
 	if ($catalogstring -match "$blueprint") {
-		LogDebug "Blueprint $blueprint is in RCC catalog."
+		LogDebug "OK: Blueprint $blueprint is in RCC catalog."
 		return $true
 	}
  else {
@@ -250,12 +250,12 @@ function DaemonController {
 	)  
 	if ($mode -eq "") {
 		LogInfo "---- Script was started without mode (by Agent?); have to start myself again to damonize."
-		StartRobotmkDecoupled
+		StartControllerDecoupled
 
 	}
  elseif ($mode -eq "start") {
-		LogInfo "---- Script was started with mode 'start'; obviously I am already daemonized and can start Robotmk now... "
-		StartRobotmkDaemon
+		LogInfo "---- Script was started with mode 'start'; obviously I am already daemonized and can control the Robotmk Agent Daemon... "
+		RobotmkController
 	}
  elseif ($mode -eq "stop") {
 		LogInfo "---- Script was started with mode 'stop': Trying to kill Robotmk daemon..."
@@ -272,24 +272,36 @@ function DaemonController {
 	}
 } 
 
-function StartRobotmkDaemon {
+function RobotmkController {
+	# Tasks of the controller: 
+	# use RCC? 
+	# yes:
+	# - check if RCC env is ready 
+	# - check if Agent runs 
+	# no: 
+	# - check if native python env is ready
 	# Starts the Robotmk process with RCC or native Python
 	# TODO: How to make RCC execution an optional feature?
 	if ($UseRCC) {
 		$blueprint = GetCondaBlueprint $RobotmkRCCdir\conda.yaml			
+		
 		if ( IsRCCEnvReady $blueprint) {
-			LogInfo "Robotmk RCC environment is ready to use, Daemon can run"
-			RunRobotmkTask "agent"
-		}
+			# if the RCC environment is ready, start the Agent if not yet running
+			LogInfo "Robotmk RCC environment is ready to use."
+			if (-Not (IsRobotmkAgentRunning)) {
+				RunRobotmkTask "agent"
+			}
+		}		
 		else {	
-			
+			# otherwise, try to create the environment	
 			if (IsFlagfileYoungerThanMinutes $Flagfile_RCC_env_creation_in_progress $RCC_env_max_creation_minutes) {
-				LogWarn "Robotmk RCC environment is NOT ready to use,"
-				LogWarn "but another Robotmk RCC environment creation is in progress. Exiting."
+				LogWarn "Robotmk RCC environment is NOT ready to use."
+				LogWarn "Another Robotmk RCC environment creation is in progress (flagfile $Flagfile_RCC_env_creation_in_progress present and younger than $RCC_env_max_creation_minutes min). Exiting."
 				return
 			}
 			else {
-				LogWARN "RCC environment is not ready to use, trying to create one now."
+				LogWarn "RCC environment is NOT ready to use."
+				LogWarn "Will now try to create a new RCC environment."
 				RemoveFlagfile $Flagfile_RCC_env_robotmk_ready
 				CreateFlagfile $Flagfile_RCC_env_creation_in_progress
 				if (Test-Path ($RobotmkRCCdir + "\hololib.zip")) {
@@ -328,8 +340,9 @@ function StartRobotmkDaemon {
 
 }
 
-function StartRobotmkDecoupled {
+function StartControllerDecoupled {
 	# Starts the Robotmk process decoupled from the current process
+	# Hand over the PID of calling process and log it
 	$powershell = (Get-Command powershell.exe).Path
 	DetachProcess $powershell "-File $PSCommandPath start"
 	LogInfo "Exiting... (Daemon will run in background now)"
@@ -597,7 +610,6 @@ function IsRobotmkAgentRunning {
 	}
 	else {
 		# Process runs, try to read PID from file
-		# TODO: if >1 robotmk.exe is running, kill all!
 		# split processId variable into array
 		$processId = $processId.split(" ")
 		# get length of array

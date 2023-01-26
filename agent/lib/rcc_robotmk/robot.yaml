@@ -10,6 +10,8 @@ tasks:
     shell: robotmk agent bg
   robotmk-output:
     shell: robotmk output
+  test:
+    shell: python -c "import sys;sys.exit(200)"
 
 condaConfigFile: conda.yaml
 

@@ -15,7 +15,7 @@ def bg():
     print(
         __name__ + ": " + "(cli agent): start the agent self-terminating by controller"
     )
-    agent.RMKAgent(controlled=True).start()
+    agent.RMKAgent(ctrl_file_controlled=True).start()
 
 
 @click.command(
@@ -26,7 +26,7 @@ def bg():
 )
 def fg():
     print(__name__ + ": " + "(cli agent): start the agent in foreground")
-    agent.RMKAgent(controlled=False).start()
+    agent.RMKAgent(ctrl_file_controlled=False).start()
 
 
 # @click.command(help="Stop the Robotmk Agent")

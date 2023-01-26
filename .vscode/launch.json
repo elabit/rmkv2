@@ -41,7 +41,7 @@
             "name": "robotmk agent bg",
             "type": "python",
             "request": "launch",
-            "program": "robotmk",
+            "program": "robotmk-agent/robotmk/modes/agent/cli.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [
@@ -50,13 +50,14 @@
             ],
             "env": {
                 "CMK_AGENT_DIR": "/home/simonmeggle/Documents/01_dev/rmkv2/agent"
-            }
+            },
+            "justMyCode": false
         },
         {
             "name": "robotmk agent fg",
             "type": "python",
             "request": "launch",
-            "program": "robotmk",
+            "program": "robotmk-agent/robotmk/modes/agent/cli.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [
@@ -65,7 +66,8 @@
             ],
             "env": {
                 "CMK_AGENT_DIR": "/home/simonmeggle/Documents/01_dev/rmkv2/agent"
-            }
+            },
+            "justMyCode": false
         },
         {
             "name": "RMK --version",
