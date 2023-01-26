@@ -1,5 +1,5 @@
 """Robot Framework test execution and result parsing for Check_MK"""
-__version__ = "0.0.32"
+__version__ = "0.0.33"
 
 # from robotmk import cli
 # import sys
