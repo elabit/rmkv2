@@ -169,8 +169,8 @@ class RMKAgent:
         self.unlink_pidfile()
         self.exit_with_filecode(
             202,
-            "Robotmk Agent exited, Reason: missing/outdated controller file %s"
-            % str(self.lastexecfile_path),
+            "Robotmk Agent exited, Reason: missing/outdated controller deadman file %s"
+            % str(self.rmk_ctrl_deadman_file),
         )
 
     # def _get_process_list(self):

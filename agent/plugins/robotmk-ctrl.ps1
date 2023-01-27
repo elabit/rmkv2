@@ -331,7 +331,7 @@ function RobotmkController {
 				if (CatalogContainsAgentBlueprint $blueprint) {
 					TouchFile $Flagfile_RCC_env_robotmk_ready "RCC env ready flagfile"
 					RemoveFlagfile $Flagfile_RCC_env_creation_in_progress	
-					LogInfo "OK: Environments for Robotmk created successfully and can be used on next run. Exiting now."		
+					LogInfo "OK: Environments for Robotmk created and ready to use on next run. Exiting now."		
 				}
 				else {
 					LogInfo "RCC environment creation for Robotmk agent failed for some reason. Exiting."
@@ -752,7 +752,7 @@ function Log {
 	}
 	# if length of $MsgArr is more than 1, then we have a multiline message
 	if ($MsgArr.Length -gt 1) {
-		$prefix = ">    "
+		$prefix = " |   "
 	}
 	else {
 		$prefix = ""
