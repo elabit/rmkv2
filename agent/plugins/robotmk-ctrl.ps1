@@ -330,7 +330,8 @@ function RobotmkController {
 				# both spaces.
 				if (CatalogContainsAgentBlueprint $blueprint) {
 					TouchFile $Flagfile_RCC_env_robotmk_ready "RCC env ready flagfile"
-					RemoveFlagfile $Flagfile_RCC_env_creation_in_progress			
+					RemoveFlagfile $Flagfile_RCC_env_creation_in_progress	
+					LogInfo "OK: Environments for Robotmk created successfully and can be used on next run. Exiting now."		
 				}
 				else {
 					LogInfo "RCC environment creation for Robotmk agent failed for some reason. Exiting."
