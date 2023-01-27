@@ -67,7 +67,7 @@ function main() {
 		StartAgentOutput
 	}
 	elseif ($scriptname -match ".*robotmk-ctrl") {
-		CreateFlagfile $controller_deadman_file	
+		TouchFile $controller_deadman_file	"Controller deadman file"
 		# FIXME: start Daemoncontroller in any case. It must also check if the conda blueprint 
 		# changed meanwhile. If so, it must restart the daemon.
 		DaemonController($MODE)
@@ -90,7 +90,7 @@ function IsRCCEnvReady {
 			return $true
 		}
 		else {
-			CreateFlagfile $Flagfile_RCC_env_robotmk_ready			
+			TouchFile $Flagfile_RCC_env_robotmk_ready	 "RCC env ready flagfile"		
 			return $true
 		}
 	}
@@ -227,12 +227,14 @@ function StartAgentOutput {
 	}
 }
 
-function CreateFlagfile {
+function TouchFile {
 	param (
 		[Parameter(Mandatory = $True)]
-		[string]$path
+		[string]$path,
+		[Parameter(Mandatory = $False)]
+		[string]$name = "file"
 	)  
-	LogDebug "Touching flagfile $path"
+	LogDebug "Touching $name $path"
 	$nul > $path
 }
 
@@ -293,9 +295,12 @@ function RobotmkController {
 		if ( IsRCCEnvReady $blueprint) {
 			# if the RCC environment is ready, start the Agent if not yet running
 			LogInfo "Robotmk RCC environment is ready to use."
-			if (-Not (IsRobotmkAgentRunning)) {
-				RunRobotmkTask "agent"
+			if (IsRobotmkAgentRunning) {
+				LogInfo "Nothing to do, Robotmk Agent is already running."
 			}
+			else {
+				RunRobotmkTask "agent"
+			}			
 		}		
 		else {	
 			# otherwise, try to create the environment	
@@ -308,7 +313,7 @@ function RobotmkController {
 				LogWarn "RCC environment is NOT ready to use."
 				LogWarn "Will now try to create a new RCC environment."
 				RemoveFlagfile $Flagfile_RCC_env_robotmk_ready
-				CreateFlagfile $Flagfile_RCC_env_creation_in_progress
+				TouchFile $Flagfile_RCC_env_creation_in_progress "RCC creation state file"
 				if (Test-Path ($RMKLibDir + "\hololib.zip")) {
 					LogInfo "hololib.zip found in $RMKLibDir, importing it"
 					RCCImportHololib "$RMKLibDir\hololib.zip"
@@ -324,7 +329,7 @@ function RobotmkController {
 				# Watch the progress with `rcc ht list` and `rcc ht catalogs`. First the catalog is created, then
 				# both spaces.
 				if (CatalogContainsAgentBlueprint $blueprint) {
-					CreateFlagfile $Flagfile_RCC_env_robotmk_ready
+					TouchFile $Flagfile_RCC_env_robotmk_ready "RCC env ready flagfile"
 					RemoveFlagfile $Flagfile_RCC_env_creation_in_progress			
 				}
 				else {
@@ -358,11 +363,11 @@ function RunRobotmkTask {
 		[Parameter(Mandatory = $True)]
 		[string]$rmkmode
 	)	
-	
+	$rcctask = "robotmk-$rmkmode"
 	#RCCTaskRun "robotmk-agent" "$RMKLibDir\robot.yaml" $rcc_ctrl_rmk $rcc_space_rmk_agent
 	$space = (Get-Variable -Name "rcc_space_rmk_$rmkmode").Value
-	LogDebug "Running Robotmk task '$rmkmode' in Holotree space '$rcc_ctrl_rmk/$space'"
-	$Arguments = "task run --controller $rcc_ctrl_rmk --space $space -t robotmk-$rmkmode -r $RMKLibDir\robot.yaml"
+	LogDebug "Running Robotmk task '$rcctask' in Holotree space '$rcc_ctrl_rmk/$space'"
+	$Arguments = "task run --controller $rcc_ctrl_rmk --space $space -t $rcctask -r $RMKLibDir\robot.yaml"
 	LogDebug "!!  $RCCExe $Arguments"
 	# As the script waits "forever", there is no PID known here. Next execution of 
 	# the controller will create it. 
@@ -377,7 +382,7 @@ function RunRobotmkTask {
 	# Read last exit code from file
 	$robotmk_agent_lastexitcode = GetAgentLastExitCode
 
-	LogInfo "Robotmk task '$rmkmode' terminated."
+	LogInfo "Robotmk task '$rcctask' terminated."
 	LogInfo "Last Message was: " + $robotmk_agent_lastexitcode
 	# 	if ($rc -eq 200) {
 	# 		LogInfo "Robotmk Agent exited gracefully with RC 200 (stale controller state file - perhaps CMK Agent stopped)"
@@ -644,7 +649,7 @@ function IsRobotmkAgentRunning {
 			$pidfromfile = Get-Content $pidfile
 			# if pidfromfile is in the list of running processes, we are good
 			if ($processes -contains $pidfromfile) {
-				LogDebug "The PID read from $pidfile ($pidfromfile) is running."
+				LogDebug "The PID $pidfromfile is already running and in pidfile $pidfile."
 				return $true
 			}
 			else {
@@ -660,8 +665,8 @@ function IsRobotmkAgentRunning {
 			}
 		}
 		else {
-			LogWarn "No PID file for running process found, but processes matching the pattern '*robotmk*agent*(fg/bg)' are running: $processes"
-			LogWarn "Waiting for them to create a PID file ($file)."
+			LogWarn "Processes matching the pattern '*robotmk*agent*(fg/bg)' are running ($processes), but NO PID file found for."
+			LogWarn "Waiting for agent to create a PID file ($file) itself."
 		}				
 	}
 
