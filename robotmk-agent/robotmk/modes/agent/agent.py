@@ -14,21 +14,21 @@ import psutil
 class RMKAgent:
     def __init__(
         self,
-        name="robotmk_agent_daemon",
+        name="robotmk_agent",
         ctrl_deadman_file_freshness=300,
         ctrl_file_controlled=False,
     ):
         self.name = name
+        # Ref 7e8b2c1 (controller plugin)
         self.pidfile = self.tmpdir / f"{self.name}.pid"
-        self.ctrl_deadman_file_freshness = ctrl_deadman_file_freshness
-        # match a python call for robotmk agent fg/bg, but not if the VS Code debugger is attached
-        # self.proc_pattern = "(?:(?!debugpy).)*(robotmk|cli).*agent\s[bf]g"
 
-        # if True, the agent will only run if the controller file is fresh
-        self.ctrl_file_controlled = ctrl_file_controlled
-        # path to the file that gets written by facade plugin at each agent trigger
+        # gets written by facade plugin at each agent trigger (Ref 23ff2d1)
         self.rmk_ctrl_deadman_file = self.tmpdir / "robotmk_controller_deadman_file"
-        # path to file where the agent cann signal the controller the reason for exiting
+        self.ctrl_deadman_file_freshness = ctrl_deadman_file_freshness
+        # if True, the agent will only run if the controller deadman file is fresh
+        self.ctrl_file_controlled = ctrl_file_controlled
+
+        # where the agent can signal the controller the reason for exiting
         self.last_agent_exitmsg_file = self.tmpdir / "robotmk_agent_lastexitcode"
 
         print(__name__ + ": (Daemon init) " + "tmpdir is: %s" % self.tmpdir)
@@ -37,25 +37,36 @@ class RMKAgent:
     @property
     def agentpath(self):
         # TODO:  should be wirhtin CMK Agent later
-        # For now, lets use system tmp dir
-
+        # only used if ROBOTMK_LOG_DIR and ROBOTMK_TMP_DIR are not set
         if platform.system() == "Windows":
-            tmppath = Path(os.getenv("TEMP")) / "robotmk"
+            return Path("C:\\Users\\vagrant\\Documents\\01_dev\\rmkv2\\agent")
         else:
-            tmppath = Path("/tmp") / "robotmk"
-        return tmppath
+            return Path("/tmp") / "robotmk"
 
     @property
     def logdir(self):
-        logpath = self.agentpath / "log"
-        logpath.mkdir(parents=True, exist_ok=True)
-        return logpath
+        if not os.getenv("ROBOTMK_LOG_DIR"):
+            print(
+                __name__
+                + ": "
+                + "ROBOTMK_LOG_DIR not set, using default: %s" % self.agentpath / "log"
+            )
+            _logdir = Path(self.agentpath / "log")
+        else:
+            _logdir = Path(os.getenv("ROBOTMK_LOG_DIR"))
+        _logdir.mkdir(parents=True, exist_ok=True)
+        return _logdir
 
     @property
     def tmpdir(self):
-        tmpdir = self.agentpath / "tmp"
-        tmpdir.mkdir(parents=True, exist_ok=True)
-        return tmpdir
+        if not os.getenv("ROBOTMK_TMP_DIR"):
+            path = self.agentpath / "tmp"
+            print(__name__ + ": " + "ROBOTMK_TMP_DIR not set, using default: %s" % path)
+            _tmpdir = Path(path)
+        else:
+            _tmpdir = Path(os.getenv("ROBOTMK_TMP_DIR"))
+        _tmpdir.mkdir(parents=True, exist_ok=True)
+        return _tmpdir
 
     @property
     def pid(self):
@@ -127,15 +138,23 @@ class RMKAgent:
                     201,
                     "Robotmk Agent exited, Reason: PID file exists, can start only once.",
                 )
-
-        print(__name__ + ": (start) " + "Try to start %s" % self.name)
+            else:
+                print(
+                    "PID %s from pidfile does not match to any running process." % pid
+                )
+        else:
+            print(__name__ + ": (start) " + "No pidfile %s found." % self.pidfile)
         # The daemon should continuously monitor the deadman file and exit if it is not fresh.
         while self.running_allowed():
             self.touch_pidfile()
             # DUMMY DAEMON CODE
-            print(__name__ + ": " + "Robotmk agent is running (PID: %d)" % self.pid)
-            for i in range(20):
-                if i == 19:
+            print(
+                __name__
+                + ": "
+                + "Robotmk agent is running (PID: %d), pidfile touched." % self.pid
+            )
+            for i in range(10):
+                if i == 9:
                     # remove all files
                     for file in self.tmpdir.glob("robotmk_output_*.txt"):
                         file.unlink()
