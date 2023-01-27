@@ -261,7 +261,7 @@ function DaemonController {
 
 	}
  elseif ($mode -eq "start") {
-		LogInfo "---- Script was started with mode 'start'; obviously I am already daemonized and can control the Robotmk Agent Daemon... "
+		LogInfo "---- Script was started with mode 'start'; unless started by hand (?), it is now an independent process and can control the Robotmk Agent Daemon... "
 		RobotmkController
 	}
  elseif ($mode -eq "stop") {

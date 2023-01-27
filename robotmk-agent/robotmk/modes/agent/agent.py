@@ -136,7 +136,8 @@ class RMKAgent:
             if pid and psutil.pid_exists(pid):
                 self.exit_with_filecode(
                     201,
-                    "Robotmk Agent exited, Reason: PID file exists, can start only once.",
+                    "Robotmk Agent exited, Reason: PID file exists (%s), can start only once."
+                    % self.pidfile,
                 )
             else:
                 print(
@@ -168,7 +169,8 @@ class RMKAgent:
         self.unlink_pidfile()
         self.exit_with_filecode(
             202,
-            f"Robotmk Agent exited, Reason: missing/outdated controller file {self.lastexecfile_path}",
+            "Robotmk Agent exited, Reason: missing/outdated controller file %s"
+            % str(self.lastexecfile_path),
         )
 
     # def _get_process_list(self):
