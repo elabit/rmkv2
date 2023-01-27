@@ -19,13 +19,14 @@ $DaemonName = "daemon.py"
 $CMKAgentDir = if ($env:CMK_AGENT_DIR) { $env:CMK_AGENT_DIR } else { "C:\Users\vagrant\Documents\01_dev\rmkv2\agent" };
 $RCCExe = $CMKAgentDir + "\bin\rcc.exe"
 $RobotmkRCCdir = $CMKAgentDir + "\lib\rcc_robotmk"
-$CMKtempdir = $CMKAgentDir + "\tmp"
-$RMKlogdir = $CMKAgentDir + "\log\robotmk"
+# Windows temp dir
+$CMKtempdir = $env:TEMP + "\robotmk\tmp"
+$RMKlogdir = $env:TEMP + "\robotmk\log"
 $RMKlogfile = $RMKlogdir + "\${scriptname}-plugin.log"
 
 $DaemonPidfile = "robotmk_agent_daemon"
 $pidfile = $CMKtempdir + "\" + $DaemonPidfile + ".pid"
-$Flagfile_controller_last_execution = $CMKtempdir + "\robotmk_controller_last_execution"
+$controller_deadman_file = $CMKtempdir + "\robotmk_controller_deadman_file"
 # This flagfile indicates that both there is a usable holotree space for "robotmk agent/output"
 $Flagfile_RCC_env_robotmk_ready = $CMKtempdir + "\rcc_env_robotmk_agent_ready"
 # IMPORTANT! All other Robot subprocesses must respect this file and not start if it is present!
@@ -62,7 +63,7 @@ function main() {
 		StartAgentOutput
 	}
 	elseif ($scriptname -match ".*robotmk-ctrl") {
-		CreateFlagfile $Flagfile_controller_last_execution	
+		CreateFlagfile $controller_deadman_file	
 		# FIXME: start Daemoncontroller in any case. It must also check if the conda blueprint 
 		# changed meanwhile. If so, it must restart the daemon.
 		DaemonController($mode)
@@ -600,52 +601,46 @@ function DetachProcess {
 
 function IsRobotmkAgentRunning {
 	# TODO: can only see own processes! 
-	$processId = GetDaemonProcess -Cmdline "%robotmk.exe agent bg"
-	if ( $processId -eq $null) {
+	$processes = GetProcesses -Cmdline "%robotmk%agent%g"
+	# if length of array is 0, no process is running
+	if ($processes.Length -eq 0) {
 		if (Test-Path $pidfile) {
 			LogInfo "No process 'robotmk.exe agent bg' is running, removing stale PID file $pidfile."
 			Remove-Item $pidfile -Force -ErrorAction SilentlyContinue
 		}
 		return $false
-	}
+	}	
 	else {
-		# Process runs, try to read PID from file
-		# split processId variable into array
-		$processId = $processId.split(" ")
-		# get length of array
-		$processCount = $processId.Length
-
-		if ($processCount -gt 1) {
-			LogError "More than one instance of 'robotmk.exe agent bg' is running, killing all!"
-			# kill all processes
-			$processId | ForEach-Object {
-				Stop-Process -Id $_ -Force
-			}
-			# Remove silly pidfile
-			Remove-Item $pidfile -Force -ErrorAction SilentlyContinue
-			return $false
-		}
-		else {
-			# only one process is running
-			$processId = $processId[0]
-			LogDebug "One instance of 'robotmk.exe agent bg' is already running (PID: $processId)"
-			if (Test-path $pidfile) {
-				$pidfromfile = Get-Content $pidfile
-				if ($pidfromfile -ne $processId) {
-					LogWarn "PID file $pidfile found, but the PID in it ($pidfromfile) does not match the running process $processId!"		
-				}
-				else {
-					LogDebug "Current PID $processId found in pidfile $pidfile."
-				}
+		# --- Facade plugin only watches if there is a process running with the PID 
+		# from the pidfile.
+		# --- agent.py will create a new pidfile for its own process.
+		# Ref: 5ea7ddc (agent.py)
+		# Read PID from pidfile and check if THIS is still running
+		# - PID from file is found: OK, go out 
+		# - PID from file not found: delete deadman file (forces the to also exit)
+		if (Test-path $pidfile) {
+			$pidfromfile = Get-Content $pidfile
+			# if pidfromfile is in the list of running processes, we are good
+			if ($processes -contains $pidfromfile) {
+				LogDebug "The PID read from $pidfile ($pidfromfile) is running."
+				return $true
 			}
 			else {
-				LogWarn "No PID file for running process found."
-			}	
-			LogDebug "Writing current PID $processId to $pidfile"
-			$processId | Out-File -encoding ascii $pidfile	
-			return $true
+				LogError "The PID read from $pidfile ($pidfromfile) des NOT seem to run."
+				# option 1: kill all processes (favoured)
+				LogWarn "Killing all processes matching the pattern '*robotmk*agent*(fg/bg)': $processes"				
+				$processes | ForEach-Object {
+					Stop-Process -Id $_ -Force				
+				}				
+				# option 2: only remove the deadman file (agent.py will exit; use this only if killing os not an option)
+				#Remove-Item $controller_deadman_file -Force -ErrorAction SilentlyContinue
+				return $false
+			}
 		}
-		
+		else {
+			LogWarn "No PID file for running process found, but processes matching the pattern '*robotmk*agent*(fg/bg)' are running: $processes"
+			LogWarn "Waiting for them to create a PID file ($file)."
+		}				
 	}
 
 }
@@ -665,7 +660,7 @@ function IsFlagfilePresent {
 }
 
 
-function GetDaemonProcess {
+function GetProcesses {
 	param (
 		[Parameter(Mandatory = $True)]
 		[string]$Cmdline
