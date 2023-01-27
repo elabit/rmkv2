@@ -6,4 +6,4 @@ dependencies:
 - yaml
 - click
 - pip:
-  - robotmk==0.0.40
+  - robotmk==0.0.41

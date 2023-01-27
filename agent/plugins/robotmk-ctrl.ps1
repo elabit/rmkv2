@@ -10,21 +10,6 @@ $DEBUG = $true
 $scriptname = (Get-Item -Path $MyInvocation.MyCommand.Path).BaseName
 
 $UseRCC = $true
-# $PyName = "python"
-# $PyExe = "C:\Python310\python.exe"
-# $DaemonName = "daemon.py"
-
-
-
-# DIRECTORYS ========================================
-# TODO: How to determine Agent dir?
-
-# $RMKRccDir = "$CMKAgentDir\lib\rcc_robotmk"
-# $RMKTmpDir = "$CMKAgentDir\tmp\robotmk"
-# $RMKLogDir = "$CMKAgentDir\log\robotmk"
-
-
-
 
 $rcc_ctrl_rmk = "robotmk"
 $rcc_space_rmk_agent = "agent"
@@ -34,7 +19,6 @@ $rcc_space_rmk_output = "output"
 # 1 = started by Agent, with parent process
 # 2 = started by itself detached, without parent process
 $EXEC_PHASE = "-"
-
 
 
 function main() {
@@ -191,7 +175,7 @@ function IsFlagfileYoungerThanMinutes {
 function StartAgentOutput {
 	LogInfo "--- Starting Robotmk Agent Output mode"
 	if ($UseRCC) {
-		$blueprint = GetCondaBlueprint $RMKRccDir\conda.yaml		
+		$blueprint = GetCondaBlueprint $RMKCfgDir\conda.yaml		
 		if ( IsRCCEnvReady $blueprint ) {
 			LogInfo "Robotmk RCC environment is ready to use, Output can be generated"
 			RunRobotmkTask "output"
@@ -274,7 +258,7 @@ function RobotmkController {
 	# Starts the Robotmk process with RCC or native Python
 	# TODO: How to make RCC execution an optional feature?
 	if ($UseRCC) {
-		$blueprint = GetCondaBlueprint $RMKRccDir\conda.yaml			
+		$blueprint = GetCondaBlueprint $RMKCfgDir\conda.yaml			
 		
 		if ( IsRCCEnvReady $blueprint) {
 			# if the RCC environment is ready, start the Agent if not yet running
@@ -298,16 +282,16 @@ function RobotmkController {
 				LogWarn "Will now try to create a new RCC environment."
 				RemoveFlagfile $Flagfile_RCC_env_robotmk_ready
 				TouchFile $Flagfile_RCC_env_creation_in_progress "RCC creation state file"
-				if (Test-Path ($RMKRccDir + "\hololib.zip")) {
-					LogInfo "hololib.zip found in $RMKRccDir, importing it"
-					RCCImportHololib "$RMKRccDir\hololib.zip"
+				if (Test-Path ($RMKCfgDir + "\hololib.zip")) {
+					LogInfo "hololib.zip found in $RMKCfgDir, importing it"
+					RCCImportHololib "$RMKCfgDir\hololib.zip"
 					# TODO: create spaces for agent /output?
 				}
 				else {
-					LogInfo "Catalog must be created from network (hololib.zip not found in $RMKRccDir)"		
+					LogInfo "Catalog must be created from network (hololib.zip not found in $RMKCfgDir)"		
 					# Create a separate Holotree Space for agent and output	
-					RCCEnvironmentCreate "$RMKRccDir\robot.yaml" $rcc_ctrl_rmk $rcc_space_rmk_agent
-					RCCEnvironmentCreate "$RMKRccDir\robot.yaml" $rcc_ctrl_rmk $rcc_space_rmk_output
+					RCCEnvironmentCreate "$RMKCfgDir\robot.yaml" $rcc_ctrl_rmk $rcc_space_rmk_agent
+					RCCEnvironmentCreate "$RMKCfgDir\robot.yaml" $rcc_ctrl_rmk $rcc_space_rmk_output
 				}
 				# This takes some minutes... 
 				# Watch the progress with `rcc ht list` and `rcc ht catalogs`. First the catalog is created, then
@@ -349,10 +333,10 @@ function RunRobotmkTask {
 		[string]$rmkmode
 	)	
 	$rcctask = "robotmk-$rmkmode"
-	#RCCTaskRun "robotmk-agent" "$RMKRccDir\robot.yaml" $rcc_ctrl_rmk $rcc_space_rmk_agent
+	#RCCTaskRun "robotmk-agent" "$RMKCfgDir\robot.yaml" $rcc_ctrl_rmk $rcc_space_rmk_agent
 	$space = (Get-Variable -Name "rcc_space_rmk_$rmkmode").Value
 	LogDebug "Running Robotmk task '$rcctask' in Holotree space '$rcc_ctrl_rmk/$space'"
-	$Arguments = "task run --controller $rcc_ctrl_rmk --space $space -t $rcctask -r $RMKRccDir\robot.yaml"
+	$Arguments = "task run --controller $rcc_ctrl_rmk --space $space -t $rcctask -r $RMKCfgDir\robot.yaml"
 	LogDebug "!!  $RCCExe $Arguments"
 	# As the script waits "forever", there is no PID known here. Next execution of 
 	# the controller will create it. 
@@ -722,7 +706,7 @@ function SetEnvironmentVars {
 	$Global:MK_TMPDIR = Get-EnvVar "MK_TMPDIR" "$CMKAgentDir\tmp"
 	$Global:RMKTmpDir = "$MK_TMPDIR\robotmk"
 	$Global:MK_CONFDIR = Get-EnvVar "MK_CONFDIR" "$CMKAgentDir\config"
-	$Global:RMKRccDir = "$MK_CONFDIR\rcc_robotmk"
+	$Global:RMKCfgDir = "$MK_CONFDIR\robotmk"
 	$Global:RMKLogfile = "$RMKLogDir\${scriptname}-plugin.log"	
 
 	$Global:ROBOCORP_HOME = if ($env:ROBOCORP_HOME) { $env:ROBOCORP_HOME } else { "C:\Users\vagrant\Documents\rc_homes\rcc1" };
@@ -732,7 +716,7 @@ function SetEnvironmentVars {
 	# do NOT if called while developing)
 	Set-EnvVar "ROBOTMK_LOGDIR" $RMKLogDir 
 	Set-EnvVar "ROBOTMK_TMPDIR" $RMKTmpDir 
-	Set-EnvVar "ROBOTMK_RCCDIR" $RMKRccDir
+	Set-EnvVar "ROBOTMK_CFGDIR" $RMKCfgDir
 
 	# FILES ========================================
 	$Global:RCCExe = $CMKAgentDir + "\bin\rcc.exe"
@@ -872,7 +856,7 @@ function LogRCCConfig {
 	LogDebug "RCC CONFIGURATION:"
 	LogDebug "- ROBOCORP_HOME: $ROBOCORP_HOME"	
 	LogDebug "- RCCEXE: $RCCEXE"	
-	LogDebug "- RMKRccDir: $RMKRccDir"
+	LogDebug "- RMKCfgDir: $RMKCfgDir"
 	LogDebug "- Robotmk RCC holotree spaces:"
 	LogDebug "  - Robotmk agent: rcc.$rcc_ctrl_rmk/$rcc_space_rmk_agent"
 	LogDebug "  - Robotmk output: rcc.$rcc_ctrl_rmk/$rcc_space_rmk_output"

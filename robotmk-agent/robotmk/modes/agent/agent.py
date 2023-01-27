@@ -43,30 +43,39 @@ class RMKAgent:
         else:
             return Path("/tmp") / "robotmk"
 
+    # TODO: ENv2Conf
     @property
     def logdir(self):
-        if not os.getenv("ROBOTMK_LOG_DIR"):
-            print(
-                __name__
-                + ": "
-                + "ROBOTMK_LOG_DIR not set, using default: %s" % self.agentpath / "log"
-            )
-            _logdir = Path(self.agentpath / "log")
+        if not os.getenv("ROBOTMK_LOGDIR"):
+            print(__name__ + ": " + "ROBOTMK_LOG_DIR not set, exiting")
+            sys.exit(1)
         else:
-            _logdir = Path(os.getenv("ROBOTMK_LOG_DIR"))
+            _logdir = Path(os.getenv("ROBOTMK_LOGDIR"))
         _logdir.mkdir(parents=True, exist_ok=True)
         return _logdir
 
+    # TODO: ENv2Conf
     @property
     def tmpdir(self):
-        if not os.getenv("ROBOTMK_TMP_DIR"):
-            path = self.agentpath / "tmp"
-            print(__name__ + ": " + "ROBOTMK_TMP_DIR not set, using default: %s" % path)
-            _tmpdir = Path(path)
+        if not os.getenv("ROBOTMK_TMPDIR"):
+            print(__name__ + ": " + "ROBOTMK_TMP_DIR not set, exiting")
+            sys.exit(1)
         else:
-            _tmpdir = Path(os.getenv("ROBOTMK_TMP_DIR"))
+            _tmpdir = Path(os.getenv("ROBOTMK_TMPDIR"))
         _tmpdir.mkdir(parents=True, exist_ok=True)
         return _tmpdir
+
+    @property
+    def cfgdir(self):
+        if not os.getenv("ROBOTMK_CFGDIR"):
+            print(__name__ + ": " + "ROBOTMK_CFGDIR not set, exiting")
+            sys.exit(1)
+        else:
+            _cfgdir = Path(os.getenv("ROBOTMK_CFGDIR"))
+            if not _cfgdir.exists():
+                print(__name__ + ": " + "ROBOTMK_CFGDIR does not exist, exiting")
+                sys.exit(1)
+        return _cfgdir
 
     @property
     def pid(self):

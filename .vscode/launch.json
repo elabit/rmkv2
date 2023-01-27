@@ -20,7 +20,9 @@
             "console": "integratedTerminal",
             "justMyCode": false,
             "env": {
-                "CMK_AGENT_DIR": "/home/simonmeggle/Documents/01_dev/rmkv2/agent"
+                "ROBOTMK_LOGDIR": "C:\\Users\\vagrant\\Documents\\01_dev\\rmkv2\\agent\\log\\robotmk",
+                "ROBOTMK_TMPDIR": "C:\\Users\\vagrant\\Documents\\01_dev\\rmkv2\\agent\\tmp\\robotmk",
+                "ROBOTMK_CFGDIR": "C:\\Users\\vagrant\\Documents\\01_dev\\rmkv2\\agent\\config\\robotmk"
             }
         },
         {
@@ -34,7 +36,9 @@
                 "output"
             ],
             "env": {
-                "CMK_AGENT_DIR": "/home/simonmeggle/Documents/01_dev/rmkv2/agent"
+                "ROBOTMK_LOGDIR": "C:\\Users\\vagrant\\Documents\\01_dev\\rmkv2\\agent\\log\\robotmk",
+                "ROBOTMK_TMPDIR": "C:\\Users\\vagrant\\Documents\\01_dev\\rmkv2\\agent\\tmp\\robotmk",
+                "ROBOTMK_CFGDIR": "C:\\Users\\vagrant\\Documents\\01_dev\\rmkv2\\agent\\config\\robotmk"
             }
         },
         {
@@ -49,7 +53,9 @@
                 "bg"
             ],
             "env": {
-                "CMK_AGENT_DIR": "/home/simonmeggle/Documents/01_dev/rmkv2/agent"
+                "ROBOTMK_LOGDIR": "C:\\Users\\vagrant\\Documents\\01_dev\\rmkv2\\agent\\log\\robotmk",
+                "ROBOTMK_TMPDIR": "C:\\Users\\vagrant\\Documents\\01_dev\\rmkv2\\agent\\tmp\\robotmk",
+                "ROBOTMK_CFGDIR": "C:\\Users\\vagrant\\Documents\\01_dev\\rmkv2\\agent\\config\\robotmk"
             },
             "justMyCode": false
         },
@@ -65,7 +71,9 @@
                 "fg"
             ],
             "env": {
-                "CMK_AGENT_DIR": "/home/simonmeggle/Documents/01_dev/rmkv2/agent"
+                "ROBOTMK_LOGDIR": "C:\\Users\\vagrant\\Documents\\01_dev\\rmkv2\\agent\\log\\robotmk",
+                "ROBOTMK_TMPDIR": "C:\\Users\\vagrant\\Documents\\01_dev\\rmkv2\\agent\\tmp\\robotmk",
+                "ROBOTMK_CFGDIR": "C:\\Users\\vagrant\\Documents\\01_dev\\rmkv2\\agent\\config\\robotmk"
             },
             "justMyCode": false
         },
