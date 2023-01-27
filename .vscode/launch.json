@@ -127,9 +127,6 @@
             "script": "agent/plugins/robotmk.ps1",
             //"script": "${file}",
             "cwd": "${cwd}"
-            // "args": [
-            //     "start"
-            // ]
         },
         {
             "name": "PowerShell robotmk.ps1 start",

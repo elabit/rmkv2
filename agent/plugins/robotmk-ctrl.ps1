@@ -14,33 +14,17 @@ $UseRCC = $true
 # $PyExe = "C:\Python310\python.exe"
 # $DaemonName = "daemon.py"
 
+
+
 # DIRECTORYS ========================================
 # TODO: How to determine Agent dir?
-$CMKAgentDir = if ($env:CMK_AGENT_DIR) { $env:CMK_AGENT_DIR } else { "C:\Users\vagrant\Documents\01_dev\rmkv2\agent" };
-$RMKLibDir = "$CMKAgentDir\lib\rcc_robotmk"
-$RMKTmpDir = "$CMKAgentDir\tmp\robotmk"
-$RMKLogDir = "$CMKAgentDir\log\robotmk"
-$RMKLogfile = $RMKLogDir + "\${scriptname}-plugin.log"
 
-# FILES ========================================
-$RCCExe = $CMKAgentDir + "\bin\rcc.exe"
-# Ref 7e8b2c1 (agent.py)
-$pidfile = $RMKTmpDir + "\robotmk_agent.pid"
-# Ref 23ff2d1 (agent.py)
-$controller_deadman_file = $RMKTmpDir + "\robotmk_controller_deadman_file"
-# This flagfile indicates that both there is a usable holotree space for "robotmk agent/output"
-$Flagfile_RCC_env_robotmk_ready = $RMKTmpDir + "\rcc_env_robotmk_agent_ready"
-$robotmk_agent_lastexitcode = $RMKTmpDir + "\robotmk_agent_lastexitcode"
-# IMPORTANT! All other Robot subprocesses must respect this file and not start if it is present!
-# (There is only ONE RCC creation allowed at a time.)
-$Flagfile_RCC_env_creation_in_progress = $RMKTmpDir + "\rcc_env_creation_in_progress.lock"
-# how many minutes to wait for a/any single RCC env creation to be finished (maxage of $Flagfile_RCC_env_creation_in_progress)
-$RCC_env_max_creation_minutes = 1
+# $RMKRccDir = "$CMKAgentDir\lib\rcc_robotmk"
+# $RMKTmpDir = "$CMKAgentDir\tmp\robotmk"
+# $RMKLogDir = "$CMKAgentDir\log\robotmk"
 
-# TODO: How to set system env vars globally? Needed?
-#[System.Environment]::SetEnvironmentVariable('ROBOCORP_HOME', 'C:\rcc')
-#[System.Environment]::SetEnvironmentVariable('ROBOCORP_HOME', 'C:\Users\vagrant\Documents\rc_homes\rcc1')
-$ROBOCORP_HOME = if ($env:ROBOCORP_HOME) { $env:ROBOCORP_HOME } else { "C:\Users\vagrant\Documents\rc_homes\rcc1" };
+
+
 
 $rcc_ctrl_rmk = "robotmk"
 $rcc_space_rmk_agent = "agent"
@@ -51,18 +35,18 @@ $rcc_space_rmk_output = "output"
 # 2 = started by itself detached, without parent process
 $EXEC_PHASE = "-"
 
+
+
 function main() {
 	# robotmk.ps1 : start Robotmk to produce output
 	# robotmk-ctrl.ps1 : start Robotmk to control the daemon
-	Set-EnvVar "ROBOCORP_HOME" $ROBOCORP_HOME	
-	Set-EnvVar "ROBOTMK_TMP_DIR" $RMKTmpDir 
-	Set-EnvVar "ROBOTMK_LOG_DIR" $RMKLogDir 
+	SetEnvironmentVars
+	
 	Ensure-Directory $RMKlogdir
 	Ensure-Directory $RMKTmpDir
 	Ensure-Directory $ROBOCORP_HOME
 	LogConfig
-	# TODO: only for debugging
-	#$scriptname = "robotmk-ctrl.ps1"
+	
 	if ($scriptname -match ".*robotmk$") {
 		StartAgentOutput
 	}
@@ -207,7 +191,7 @@ function IsFlagfileYoungerThanMinutes {
 function StartAgentOutput {
 	LogInfo "--- Starting Robotmk Agent Output mode"
 	if ($UseRCC) {
-		$blueprint = GetCondaBlueprint $RMKLibDir\conda.yaml		
+		$blueprint = GetCondaBlueprint $RMKRccDir\conda.yaml		
 		if ( IsRCCEnvReady $blueprint ) {
 			LogInfo "Robotmk RCC environment is ready to use, Output can be generated"
 			RunRobotmkTask "output"
@@ -290,7 +274,7 @@ function RobotmkController {
 	# Starts the Robotmk process with RCC or native Python
 	# TODO: How to make RCC execution an optional feature?
 	if ($UseRCC) {
-		$blueprint = GetCondaBlueprint $RMKLibDir\conda.yaml			
+		$blueprint = GetCondaBlueprint $RMKRccDir\conda.yaml			
 		
 		if ( IsRCCEnvReady $blueprint) {
 			# if the RCC environment is ready, start the Agent if not yet running
@@ -314,16 +298,16 @@ function RobotmkController {
 				LogWarn "Will now try to create a new RCC environment."
 				RemoveFlagfile $Flagfile_RCC_env_robotmk_ready
 				TouchFile $Flagfile_RCC_env_creation_in_progress "RCC creation state file"
-				if (Test-Path ($RMKLibDir + "\hololib.zip")) {
-					LogInfo "hololib.zip found in $RMKLibDir, importing it"
-					RCCImportHololib "$RMKLibDir\hololib.zip"
+				if (Test-Path ($RMKRccDir + "\hololib.zip")) {
+					LogInfo "hololib.zip found in $RMKRccDir, importing it"
+					RCCImportHololib "$RMKRccDir\hololib.zip"
 					# TODO: create spaces for agent /output?
 				}
 				else {
-					LogInfo "Catalog must be created from network (hololib.zip not found in $RMKLibDir)"		
+					LogInfo "Catalog must be created from network (hololib.zip not found in $RMKRccDir)"		
 					# Create a separate Holotree Space for agent and output	
-					RCCEnvironmentCreate "$RMKLibDir\robot.yaml" $rcc_ctrl_rmk $rcc_space_rmk_agent
-					RCCEnvironmentCreate "$RMKLibDir\robot.yaml" $rcc_ctrl_rmk $rcc_space_rmk_output
+					RCCEnvironmentCreate "$RMKRccDir\robot.yaml" $rcc_ctrl_rmk $rcc_space_rmk_agent
+					RCCEnvironmentCreate "$RMKRccDir\robot.yaml" $rcc_ctrl_rmk $rcc_space_rmk_output
 				}
 				# This takes some minutes... 
 				# Watch the progress with `rcc ht list` and `rcc ht catalogs`. First the catalog is created, then
@@ -365,10 +349,10 @@ function RunRobotmkTask {
 		[string]$rmkmode
 	)	
 	$rcctask = "robotmk-$rmkmode"
-	#RCCTaskRun "robotmk-agent" "$RMKLibDir\robot.yaml" $rcc_ctrl_rmk $rcc_space_rmk_agent
+	#RCCTaskRun "robotmk-agent" "$RMKRccDir\robot.yaml" $rcc_ctrl_rmk $rcc_space_rmk_agent
 	$space = (Get-Variable -Name "rcc_space_rmk_$rmkmode").Value
 	LogDebug "Running Robotmk task '$rcctask' in Holotree space '$rcc_ctrl_rmk/$space'"
-	$Arguments = "task run --controller $rcc_ctrl_rmk --space $space -t $rcctask -r $RMKLibDir\robot.yaml"
+	$Arguments = "task run --controller $rcc_ctrl_rmk --space $space -t $rcctask -r $RMKRccDir\robot.yaml"
 	LogDebug "!!  $RCCExe $Arguments"
 	# As the script waits "forever", there is no PID known here. Next execution of 
 	# the controller will create it. 
@@ -378,24 +362,14 @@ function RunRobotmkTask {
 	# ------------- DAEMONIZED ------------
 	# -------------------------------------
 	# We should not come here!
-	# RCC cannot return the exit code of the task. 
+	
 	$rc = $ret.ExitCode
-	# Read last exit code from file
+	# Read last exit code from file (RCC cannot return the exit code of the task. )
 	$robotmk_agent_lastexitcode = GetAgentLastExitCode
 
 	LogInfo "Robotmk task '$rcctask' terminated."
-	LogInfo "Last Message was: " + $robotmk_agent_lastexitcode
-	# 	if ($rc -eq 200) {
-	# 		LogInfo "Robotmk Agent exited gracefully with RC 200 (stale controller state file - perhaps CMK Agent stopped)"
-	# 	}
-	#  else {
-	# 		LogInfo "Robotmk Agent exited with RC $rc"
-	# 		LogDebug "Output: \n" + $rc.Output
-	# 	}
+	LogInfo "Last Message was: '$robotmk_agent_lastexitcode'"
 
-	# if (($rc -gt 0) -or (-Not (IsRobotmkAgentRunning))) {		
-	# 	LogInfo "Robotmk task '$rmkmode' ended (rc: $rc). Exiting Phase 2."
-	# }
  
 }
 
@@ -636,6 +610,9 @@ function IsRobotmkAgentRunning {
 			LogInfo "No process 'robotmk.exe agent bg' is running, removing stale PID file $pidfile."
 			Remove-Item $pidfile -Force -ErrorAction SilentlyContinue
 		}
+		else {
+			LogDebug "No process 'robotmk.exe agent bg' is running."
+		}
 		return $false
 	}	
 	else {
@@ -710,6 +687,23 @@ function Ensure-Directory {
 	}
 }
 
+function Get-EnvVar {
+	# return environment variable or default value
+	param (
+		[Parameter(Mandatory = $True)]
+		[string]$name, 
+		[Parameter(Mandatory = $True)]
+		[string]$default = ""
+	)
+	$value = [System.Environment]::GetEnvironmentVariable($name)
+	if ($value -eq $null) {
+		return $default
+	}
+	else {
+		return $value
+	}
+}
+
 function Set-EnvVar {
 	param (
 		[Parameter(Mandatory = $True)]
@@ -719,6 +713,45 @@ function Set-EnvVar {
 	)
 	[System.Environment]::SetEnvironmentVariable($name, $value)
 } 
+
+function SetEnvironmentVars {
+	$CMKAgentDir = if ($env:CMK_AGENT_DIR) { $env:CMK_AGENT_DIR } else { "x:\ProgramData\checkmk\agent" };
+	# Try to read the environment variables from the agent. If not set, use defaults.
+	$Global:MK_LOGDIR = Get-EnvVar "MK_LOGDIR" "$CMKAgentDir\log"
+	$Global:RMKLogDir = "$MK_LOGDIR\robotmk"
+	$Global:MK_TMPDIR = Get-EnvVar "MK_TMPDIR" "$CMKAgentDir\tmp"
+	$Global:RMKTmpDir = "$MK_TMPDIR\robotmk"
+	$Global:MK_CONFDIR = Get-EnvVar "MK_CONFDIR" "$CMKAgentDir\config"
+	$Global:RMKRccDir = "$MK_CONFDIR\rcc_robotmk"
+	$Global:RMKLogfile = "$RMKLogDir\${scriptname}-plugin.log"	
+
+	$Global:ROBOCORP_HOME = if ($env:ROBOCORP_HOME) { $env:ROBOCORP_HOME } else { "C:\Users\vagrant\Documents\rc_homes\rcc1" };
+	Set-EnvVar "ROBOCORP_HOME" $ROBOCORP_HOME	
+
+	# Expose env vars for CMK agent (they exist if called from agent, but 
+	# do NOT if called while developing)
+	Set-EnvVar "ROBOTMK_LOGDIR" $RMKLogDir 
+	Set-EnvVar "ROBOTMK_TMPDIR" $RMKTmpDir 
+	Set-EnvVar "ROBOTMK_RCCDIR" $RMKRccDir
+
+	# FILES ========================================
+	$Global:RCCExe = $CMKAgentDir + "\bin\rcc.exe"
+	# Ref 7e8b2c1 (agent.py)
+	$Global:pidfile = $RMKTmpDir + "\robotmk_agent.pid"
+	# Ref 23ff2d1 (agent.py)
+	$Global:controller_deadman_file = $RMKTmpDir + "\robotmk_controller_deadman_file"
+	# This flagfile indicates that both there is a usable holotree space for "robotmk agent/output"
+	$Global:Flagfile_RCC_env_robotmk_ready = $RMKTmpDir + "\rcc_env_robotmk_agent_ready"
+	$Global:robotmk_agent_lastexitcode = $RMKTmpDir + "\robotmk_agent_lastexitcode"
+	# IMPORTANT! All other Robot subprocesses must respect this file and not start if it is present!
+	# (There is only ONE RCC creation allowed at a time.)
+	$Global:Flagfile_RCC_env_creation_in_progress = $RMKTmpDir + "\rcc_env_creation_in_progress.lock"
+	# how many minutes to wait for a/any single RCC env creation to be finished (maxage of $Flagfile_RCC_env_creation_in_progress)
+	$Global:RCC_env_max_creation_minutes = 1
+
+
+}
+
 
 
 function Log {
@@ -752,7 +785,7 @@ function Log {
 	}
 	# if length of $MsgArr is more than 1, then we have a multiline message
 	if ($MsgArr.Length -gt 1) {
-		$prefix = " |   "
+		$prefix = "  |   "
 	}
 	else {
 		$prefix = ""
@@ -826,9 +859,8 @@ function LogConfig {
 	LogDebug "- mode: $MODE"
 	LogDebug "- PID: $PID"
 	LogDebug "- PPID: $PPID"
-	LogDebug "- CMKAgentDir: $CMKAgentDir"
-	LogDebug "- ENV:ROBOTMK_TMP_DIR: $Env:ROBOTMK_TMP_DIR"
-	LogDebug "- RMKLogfile: $RMKLogfile"
+	LogDebug "- RMKLogDir: $RMKLogDir"
+	LogDebug "- RMKTmpDir: $RMKTmpDir"
 	LogDebug "- Use RCC: $UseRCC"
 	if ($UseRCC) {
 		LogRCCConfig
@@ -838,9 +870,9 @@ function LogConfig {
 
 function LogRCCConfig {
 	LogDebug "RCC CONFIGURATION:"
-	LogDebug "- ENV:ROBOCORP_HOME=$ROBOCORP_HOME"	
+	LogDebug "- ROBOCORP_HOME: $ROBOCORP_HOME"	
 	LogDebug "- RCCEXE: $RCCEXE"	
-	LogDebug "- RMKLibDir: $RMKLibDir"
+	LogDebug "- RMKRccDir: $RMKRccDir"
 	LogDebug "- Robotmk RCC holotree spaces:"
 	LogDebug "  - Robotmk agent: rcc.$rcc_ctrl_rmk/$rcc_space_rmk_agent"
 	LogDebug "  - Robotmk output: rcc.$rcc_ctrl_rmk/$rcc_space_rmk_output"
