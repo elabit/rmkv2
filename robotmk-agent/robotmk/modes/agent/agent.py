@@ -31,9 +31,6 @@ class RMKAgent:
         # where the agent can signal the controller the reason for exiting
         self.last_agent_exitmsg_file = self.tmpdir / "robotmk_agent_lastexitcode"
 
-        print(__name__ + ": (Daemon init) " + "tmpdir is: %s" % self.tmpdir)
-        print(__name__ + ": (Daemon init) " + "Pidfile is: %s" % self.pidfile)
-
     @property
     def agentpath(self):
         # TODO:  should be wirhtin CMK Agent later

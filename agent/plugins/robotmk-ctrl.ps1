@@ -1,19 +1,18 @@
 
 # Credits to https://github.com/FuzzySecurity/PowerShell-Suite/blob/master/Invoke-CreateProcess.ps1
 
+$scriptname = (Get-Item -Path $MyInvocation.MyCommand.Path).BaseName
 # read mode from args or set to 0
 $MODE = if ($args[0]) { $args[0] } else { $nul };
 $PPID = if ($args[1]) { $args[1] } else { $nul };
 
 $DEBUG = $true
 #$DEBUG = $false
-$scriptname = (Get-Item -Path $MyInvocation.MyCommand.Path).BaseName
+
 
 $UseRCC = $true
 
-$rcc_ctrl_rmk = "robotmk"
-$rcc_space_rmk_agent = "agent"
-$rcc_space_rmk_output = "output"
+
 
 # Execution phase: 
 # 1 = started by Agent, with parent process
@@ -24,7 +23,7 @@ $EXEC_PHASE = "-"
 function main() {
 	# robotmk.ps1 : start Robotmk to produce output
 	# robotmk-ctrl.ps1 : start Robotmk to control the daemon
-	SetEnvironmentVars
+	SetScriptVars
 	
 	Ensure-Directory $RMKlogdir
 	Ensure-Directory $RMKTmpDir
@@ -325,6 +324,9 @@ function StartControllerDecoupled {
 	$powershell = (Get-Command powershell.exe).Path
 	DetachProcess $powershell "-File $PSCommandPath start ${PID}"
 	LogInfo "Exiting... (Daemon will run in background now)"
+	# sleep  100 seconds to give the daemon some time to start
+	# Start-Sleep -s 100
+
 }
 
 function RunRobotmkTask {
@@ -587,7 +589,7 @@ function DetachProcess {
 
 function IsRobotmkAgentRunning {
 	# TODO: can only see own processes! 
-	$processes = GetProcesses -Cmdline "%robotmk%agent%g"
+	$processes = GetProcesses -Cmdline "%robotmk.exe agent bg"
 	# if length of array is 0, no process is running
 	if ($processes.Length -eq 0) {
 		if (Test-Path $pidfile) {
@@ -654,7 +656,11 @@ function GetProcesses {
 		[Parameter(Mandatory = $True)]
 		[string]$Cmdline
 	)
+	#LogInfo '!! Get-WmiObject -Query "SELECT * FROM Win32_Process WHERE CommandLine like "'$Cmdline'" | Select ProcessId'
+	#$processId = Get-WmiObject -Query "SELECT * FROM Win32_Process WHERE CommandLine like '$Cmdline'" | Export-Csv -Path c:\robotmk.csv -NoTypeInformation -Encoding ASCII
+	# TODO: when run by the agent, no process is found
 	$processId = Get-WmiObject -Query "SELECT * FROM Win32_Process WHERE CommandLine like '$Cmdline'" | Select ProcessId
+	
 	#LogInfo "ProcessId: $processId"
 	return $processId.processId
 
@@ -698,13 +704,14 @@ function Set-EnvVar {
 	[System.Environment]::SetEnvironmentVariable($name, $value)
 } 
 
-function SetEnvironmentVars {
+function SetScriptVars {
+	
 	$CMKAgentDir = if ($env:CMK_AGENT_DIR) { $env:CMK_AGENT_DIR } else { "x:\ProgramData\checkmk\agent" };
 	# Try to read the environment variables from the agent. If not set, use defaults.
 	$Global:MK_LOGDIR = Get-EnvVar "MK_LOGDIR" "$CMKAgentDir\log"
 	$Global:RMKLogDir = "$MK_LOGDIR\robotmk"
-	$Global:MK_TMPDIR = Get-EnvVar "MK_TMPDIR" "$CMKAgentDir\tmp"
-	$Global:RMKTmpDir = "$MK_TMPDIR\robotmk"
+	$Global:MK_TEMPDIR = Get-EnvVar "MK_TEMPDIR" "$CMKAgentDir\tmp"
+	$Global:RMKTmpDir = "$MK_TEMPDIR\robotmk"
 	$Global:MK_CONFDIR = Get-EnvVar "MK_CONFDIR" "$CMKAgentDir\config"
 	$Global:RMKCfgDir = "$MK_CONFDIR\robotmk"
 	$Global:RMKLogfile = "$RMKLogDir\${scriptname}-plugin.log"	
@@ -733,6 +740,12 @@ function SetEnvironmentVars {
 	# how many minutes to wait for a/any single RCC env creation to be finished (maxage of $Flagfile_RCC_env_creation_in_progress)
 	$Global:RCC_env_max_creation_minutes = 1
 
+	# RCC namespaces
+	# - controller
+	$Global:rcc_ctrl_rmk = "robotmk"
+	# - space for agent and output
+	$Global:rcc_space_rmk_agent = "agent"
+	$Global:rcc_space_rmk_output = "output"
 
 }
 
@@ -840,6 +853,7 @@ function LogConfig {
 	)
 	LogDebug "--- 8< --------------------"
 	LogDebug "CONFIGURATION:"
+	LogDebug "- Scriptname: $scriptname"
 	LogDebug "- mode: $MODE"
 	LogDebug "- PID: $PID"
 	LogDebug "- PPID: $PPID"

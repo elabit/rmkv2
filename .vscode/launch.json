@@ -110,15 +110,16 @@
                 "robot"
             ]
         },
+        //---------------------------------------------
         {
-            "name": "PowerShell robotmk-ctrl.ps1",
+            "name": "PS robotmk-ctrl.ps1",
             "type": "PowerShell",
             "request": "launch",
             "script": "agent/plugins/robotmk-ctrl.ps1",
             "cwd": "${cwd}"
         },
         {
-            "name": "PowerShell robotmk-ctrl.ps1 start",
+            "name": "PS robotmk-ctrl.ps1 start",
             "type": "PowerShell",
             "request": "launch",
             "script": "agent/plugins/robotmk-ctrl.ps1",
@@ -128,8 +129,28 @@
                 "9999"
             ]
         },
+        //---------------------------------------------
         {
-            "name": "PowerShell robotmk.ps1",
+            "name": "PS CMK robotmk-ctrl.ps1",
+            "type": "PowerShell",
+            "request": "launch",
+            "script": "C:\\ProgramData\\checkmk\\agent\\plugins\\robotmk-ctrl.ps1",
+            "cwd": "${cwd}"
+        },
+        {
+            "name": "PS CMK robotmk-ctrl.ps1 start",
+            "type": "PowerShell",
+            "request": "launch",
+            "script": "C:\\ProgramData\\checkmk\\agent\\plugins\\robotmk-ctrl.ps1",
+            "cwd": "${cwd}",
+            "args": [
+                "start",
+                "9999"
+            ]
+        },
+        //---------------------------------------------
+        {
+            "name": "PS robotmk.ps1",
             "type": "PowerShell",
             "request": "launch",
             "script": "agent/plugins/robotmk.ps1",
@@ -137,7 +158,7 @@
             "cwd": "${cwd}"
         },
         {
-            "name": "PowerShell robotmk.ps1 start",
+            "name": "PS robotmk.ps1 start",
             "type": "PowerShell",
             "request": "launch",
             "script": "agent/plugins/robotmk.ps1",
