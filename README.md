@@ -1,6 +1,44 @@
 # Robotmk V2
 
+!!! ALPHA - NOT FOR PRODUCTION !!!
 
+## USAGE
+
+- copy `agent/config/robotmk` into `%Programdata%/checkmk/agent/config/robotmk`
+- copy `agent\plugins\robotmk-ctrl.ps1` into `%Programdata%/checkmk/agent/plugins/`
+
+Add to `C:\ProgramData\checkmk\agent\bakery\check_mk.bakery.yml``:
+
+```
+plugins:
+  enabled: true
+  execution:
+  - async: true
+    pattern: $CUSTOM_PLUGINS_PATH$\robotmk-ctrl.ps1
+    run: true
+```
+
+
+Now start the CMK agent and watch `C:\ProgramData\checkmk\agent\log\robotmk\robotmk-ctrl-plugin.log` . 
+You should see the Phase 1 prcess starting the Phase 2 process. 
+The Process list should only show up the Phase 2 process (Phase 1 behaves like a normal Plugin and is meant to run shortly).
+
+The very first start of Phase 2 will take longer because `robotmk-ctrl.ps1` starts rcc.exe to create a new RCC environment for robotmk to run. 
+During this process, `rcc_env_creation_in_progress.lock` will be present in `ProgramData/agent/tmp/robotmk/`. 
+As long, further executions of `robotmk-ctrl.ps` will not trigger any other environment creations.
+
+After the environment was built, the lockfile in `tmp` gets replaced by `rcc_env_robotmk_agent_ready`. 
+The next execution of the controller will start the Robotmk Python agent within the new RCC environment. 
+(The Daemon will be responsible to start Robot suites in individual intervals in multiple proceses)
+Dummy activity of this Daemon action can be seen in `ProgramData/agent/tmp/robotmk/`.
+
+---
+
+**GOAL**: When the CMK agent gets stopped or executed/triggered from CMK, the Phase 2 process should survive. 
+
+**PROBLEM**: Stopping/executing the Agent kills the Phase2 Powrshell process and Robotmk below of it, although it does not have a parent process id. 
+
+--- 
 ## I. Robotmk als Agent Plugin  
 
 ### a) Robotmk-Plugin im "Agent" mode

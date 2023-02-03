@@ -2,6 +2,7 @@
 # Credits to https://github.com/FuzzySecurity/PowerShell-Suite/blob/master/Invoke-CreateProcess.ps1
 
 $scriptname = (Get-Item -Path $MyInvocation.MyCommand.Path).BaseName
+$scriptname_ext = (Get-Item -Path $MyInvocation.MyCommand.Path).PSChildName
 # read mode from args or set to 0
 $MODE = if ($args[0]) { $args[0] } else { $nul };
 $PPID = if ($args[1]) { $args[1] } else { $nul };
@@ -28,6 +29,7 @@ function main() {
 	Ensure-Directory $RMKlogdir
 	Ensure-Directory $RMKTmpDir
 	Ensure-Directory $ROBOCORP_HOME
+	Ensure-Directory $PDataRMKPlugins
 	LogConfig
 	
 	if ($scriptname -match ".*robotmk$") {
@@ -174,6 +176,7 @@ function IsFlagfileYoungerThanMinutes {
 function StartAgentOutput {
 	LogInfo "--- Starting Robotmk Agent Output mode"
 	if ($UseRCC) {
+		EnsureRCCPresent
 		$blueprint = GetCondaBlueprint $RMKCfgDir\conda.yaml		
 		if ( IsRCCEnvReady $blueprint ) {
 			LogInfo "Robotmk RCC environment is ready to use, Output can be generated"
@@ -257,6 +260,7 @@ function RobotmkController {
 	# Starts the Robotmk process with RCC or native Python
 	# TODO: How to make RCC execution an optional feature?
 	if ($UseRCC) {
+		EnsureRCCPresent
 		$blueprint = GetCondaBlueprint $RMKCfgDir\conda.yaml			
 		
 		if ( IsRCCEnvReady $blueprint) {
@@ -321,8 +325,22 @@ function RobotmkController {
 function StartControllerDecoupled {
 	# Starts the Robotmk process decoupled from the current process
 	# Hand over the PID of calling process and log it
+
+	# Try to copy the script to Robotmk plugin directory.
+	# Phase 2 must be started from a folder outside the "agent" directory because the 
+	# agent kills all processes which belong to files inside the "agent" directory to 
+	# be update-ready.
+	try {
+		LogDebug "Copy myself ($scriptname_ext) to Robotmk plugin directory $PDataRMKPlugins."
+		Copy-Item $PSCommandPath $PDataRMKPlugins -Force -ErrorAction SilentlyContinue
+	}
+	catch {
+		LogError "Could not copy myself ($scriptname_ext) to Robotmk plugin directory $PDataRMKPlugins. Exiting."
+		return
+	}
+	$RobotmkControllerPS = "$PDataRMKPlugins\$scriptname_ext"
 	$powershell = (Get-Command powershell.exe).Path
-	DetachProcess $powershell "-File $PSCommandPath start ${PID}"
+	DetachProcess $powershell "-File $RobotmkControllerPS start ${PID}"
 	LogInfo "Exiting... (Daemon will run in background now)"
 	# sleep  100 seconds to give the daemon some time to start
 	# Start-Sleep -s 100
@@ -555,6 +573,9 @@ function DetachProcess {
 	# TODO: Check if this is needed  
 	$CREATE_NO_WINDOW = 0x08000000 
 
+	# Versuch 
+	$CREATE_NEW_CONSOLE = 0x00000010
+
 	# merge creation flags:
 	# 1) All three flags work together when executing e.g. RCC.exe 
 	#$CreationFlags = $CreationFlags -bor $DETACHED_PROCESS -bor $CREATE_NEW_PROCESS_GROUP -bor $CREATE_NO_WINDOW
@@ -656,9 +677,9 @@ function GetProcesses {
 		[Parameter(Mandatory = $True)]
 		[string]$Cmdline
 	)
+	# TODO: unsauber!
 	#LogInfo '!! Get-WmiObject -Query "SELECT * FROM Win32_Process WHERE CommandLine like "'$Cmdline'" | Select ProcessId'
-	#$processId = Get-WmiObject -Query "SELECT * FROM Win32_Process WHERE CommandLine like '$Cmdline'" | Export-Csv -Path c:\robotmk.csv -NoTypeInformation -Encoding ASCII
-	# TODO: when run by the agent, no process is found
+	#Get-WmiObject -Query "SELECT * FROM Win32_Process" | Export-Csv -Path c:\all.csv -NoTypeInformation -Encoding ASCII
 	$processId = Get-WmiObject -Query "SELECT * FROM Win32_Process WHERE CommandLine like '$Cmdline'" | Select ProcessId
 	
 	#LogInfo "ProcessId: $processId"
@@ -672,7 +693,7 @@ function Ensure-Directory {
 		[string]$directory
 	)
 	if (-Not (Test-Path $directory)) {
-		LogInfo "Directory $directory does not exist, creating it."
+		#LogInfo "Directory $directory does not exist, creating it."
 		New-Item -ItemType Directory -Path $directory -Force -ErrorAction SilentlyContinue | Out-Null
 	}
 }
@@ -704,19 +725,40 @@ function Set-EnvVar {
 	[System.Environment]::SetEnvironmentVariable($name, $value)
 } 
 
+function EnsureRCCPresent {
+	# Check if the RCCExe binary is present. If not, download it.
+	if (Test-Path $RCCExe) {
+		LogDebug "RCC.exe found at $RCCExe."
+	}
+	else {
+		LogInfo "RCCExe $RCCExe not found, downloading it."
+		$RCCExeUrl = "https://downloads.robocorp.com/rcc/releases/v11.30.0/windows64/rcc.exe"
+		[Net.ServicePointManager]::SecurityProtocol = "tls12, tls11, tls"
+		Invoke-WebRequest -Uri $RCCExeUrl -OutFile $RCCExe
+	}
+}
+
+
 function SetScriptVars {
-	
-	$CMKAgentDir = if ($env:CMK_AGENT_DIR) { $env:CMK_AGENT_DIR } else { "x:\ProgramData\checkmk\agent" };
+	# Programdata var
+	$PData = [System.Environment]::GetFolderPath("CommonApplicationData")
+	$Global:PDataCMK = "$PData\checkmk"
+	$Global:PDataCMKAgent = "$PDataCMK\agent"
+	$Global:PDataRMKPlugins = "${PData}\robotmk\plugins"
+
 	# Try to read the environment variables from the agent. If not set, use defaults.
-	$Global:MK_LOGDIR = Get-EnvVar "MK_LOGDIR" "$CMKAgentDir\log"
+	$Global:MK_LOGDIR = "$PDataCMKAgent\log"
 	$Global:RMKLogDir = "$MK_LOGDIR\robotmk"
-	$Global:MK_TEMPDIR = Get-EnvVar "MK_TEMPDIR" "$CMKAgentDir\tmp"
+	$Global:MK_TEMPDIR = "$PDataCMKAgent\tmp"
 	$Global:RMKTmpDir = "$MK_TEMPDIR\robotmk"
-	$Global:MK_CONFDIR = Get-EnvVar "MK_CONFDIR" "$CMKAgentDir\config"
+	$Global:MK_CONFDIR = "$PDataCMKAgent\config"
 	$Global:RMKCfgDir = "$MK_CONFDIR\robotmk"
 	$Global:RMKLogfile = "$RMKLogDir\${scriptname}-plugin.log"	
 
-	$Global:ROBOCORP_HOME = if ($env:ROBOCORP_HOME) { $env:ROBOCORP_HOME } else { "C:\Users\vagrant\Documents\rc_homes\rcc1" };
+	$Global:ROBOCORP_HOME = if ($env:ROBOCORP_HOME) { $env:ROBOCORP_HOME } else { 
+		# use user tmp dir if not set
+		$env:TEMP + "\ROBOCORP"
+	};
 	Set-EnvVar "ROBOCORP_HOME" $ROBOCORP_HOME	
 
 	# Expose env vars for CMK agent (they exist if called from agent, but 
@@ -726,7 +768,7 @@ function SetScriptVars {
 	Set-EnvVar "ROBOTMK_CFGDIR" $RMKCfgDir
 
 	# FILES ========================================
-	$Global:RCCExe = $CMKAgentDir + "\bin\rcc.exe"
+	$Global:RCCExe = $PDataCMKAgent + "\bin\rcc.exe"
 	# Ref 7e8b2c1 (agent.py)
 	$Global:pidfile = $RMKTmpDir + "\robotmk_agent.pid"
 	# Ref 23ff2d1 (agent.py)
