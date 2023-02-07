@@ -744,7 +744,9 @@ function SetScriptVars {
 	$PData = [System.Environment]::GetFolderPath("CommonApplicationData")
 	$Global:PDataCMK = "$PData\checkmk"
 	$Global:PDataCMKAgent = "$PDataCMK\agent"
-	$Global:PDataRMKPlugins = "${PData}\robotmk\plugins"
+	# Set to tmp dir for testing
+	$Global:PDataRMKPlugins = "C:\tmp\robotmk\agent"
+	#$Global:PDataRMKPlugins = "${PData}\robotmk\plugins"
 
 	# Try to read the environment variables from the agent. If not set, use defaults.
 	$Global:MK_LOGDIR = "$PDataCMKAgent\log"
