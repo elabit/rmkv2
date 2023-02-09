@@ -5,6 +5,14 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "-------------- AGENT -------------------",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": false
+        },
+        {
             "name": "Python: Current File",
             "type": "python",
             "request": "launch",
@@ -109,6 +117,48 @@
             "args": [
                 "robot"
             ]
+        },
+        //---------------------------------------------
+        {
+            "type": "bashdb",
+            "request": "launch",
+            "name": "------------- CTRL -------------------",
+            "cwd": "${workspaceFolder}",
+            "program": "${workspaceFolder}/agent/plugins/robotmk-ctrl.sh",
+            "args": []
+        },
+        {
+            "type": "bashdb",
+            "request": "launch",
+            "name": "Bash robotmk-ctrl.sh",
+            "cwd": "${workspaceFolder}",
+            "program": "${workspaceFolder}/agent/plugins/robotmk-ctrl.sh",
+            "args": [],
+            "env": {
+                "MK_LOGDIR": "/var/log/check_mk_agent",
+                "MK_CONFDIR": "/etc/check_mk",
+                "MK_LIBDIR": "/usr/lib/check_mk_agent",
+                "MK_VARDIR": "/var/lib/check_mk_agent",
+                "MK_BIN": "/usr/bin"
+            }
+        },
+        {
+            "type": "bashdb",
+            "request": "launch",
+            "name": "Bash robotmk-ctrl.sh start 9999",
+            "cwd": "${workspaceFolder}",
+            "program": "${workspaceFolder}/agent/plugins/robotmk-ctrl.sh",
+            "args": [
+                "start",
+                "9999"
+            ],
+            "env": {
+                "MK_LOGDIR": "/var/log/check_mk_agent",
+                "MK_CONFDIR": "/etc/check_mk",
+                "MK_LIBDIR": "/usr/lib/check_mk_agent",
+                "MK_VARDIR": "/var/lib/check_mk_agent",
+                "MK_BIN": "/usr/bin"
+            }
         },
         //---------------------------------------------
         {
