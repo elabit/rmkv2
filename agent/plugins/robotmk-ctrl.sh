@@ -35,34 +35,37 @@ function start_agent_controller() {
 	# mode=start/stop/restart
 	# CAVEAT: using the Daemon control words (start/stop etc) will start the Daemon in the 
 	# user context. This is not what we probably want. The Daemon should better in the system context.
-    $mode=$1
+    mode=$1
     touch "$CONTROLLER_DEADMAN_FILE"
     if [[ "$mode" == "(none)" ]]; then
         log_info "---- Script was started without mode (by Agent?); have to start myself again to damonize."
         start_agent_controller_decoupled
+    elif [[ "$mode" == "start"]]
+    
     fi
 }
 
 function double_fork() {
     pid=0
-    # Double fork to detach process from terminal
+    # FORK 1: detach process from terminal
     pid=$(fork)
 
-    #shellcheck disable=SC2089
+    #shellcheck disable=SC2086
     if [ $pid -ne 0 ]; then
-    # Terminate parent process
-    exit 0
+        # Terminate parent process
+        exit 0
     fi
 
     # Create a new session to run as daemon
     setsid
 
-    # Double fork to prevent reattaching to terminal
+    # FORK 2: prevent reattaching to terminal
     pid=$(fork)
 
+    #shellcheck disable=SC2086
     if [ $pid -ne 0 ]; then
-    # Terminate parent process
-    exit 0
+        # Terminate parent process
+        exit 0
     fi
 
     # Write PID to file for reference
@@ -72,13 +75,6 @@ function double_fork() {
     exec 0<&-
     exec 1>&-
     exec 2>&-
-
-    # Your daemon code goes here
-    # Example: run a loop that logs the date and time every minute
-    while true; do
-    date >> /var/log/daemon.log
-    sleep 60
-    done    
 }
 
 

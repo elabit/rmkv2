@@ -5,30 +5,30 @@ $scriptname = (Get-Item -Path $MyInvocation.MyCommand.Path).PSChildName
 $MODE = if ($args[0]) { $args[0] } else { $nul };
 $PPID = if ($args[1]) { $args[1] } else { $nul };
 
-$DEBUG = $true
-#$DEBUG = $false
+# $DEBUG = $true
+# #$DEBUG = $false
 
 
-$UseRCC = $true
+# $UseRCC = $true
 
 
 
-# Execution phase: 
-# 1 = started by Agent, with parent process
-# 2 = started by itself detached, without parent process
-$EXEC_PHASE = "-"
+# # Execution phase: 
+# # 1 = started by Agent, with parent process
+# # 2 = started by itself detached, without parent process
+# $EXEC_PHASE = "-"
 
 
 function main() {
-	# robotmk.ps1 : start Robotmk to produce output
-	# robotmk-ctrl.ps1 : start Robotmk to control the daemon
-	SetScriptVars
+	# # robotmk.ps1 : start Robotmk to produce output
+	# # robotmk-ctrl.ps1 : start Robotmk to control the daemon
+	# SetScriptVars
 	
-	Ensure-Directory $RMKlogdir
-	Ensure-Directory $RMKTmpDir
-	Ensure-Directory $ROBOCORP_HOME
-	Ensure-Directory $PDataRMKPlugins
-	LogConfig
+	# Ensure-Directory $RMKlogdir
+	# Ensure-Directory $RMKTmpDir
+	# Ensure-Directory $ROBOCORP_HOME
+	# Ensure-Directory $PDataRMKPlugins
+	# LogConfig
 	
 
 	StartAgentController($MODE)
@@ -39,9 +39,6 @@ function main() {
 
 
 function StartAgentController {
-	# mode=start/stop/restart
-	# CAVEAT: using the Daemon control words (start/stop etc) will start the Daemon in the 
-	# user context. This is not what we probably want. The Daemon should better in the system context.
 	param (
 		[Parameter(Mandatory = $False)]
 		[string]$mode = $null
