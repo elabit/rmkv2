@@ -6,6 +6,12 @@ Param(
 	[Parameter(ParameterSetName = 'Start', Mandatory = $true)]
 	[Switch]$Start, # Start the service
 
+	[Parameter(ParameterSetName = 'Test', Mandatory = $true)]
+	[Switch]$Test, # Start the Agent in foreground, without service	
+
+	[Parameter(ParameterSetName = 'Run', Mandatory = $true)]
+	[Switch]$Run, # Same as Test, but in background, without service
+
 	[Parameter(ParameterSetName = 'Stop', Mandatory = $true)]
 	[Switch]$Stop, # Stop the service
 
@@ -37,6 +43,9 @@ Param(
 	[Switch]$Version              # Get this script version
 )
 
+# Determine the given mode
+$script_arg = $PSBoundParameters.Keys | Where-Object { $PSBoundParameters[$_] } | Select-Object -First 1
+
 $argv0 = Get-Item $MyInvocation.MyCommand.Definition
 $script = $argv0.basename               # Ex: PSService
 $scriptName = $argv0.name               # Ex: PSService.ps1
@@ -45,14 +54,19 @@ $scriptFullName = $argv0.fullname       # Ex: C:\Temp\PSService.ps1
 
 #$scriptname = (Get-Item -Path $MyInvocation.MyCommand.Path).PSChildName
 # read mode from args or set to 0
-$MODE = if ($args[0]) { $args[0] } else { $nul };
-$PPID = if ($args[1]) { $args[1] } else { $nul };
+#$MODE = if ($args[0]) { $args[0] } else { $nul };
+#$PPID = if ($args[1]) { $args[1] } else { $nul };
 
 $DEBUG = $true
 #$DEBUG = $false
 
-
-$UseRCC = $true
+# Controls if script should output all log messages on console
+if ($Test) {
+	$RunningInBackground = $false
+}
+else {
+	$RunningInBackground = $true
+}
 
 # ==============================================================================
 #   __  __          _____ _   _ 
@@ -74,7 +88,8 @@ function main() {
 	Ensure-Directory $RMKTmpDir
 	Ensure-Directory $ROBOCORP_HOME
 	Ensure-Directory $PDataRobotmk
-	LogConfiguration
+	# TODO: Enable 
+	# LogConfiguration
 	
 	if ($scriptname -match ".*robotmk.ps1$") {
 		RMKOutputProducer
@@ -91,6 +106,7 @@ function main() {
 		# Other commandline actions are: 
 		# - Setup
 		# - Start
+		# - Test
 		# - Stop 
 		# - Restart
 		# - Status
@@ -105,6 +121,8 @@ function main() {
 		# - SCMStart 
 		#   -> Starts RobotmkAgent.ps1 -Service
 		#      -> run the Robotmk Python Agent, process workload loop
+		# - Service (Start Service Routine, called by -SCMStart)
+		# - Run (Start Agent Routine directly, called by -Service)
 		# - SCMStop
 		#   -> Stops RobotmkAgent.ps1 -Service
 		SCMController
@@ -119,8 +137,7 @@ function main() {
 
 function RMKOutputProducer {
 	LogInfo "--- Starting Robotmk Agent Output mode"
-	if ($UseRCC) {
-		EnsureRCCPresent
+	if (RCCIsAvailable) {		
 		$blueprint = GetCondaBlueprint $RMKCfgDir\conda.yaml		
 		if ( IsRCCEnvReady $blueprint ) {
 			LogInfo "Robotmk RCC environment is ready to use, Output can be generated"
@@ -142,52 +159,85 @@ function RMKOutputProducer {
 }
 
 function CLIController {
-	# whenever the CMK Agent calls the plugin, renew the deadman file
-	TouchFile $controller_deadman_file	"Controller deadman file"
 
 	# Workaround for PowerShell v2 bug: $PSCmdlet Not yet defined in Param() block
 	$Monitor = ($PSCmdlet.ParameterSetName -eq 'Monitor')
 
+	# All following functions are to control console output depending on the mode
+
 	if ($Monitor) {
 		# The Checkmk Agent calls the script w/o args. 
+		# On each call, renew the deadman file
+		TouchFile $controller_deadman_file	"Controller deadman file"
+
 		# This mode installs the service and starts it if not already running.
 		RMKAgentMonitor
+		return 
 	}
 
 	if ($Status) {
 		Write-ServiceStatus
+		return 
 	}
 
 	if ($Setup) {
+		Write-Host "Installing service $RMK_AgentServiceName"
 		RMKAgentSetup
 		Write-ServiceStatus
+		return 
 	}
 
 	if ($Start) {
 		# the user starts the ps.1 script with -Start
+		Write-Host "Starting service $RMK_AgentServiceName"
 		RMKAgentStart
 		Write-ServiceStatus
+		return 
+	}
+
+	if ($Test) {
+		# the user starts the ps.1 script with -Test (only for testing!!)
+		# (Agent runs without service, logs to foreground)
+		if (IsProcessRunning "%RobotmkAgent.exe") {
+			Write-Host "$RMK_AgentServiceName seems to run. You cannot start another instance in foreground. Exiting."
+			exit 1
+		}
+	 else {
+			# Starts agent in foreground and logs to console and file
+			RMKAgentTester
+		}	
+		return 	
+		
 	}
 
 	if ($Stop) {
+		Write-Host "Stopping service $RMK_AgentServiceName"
 		RMKAgentStop
 		Write-ServiceStatus
+		return 
 	}
 
 	if ($Restart) {
+		Write-Host "Restarting service $RMK_AgentServiceName"
 		RMKAgentRestart
 		Write-ServiceStatus
+		return 
 	}
 
 	if ($Remove) {
+		Write-Host "Removing service $RMK_AgentServiceName"
 		RMKAgentRemove
 		Write-ServiceStatus
+		return 
 	}
 	
 	if ($Control) {
 		# Send a control message to the service (only for debugging)
 		Send-PipeMessage $RMK_AgentPipeName $control
+		return 
 	}
+
+	# Usage TODO
 }
 
 
@@ -195,8 +245,15 @@ function SCMController() {
 	
 	if ($SCMStart) {
 		# Ref 22db44: the SCM calls OnStart() function in the C# stub.
-		# This calls the ps1 with arg -SCMStart
+		# This calls the ps1 with arg -Service (see below)
 		RMKAgentSCMStart
+	}	
+
+	if ($Run) {
+		# (Same as -Test, but silent. Agent runs without service. This mode
+		# is called internally by the Servicescript 'RobotmkAgent.ps -Service' 
+		# to begin the actual workload loop.)
+		RMKAgentRunner
 	}	
 
 	if ($SCMStop) {
@@ -206,6 +263,9 @@ function SCMController() {
 	}
 
 	if ($Service) {
+		# Called by 'RobotmkAgent.ps1 -SCMStart' (which was called from the C# stub.)
+		# In this mode, the script starts the workload loop, but listens at the same
+		# for control messages from the service stub (e.g. Stop)
 		RMKAgentService
 	}	
 }
@@ -219,9 +279,11 @@ function SCMController() {
 #  | |____| |____ _| |_ 
 #   \_____|______|_____|
                       
-# The following functions are called by the CMK Agent or the user. Dispatching by CLIController.
+# Functions which can be executed by the CMK Agent or the user. 
+# (Called from CLIController)
 
 function RMKAgentMonitor {
+	# Todo: what if the robotmk-ctrl.ps1 gets updated? How to update the service script?
 	# Start-Transcript -Path $null
 	$status = RMKAgentStatus
 	if ($status -ne "Stopped" -and $status -ne "Running" -and $status -ne "Not Installed") {
@@ -239,6 +301,7 @@ function RMKAgentMonitor {
 		}
 
 	}
+	# AT THIS POINT, only "Running", "Stopped" or "Not Installed" is allowed
 	if ($status -eq "Stopped" -or $status -eq "Not Installed") {
 		LogDebug "Service $RMK_AgentServiceName is $status. "
 		RMKAgentSetup
@@ -246,11 +309,11 @@ function RMKAgentMonitor {
 	}
  elseif ($status -eq "Running") {
 		LogDebug "Service $RMK_AgentServiceName is running."
-		# - if RCCUse and condahash changed: 
-		#    Stop 
-		#    Setup
-		#    Start	
+		# Rebuilds the RCC environment if there is a newer conda.yaml
+		ResetRCCEnvironment
 	}
+
+	# Finally, check if the service is _really_ running
 	$status = RMKAgentStatus
 	if ((RMKAgentStatus) -ne "Running") {
 		LogError "Service $RMK_AgentServiceName is not running. Exiting."
@@ -272,7 +335,7 @@ function RMKAgentSetup {
 		else {
 			LogDebug "Service $RMK_AgentServiceName is already Installed, and up-to-date"
 		}
-		exit 0
+		return
 	}
 	catch {
 		# This is the normal case here. Do not throw or write any error!
@@ -311,28 +374,48 @@ function RMKAgentStart {
 	Start-Service $RMK_AgentServiceName # Ask Service Control Manager to start it
 }
 
+function RMKAgentTester {
+	# Starts agent in foreground and logs to console and file
+	RMKAgent
+}
+
+function RMKAgentRunner {
+	# STarted by RobotmkAgent.ps1 -Service, Job
+	RMKAgent
+}
+
 function RMKAgentStop {
 	# Ref 6e3aaf
 	# The user tells us to stop the service. 
 	LogDebug "Stopping service $RMK_AgentServiceName"
 	Write-EventLog -LogName $EventLog -Source $RMK_AgentServiceName -EventId 1004 -EntryType Information -Message "$scriptName -Stop: Stopping service $RMK_AgentServiceName"
 	Stop-Service $RMK_AgentServiceName 
+	
+	KillProcessByCmdline "%$RMK_AgentName%-SCMStart%"
+	KillProcessByCmdline "%$RMK_AgentName%-Service%"
+	KillProcessByCmdline "%$RMK_AgentName%-Run%"
+	KillProcessByCmdline "%robotmk.exe agent fg%"
+	KillProcessByCmdline "%robotmk.exe agent bg%"
+	KillProcessByCmdline "%$RMK_AgentExeName%"
 	# SCM will now call the OnStop() method of the service, which will call the Agent with -SCMStop
 }
 
 function RMKAgentRestart {
 	# Restart the service
 	RMKAgentStop
+	RMKAgentSetup
 	RMKAgentStart
 }
 
 function RMKAgentStatus {
 	# Get the current service status
 	$spid = $null
+	$process_pattern = ".*$RMK_AgentFullNameEscaped.*-Run"
 	# Search for RobotmkAgent.ps1 -Service (this is the process doing the actual service work)
 	# See Ref 8b0f1a
 	$processes = @(Get-WmiObject Win32_Process -filter "Name = 'powershell.exe'" | Where-Object {
-			$_.CommandLine -match ".*$RMK_AgentFullNameEscaped.*-Service"
+			#$_.CommandLine -match ".*$RMK_AgentFullNameEscaped.*-Service"
+			$_.CommandLine -match $process_pattern
 		})
 	foreach ($process in $processes) {
 		# There should be just one, but be prepared for surprises.
@@ -350,7 +433,7 @@ function RMKAgentStatus {
 	
 	if (($pss.Status -eq "Running") -and (!$spid)) {
 		# This happened during the debugging phase
-		LogError "Undefined Service state: $RMK_AgentServiceName is started in SCM, but no PID found for '$RMK_AgentServiceName.ps1 -Service'."
+		LogError "Undefined Service state: $RMK_AgentServiceName is started in SCM, but no PID found for '$process_pattern'."
 		return "noPID"
 	}
  else {
@@ -401,15 +484,17 @@ function RMKAgentRemove {
 }
 
 
-#    _____  _____ __  __ 
-#   / ____|/ ____|  \/  |
-#  | (___ | |    | \  / |
-#   \___ \| |    | |\/| |
-#   ____) | |____| |  | |
-#  |_____/ \_____|_|  |_|
-#
-# The following functions are called by the service stub RobotmkAgent.exe     
-# Dispatching by SCMController                  
+#    _____ ______ _______      _______ _____ ______ 
+#   / ____|  ____|  __ \ \    / /_   _/ ____|  ____|
+#  | (___ | |__  | |__) \ \  / /  | || |    | |__   
+#   \___ \|  __| |  _  / \ \/ /   | || |    |  __|  
+#   ____) | |____| | \ \  \  /   _| || |____| |____ 
+#  |_____/|______|_|  \_\  \/   |_____\_____|______|
+                                                  
+                                                  
+# The following functions are NOT meant to be called by the user.
+# They are called by the service stub RobotmkAgent.exe     
+# Dispatching by SCMController (active when Script is ServiceScript = RobotmkAgent.ps1)                  
                        
 function RMKAgentSCMStart {
 	# Ref 22db44: Param -SCMStart
@@ -430,6 +515,7 @@ function RMKAgentSCMStop {
 	LogInfo "$scriptName -SCMStop: Stopping script $scriptName -Service"
 	# Send an exit message to the service instance
 	# Ref 3399b1
+	LogDebug "$scriptName -SCMStop: 'Send-PipeMessage $RMK_AgentPipeName exit'"
 	Send-PipeMessage $RMK_AgentPipeName "exit"
 }
 
@@ -439,59 +525,54 @@ function RMKAgentService {
 	Write-EventLog -LogName $EventLog -Source $RMK_AgentServiceName -EventId 1005 -EntryType Information -Message "$scriptName -Service # Beginning background job"
 	try {
 		# Start the control pipe handler thread
+		# !! TO AVOID NASTY ERROR MESSAGES WHILE DEBUGGING ABOUT PIPE HANDLER THREADS, 
+		# execute this before you srtop the debugger: "Get-PSThread | Remove-PSThread"
+		# This frees up the pipe handler thread.
 		$pipeThread = Start-PipeHandlerThread $RMK_AgentPipeName -Event "ControlMessage"
-		######### TO DO: Implement your own service code here. ##########
-		###### Example that wakes up and logs a line every 10 sec: ######
-		# Start a periodic timer
-		$timerName = "Sample service timer"
-		$period = 3 # seconds
-		$timer = new-object System.Timers.Timer
-		$timer.Interval = ($period * 1000) # Milliseconds
-		$timer.AutoReset = $true # Make it fire repeatedly
-		Register-ObjectEvent $timer -EventName Elapsed -SourceIdentifier $timerName -MessageData "TimerTick"
-		$timer.start() # Must be stopped in the finally block
-		# Now enter the main service event loop
+		# Agent, your turn!
+		$process = Start-Process Powershell.exe -ArgumentList "-File", "$scriptFullName", "-Run" -NoNewWindow -PassThru
+
+		# The Agent process runs in the background, so let's enter the main loop,
+		# where we must listen for "exit" events coming from RobotmkAgent.ps1 via Command Pipe
 		do {
 			# Keep running until told to exit by the -Stop handler
-			$event = Wait-Event # Wait for the next incoming event
-			$source = $event.SourceIdentifier
-			$message = $event.MessageData
-			$eventTime = $event.TimeGenerated.TimeofDay
-			LogDebug "Event at $eventTime from ${source}: $message"
-			$event | Remove-Event # Flush the event from the queue
+			$evt = Wait-Event # Wait for the next incoming event
+			$source = $evt.SourceIdentifier
+			$message = $evt.MessageData
+			$eventTime = $evt.TimeGenerated.TimeofDay
+			LogDebug "Received an event at $eventTime from ${source}: $message"
+			$evt | Remove-Event # Flush the event from the queue
 			switch ($message) {
 				"ControlMessage" {
 					# Required. Message received by the control pipe thread
-					$state = $event.SourceEventArgs.InvocationStateInfo.state
+					$state = $evt.SourceEventArgs.InvocationStateInfo.state
 					LogDebug "$script -Service # Thread $source state changed to $state"
 					switch ($state) {
 						"Completed" {
 							$message = Receive-PipeHandlerThread $pipeThread
 							LogInfo "$scriptName -Service # Received control message: $Message"
-							if ($message -ne "exit") {
-								# Start another thread waiting for control messages
-								$pipeThread = Start-PipeHandlerThread $RMK_AgentPipeName -Event "ControlMessage"
+							# Ref 3399b1
+							if ($message -eq "exit") {
+								# Terminate the background job and exit the loop
+								# TODO: Force?
+								$job | Stop-Job
+								break
 							}
 						}
 						"Failed" {
-							$error = Receive-PipeHandlerThread $pipeThread
-							LogInfo "$scriptName -Service # $source thread failed: $error"
+							$threaderror = Receive-PipeHandlerThread $pipeThread
+							LogInfo "$scriptName -Service # $source thread failed: $threaderror"
 							Start-Sleep 1 # Avoid getting too many errors
 							$pipeThread = Start-PipeHandlerThread $RMK_AgentPipeName -Event "ControlMessage" # Retry
 						}
 					}
 				}
-				"TimerTick" {
-					# Example. Periodic event generated for this example
-					LogInfo "$scriptName -Service # Timer ticked"
-				}
 				default {
 					# Should not happen
 					LogInfo "$scriptName -Service # Unexpected event from ${source}: $Message"
 				}
-			}
-			# Ref 3399b1
-		} while ($message -ne "exit")
+			}			
+		} while ($true)  # Message receive loop
 	}
 	catch {
 		# An exception occurred while runnning the service
@@ -501,11 +582,17 @@ function RMKAgentService {
 	}
 	finally {
 		# Invoked in all cases: Exception or normally by -Stop
-		# Cleanup the periodic timer used in the above example
-		Unregister-Event -SourceIdentifier $timerName
-		$timer.stop()
-		############### End of the service code example. ################
-		# Terminate the control pipe handler thread
+		# if process is still running, kill it
+		if ($process.HasExited -eq $false) {
+			Stop-Process -Id $process.Id
+		}
+
+		# Remove controller deadman switch - should terminate the agent soon
+		Remove-Item $controller_deadman_file -ErrorAction SilentlyContinue
+		# Terminate the control pipe handler thread and cleanup any remaining threads
+		if ($pipeThread -ne $null) {
+			Remove-PipeHandlerThread $pipeThread
+		}
 		Get-PSThread | Remove-PSThread # Remove all remaining threads
 		# Flush all leftover events (There may be some that arrived after we exited the while event loop, but before we unregistered the events)
 		$events = Get-Event | Remove-Event
@@ -514,115 +601,41 @@ function RMKAgentService {
 		LogInfo "$scriptName -Service # Exiting"
 	}
 	return
+}
 
+function RMKAgent {
 
-	# HEREIWAS 2 
-	# # Das gehört in RMKAGentService 
-	# # use RCC? 
-	# # yes:
-	# # - check if RCC env is ready 
-	# # - check if Agent runs 
-	# # no: 
-	# # - check if native python env is ready
-	# # Starts the Robotmk process with RCC or native Python
-	# # TODO: How to make RCC execution an optional feature?
+	LogDebug "Entering RobotmkAgent Main Routine. Checking for Rcc..."
+	# This is the main Routine for the Robotmk Agent.
+	if (RCCIsAvailable) {
+		$blueprint = GetCondaBlueprint $RMKCfgDir\conda.yaml			
 
-	# Start-Sleep -Seconds 20000
-	# Start-Sleep -Seconds 20000
-	# if ($UseRCC) {
-	# 	EnsureRCCPresent
-	# 	$blueprint = GetCondaBlueprint $RMKCfgDir\conda.yaml			
+		if ( IsRCCEnvReady $blueprint) {
+			# if the RCC environment is ready, start the Agent if not yet running
+			LogInfo "Robotmk RCC environment is ready to use."
+			if (IsRobotmkPythonAgentRunning) {
+				LogInfo "Nothing to do, Robotmk Agent is already running."
+			}
+			else {
+				# TODO: Terminating when...? 
+				RunRobotmkTask "agent"
+			}			
+		}		
+		else {	
+			# otherwise, try to create the environment	
+			LogWarn "RCC environment is NOT ready to use."
+			LogWarn "Will now try to create a new RCC environment."
+			CreateRCCEnvironment $blueprint		
+		}		
 		
-	# 	if ( IsRCCEnvReady $blueprint) {
-	# 		# if the RCC environment is ready, start the Agent if not yet running
-	# 		LogInfo "Robotmk RCC environment is ready to use."
-	# 		if (IsRobotmkAgentRunning) {
-	# 			LogInfo "Nothing to do, Robotmk Agent is already running."
-	# 		}
-	# 		else {
-	# 			RunRobotmkTask "agent"
-	# 		}			
-	# 	}		
-	# 	else {	
-	# 		# otherwise, try to create the environment	
-	# 		if (IsFlagfileYoungerThanMinutes $Flagfile_RCC_env_creation_in_progress $RCC_env_max_creation_minutes) {
-	# 			LogWarn "Robotmk RCC environment is NOT ready to use."
-	# 			LogWarn "Another Robotmk RCC environment creation is in progress (flagfile $Flagfile_RCC_env_creation_in_progress present and younger than $RCC_env_max_creation_minutes min). Exiting."
-	# 			return
-	# 		}
-	# 		else {
-	# 			LogWarn "RCC environment is NOT ready to use."
-	# 			LogWarn "Will now try to create a new RCC environment."
-	# 			RemoveFlagfile $Flagfile_RCC_env_robotmk_ready
-	# 			TouchFile $Flagfile_RCC_env_creation_in_progress "RCC creation state file"
-	# 			if (Test-Path ($RMKCfgDir + "\hololib.zip")) {
-	# 				LogInfo "hololib.zip found in $RMKCfgDir, importing it"
-	# 				RCCImportHololib "$RMKCfgDir\hololib.zip"
-	# 				# TODO: create spaces for agent /output?
-	# 			}
-	# 			else {
-	# 				LogInfo "Catalog must be created from network (hololib.zip not found in $RMKCfgDir)"		
-	# 				# Create a separate Holotree Space for agent and output	
-	# 				RCCEnvironmentCreate "$RMKCfgDir\robot.yaml" $rcc_ctrl_rmk $rcc_space_rmk_agent
-	# 				RCCEnvironmentCreate "$RMKCfgDir\robot.yaml" $rcc_ctrl_rmk $rcc_space_rmk_output
-	# 			}
-	# 			# This takes some minutes... 
-	# 			# Watch the progress with `rcc ht list` and `rcc ht catalogs`. First the catalog is created, then
-	# 			# both spaces.
-	# 			if (CatalogContainsAgentBlueprint $blueprint) {
-	# 				TouchFile $Flagfile_RCC_env_robotmk_ready "RCC env ready flagfile"
-	# 				RemoveFlagfile $Flagfile_RCC_env_creation_in_progress	
-	# 				LogInfo "OK: Environments for Robotmk created and ready to use on next run. Exiting now."		
-	# 			}
-	# 			else {
-	# 				LogInfo "RCC environment creation for Robotmk agent failed for some reason. Exiting."
-	# 				RemoveFlagfile $Flagfile_RCC_env_creation_in_progress
-	# 			}
-	# 		}
-
-	# 	}		
-		
-	# }
-	# else {
-	# 	# TODO: finalize native python execution
-	# 	$Binary = $PythonExe
-	# 	$Arguments = "$PythonExe $RobotmkAgent"
-	# }
+	}
+	else {
+		# TODO: finalize native python execution
+		$Binary = $PythonExe
+		$Arguments = "$PythonExe $RobotmkAgent"
+	}
 	
 
-
-	
-	# HEREIWAS	
-	# 	if (IsRobotmkAgentServiceRunning) {
-	# 		# get md5 hash of conda.yaml
-	# 		$conda_hash = GetFileHash $RMKCfgDir\conda.yaml
-	# 		if ($conda_hash -eq $null) {
-	# 			LogError "Cannot get hash of conda.yaml. Exiting."
-	# 			return
-	# 		}
-	# 		# check if hash is in cache file
-	# 		if (Test-Path $conda_yml_hashfile) {
-	# 			$hash_cached = Get-Content $conda_yml_hashfile
-	# 			if ($hash_cached -eq $conda_hash) {
-	# 				LogDebug "conda.yaml hash is unchanged, nothing to do."
-	# 				return
-	# 			}
-	# 			else {
-	# 				LogInfo "conda.yaml hash has changed, restarting Robotmk Agent service."
-	# 				RestartRobotmkAgentService
-	# 				Set-Content $conda_yml_hashfile $conda_hash
-	# 			}
-	# 		}
-	# 		else {
-	# 			LogInfo "conda.yaml hash is not cached, restarting Robotmk Agent service."
-	# 			RestartRobotmkAgentService
-	# 			Set-Content $conda_yml_hashfile $conda_hash
-	# 		}
-	# 	}
-	#  else {
-	# 		LogInfo "Service '$RMK_AgentServiceName' is not running."
-	# 		StartRobotmkAgentService
-	# 	}
 
 }
 
@@ -724,7 +737,9 @@ function StartRobotmkAgentService {
 }
 
 
-function IsRobotmkAgentRunning {
+
+
+function IsRobotmkPythonAgentRunning {
 	# TODO: can only see own processes! 
 	$processes = GetProcesses -Cmdline "%robotmk.exe agent bg"
 	# if length of array is 0, no process is running
@@ -783,6 +798,39 @@ function IsRobotmkAgentRunning {
 #                                     | |              
 #                                     |_|              
 
+function SaveCondaFileHash {
+	# Get hash of conda.yaml and store it in conda.yaml.hash
+	Param(
+		[Parameter(Mandatory = $true)]
+		[string]$conda_yml_hash
+	)
+	if (AssertFileExists $RMKCfgDir\conda.yaml) {
+		LogDebug "Storing conda.yaml hash $conda_yml_hash in $RMKCfgDir\conda.yaml.hash."					
+		$conda_yml_hash | Out-File $conda_yml_hashfile -Force
+		
+	}
+}
+
+function CalculateCondaFilehash {
+	# Calculate a hash of conda.yaml
+	if (AssertFileExists $RMKCfgDir\conda.yaml) {
+		$conda_hash = Get-FileHash $RMKCfgDir\conda.yaml	
+		return $conda_hash.Hash.Substring(0, 8)
+	}
+	else {
+		return 00000000
+	}
+}
+function ReadCondaFilehash {
+	# Read hash of conda.yaml from conda.yaml.hash
+	if (AssertFileExists $conda_yml_hashfile) {
+		$conda_hash = Get-Content $conda_yml_hashfile
+		return $conda_hash
+	}
+	else {
+		return "00000000"
+	}
+}
 
 function IsRCCEnvReady {
 	# This approach checks if the blueprint is really in the catalog list. 
@@ -921,18 +969,90 @@ function RCCImportHololib {
 	$p.StandardError
 }
 
+function ResetRCCEnvironment {
+	# There are two situations when a environment need tabula rasa:
+	# 1. Monitor detects that there is a newer conda.yml file than the one used in the RUNNING RCC env in use. 
+	# 2. Monitor 
+	# This function compares the conda.yaml file hash with the cached one.
+	$condahash_yml = CalculateCondaFilehash
+	$condahash_cache = ReadCondaFilehash
+	if ($condahash_yml -eq $condahash_cache) {
+		LogDebug "conda.yaml hash is unchanged ($condahash_cache), current RCC environment is up to date."
+		return $False
+	}
+	else {
+		LogInfo "conda.yaml hash ($condahash_yml) does not match cached one ($condahash_cache), restarting Robotmk Agent service (RCC env. rebuild needed)."
+		# Save current conda.yaml hash to cache file to prevent subsequent runs don't see a difference anymore.
+		SaveCondaFileHash $condahash_yml		
+		RMKAgentStop
+		RMKAgentSetup
+		# When long-running as Service, RobotmkAgent.ps1 will detect that there is no holotree space for this conda.yaml and rebuild the RCC env.
+		RMKAgentStart
+		
+	}	
+
+	# TODO: is this still needed? 
+	# if (IsFlagfileYoungerThanMinutes $Flagfile_RCC_env_creation_in_progress $RCC_env_max_creation_minutes) {
+	# 	LogWarn "Robotmk RCC environment is NOT ready to use."
+	# 	LogWarn "Another Robotmk RCC environment creation is in progress (flagfile $Flagfile_RCC_env_creation_in_progress present and younger than $RCC_env_max_creation_minutes min). Exiting."
+	# 	return
+	# }	
+}
 
 
-function EnsureRCCPresent {
+function RCCIsAvailable {
 	# Check if the RCCExe binary is present. If not, download it.
 	if (Test-Path $RCCExe) {
 		LogDebug "RCC.exe found at $RCCExe."
+		return $true
 	}
 	else {
+		# TODO: Should we allow this?
 		LogInfo "RCCExe $RCCExe not found, downloading it."
 		$RCCExeUrl = "https://downloads.robocorp.com/rcc/releases/v11.30.0/windows64/rcc.exe"
 		[Net.ServicePointManager]::SecurityProtocol = "tls12, tls11, tls"
 		Invoke-WebRequest -Uri $RCCExeUrl -OutFile $RCCExe
+		if (Test-Path $RCCExe) {
+			LogDebug "RCC.exe downloaded to $RCCExe and available."
+			return $true
+		}
+		else {
+			LogError "RCC.exe could not be downloaded to $RCCExe."
+			return $false
+		}
+	}
+}
+
+function CreateRCCEnvironment {
+	# Creates a RCC environment for Robotmk agent
+	Params(
+		[Parameter(Mandatory = $True)]
+		[string]$blueprint
+	)
+	RemoveFlagfile $Flagfile_RCC_env_robotmk_ready
+	TouchFile $Flagfile_RCC_env_creation_in_progress "RCC creation state file"
+	if (Test-Path ($RMKCfgDir + "\hololib.zip")) {
+		LogInfo "hololib.zip found in $RMKCfgDir, importing it"
+		RCCImportHololib "$RMKCfgDir\hololib.zip"
+		# TODO: create spaces for agent /output?
+	}
+	else {
+		LogInfo "Catalog must be created from network (hololib.zip not found in $RMKCfgDir)"		
+		# Create a separate Holotree Space for agent and output	
+		RCCEnvironmentCreate "$RMKCfgDir\robot.yaml" $rcc_ctrl_rmk $rcc_space_rmk_agent
+		RCCEnvironmentCreate "$RMKCfgDir\robot.yaml" $rcc_ctrl_rmk $rcc_space_rmk_output
+	}
+	# This takes some minutes... 
+	# Watch the progress with `rcc ht list` and `rcc ht catalogs`. First the catalog is created, then
+	# both spaces.
+	if (CatalogContainsAgentBlueprint $blueprint) {
+		TouchFile $Flagfile_RCC_env_robotmk_ready "RCC env ready flagfile"
+		RemoveFlagfile $Flagfile_RCC_env_creation_in_progress	
+		LogInfo "OK: Environments for Robotmk created and ready to use on next run. Exiting now."		
+	}
+	else {
+		LogInfo "RCC environment creation for Robotmk agent failed for some reason. Exiting."
+		RemoveFlagfile $Flagfile_RCC_env_creation_in_progress
 	}
 }
 
@@ -987,6 +1107,22 @@ function GetAgentLastExitCode {
 	return $content
 }
 
+function AssertFileExists {
+	param (
+		[Parameter(Mandatory = $True)]
+		[string]$path,
+		[Parameter(Mandatory = $False)]
+		[string]$name = "file"
+	)  
+	if (Test-Path $path) {
+		LogDebug "OK: $name '$path' found."
+		return $true
+	}
+	else {
+		LogError "ERROR: $name '$path' not found."
+		return $false
+	}
+}
 
 function TouchFile {
 	param (
@@ -1064,6 +1200,37 @@ function GetProcesses {
 
 }
 
+function IsProcessRunning {
+	Param(
+		[Parameter(Mandatory = $true)]
+		[string]$Cmdline
+	)
+	# TODO: can only see own processes! 
+	$processes = GetProcesses -Cmdline "$Cmdline"
+	# if length of array is 0, no process is running
+	if ($processes.Length -eq 0) {
+		return $false
+	}	
+	else {	
+		return $true
+	}
+}
+
+function KillProcessByCmdline {
+	Param(
+		[Parameter(Mandatory = $true)]
+		[string]$Cmdline
+	)
+	$processes = GetProcesses -Cmdline "$Cmdline"
+	# if length of array is 0, no process is running
+	if ($processes.Length -gt 0) {
+		foreach ($process in $processes) {
+			LogInfo "Killing process with command line '$Cmdline' (PID $process)"
+			Stop-Process -Id $process -Force
+		}
+	}
+}
+
 function Ensure-Directory {
 	param (
 		[Parameter(Mandatory = $True)]
@@ -1139,6 +1306,9 @@ Function Now {
 
 function SetScriptVars {
 	# TODO: Set RObocorp Home with robotmk.yaml
+
+	
+	
 	# Programdata var
 	$PData = [System.Environment]::GetFolderPath("CommonApplicationData")
 	$Global:PDataCMK = "$PData\checkmk"
@@ -1251,18 +1421,15 @@ function Log {
 	$PaddedLevel = $Level.PadRight(6)
 	$mypid = $PID.ToString()
 	$MsgArr = $Message.Split([System.Environment]::NewLine, [System.StringSplitOptions]::RemoveEmptyEntries)
-	if (($MODE -eq "") -or ($MODE -eq $nul)) {
-		$EXEC_PHASE = "P1"
-		$pidstring = "[${mypid}]".PadRight(8)
-	}
-	elseif ($MODE -eq "start") {
-		$EXEC_PHASE = "P2"
-		$myppid = $PPID.ToString()
-		$pidstring = "[${myppid}> ${mypid}]".PadRight(16)
+	$pidstring = "[${mypid}]".PadRight(8)
+	if ($script_arg) {
+		$EXEC_PHASE = "$script_arg".PadRight(9)
 	}
 	else {
-		$EXEC_PHASE = "P-"
+		$EXEC_PHASE = "".PadRight(9)
 	}
+	
+	
 	# if length of $MsgArr is more than 1, then we have a multiline message
 	if ($MsgArr.Length -gt 1) {
 		$prefix = "  |   "
@@ -1271,6 +1438,9 @@ function Log {
 		$prefix = ""
 	}
 	$MsgArr | ForEach-Object { "$LogTime ${pidstring} ${EXEC_PHASE} ${PaddedLevel}  ${prefix}$_" >> "$file" } 
+	if (-Not ($RunningInBackground)) {
+		$MsgArr | ForEach-Object { Write-Host "$LogTime ${pidstring} ${EXEC_PHASE} ${PaddedLevel}  ${prefix}$_" }
+	}
 	#"$logTime - $PadLevel ${PaddedPID} $Message" >> "$file"
 }
 

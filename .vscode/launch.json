@@ -181,6 +181,14 @@
         },
         //---------------------------------------------
         {
+            "type": "bashdb",
+            "request": "launch",
+            "name": "---------- robotmk-ctrl.ps1 --------------",
+            "cwd": "${workspaceFolder}",
+            "program": "${workspaceFolder}/agent/plugins/robotmk-ctrl.sh",
+            "args": []
+        },
+        {
             "name": "PS CMK robotmk-ctrl.ps1",
             "type": "PowerShell",
             "request": "launch",
@@ -218,6 +226,26 @@
             ]
         },
         {
+            "name": "PS CMK robotmk-ctrl.ps1 -Stop",
+            "type": "PowerShell",
+            "request": "launch",
+            "script": "C:\\ProgramData\\checkmk\\agent\\plugins\\robotmk-ctrl.ps1",
+            "cwd": "${cwd}",
+            "args": [
+                "-Stop"
+            ]
+        },
+        {
+            "name": "PS CMK robotmk-ctrl.ps1 -Restart",
+            "type": "PowerShell",
+            "request": "launch",
+            "script": "C:\\ProgramData\\checkmk\\agent\\plugins\\robotmk-ctrl.ps1",
+            "cwd": "${cwd}",
+            "args": [
+                "-Restart"
+            ]
+        },
+        {
             "name": "PS CMK robotmk-ctrl.ps1 -Status",
             "type": "PowerShell",
             "request": "launch",
@@ -238,6 +266,35 @@
             ]
         },
         {
+            "name": "PS CMK robotmk-ctrl.ps1 -Test",
+            "type": "PowerShell",
+            "request": "launch",
+            "script": "C:\\ProgramData\\checkmk\\agent\\plugins\\robotmk-ctrl.ps1",
+            "cwd": "${cwd}",
+            "args": [
+                "-Test"
+            ]
+        },
+        //---------------------------------------------
+        {
+            "type": "bashdb",
+            "request": "launch",
+            "name": "------- RobotmkAgent ----------",
+            "cwd": "${workspaceFolder}",
+            "program": "${workspaceFolder}/agent/plugins/robotmk-ctrl.sh",
+            "args": []
+        },
+        {
+            "name": "PS RobotmkAgent -SCMStart",
+            "type": "PowerShell",
+            "request": "launch",
+            "script": "C:\\ProgramData\\checkmk\\robotmk\\RobotmkAgent.ps1",
+            "cwd": "${cwd}",
+            "args": [
+                "-SCMStart"
+            ]
+        },
+        {
             "name": "PS RobotmkAgent -Service",
             "type": "PowerShell",
             "request": "launch",
@@ -248,13 +305,13 @@
             ]
         },
         {
-            "name": "PS RobotmkAgent -SCMStart",
+            "name": "PS RobotmkAgent -Run",
             "type": "PowerShell",
             "request": "launch",
             "script": "C:\\ProgramData\\checkmk\\robotmk\\RobotmkAgent.ps1",
             "cwd": "${cwd}",
             "args": [
-                "-SCMStart"
+                "-Run"
             ]
         },
         //---------------------------------------------
