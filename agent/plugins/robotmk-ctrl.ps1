@@ -948,14 +948,28 @@ function GetCondaBlueprint {
     [Parameter(Mandatory = $True)]
     [string]$conda_yaml
   )	
-  LogDebug "!!  rcc ht hash $conda_yaml"
-  $ret = Invoke-Process -FilePath $RCCExe -ArgumentList "ht hash $conda_yaml"
-  $out = $ret.Output
-  LogDebug $out
-  #$condahash = & $RCCExe ht hash $conda_yaml 2>&1
-  $m = $out -match "Blueprint hash for.*is (?<blueprint>[A-Za-z0-9]*)\."
-  $blueprint = $Matches.blueprint
-  return $blueprint
+  LogDebug "Calculating blueprint hash for $conda_yaml..."
+  if (-Not(Test-Path $conda_yaml)) {
+    LogError "File $conda_yaml does not exist."
+    exit 1
+  }
+  else {
+    LogDebug "!!  rcc ht hash $conda_yaml"
+    try {
+      $ret = Invoke-Process -FilePath $RCCExe -ArgumentList "ht hash $conda_yaml"
+      $out = $ret.Output
+      LogDebug $out
+      #$condahash = & $RCCExe ht hash $conda_yaml 2>&1
+      $m = $out -match "Blueprint hash for.*is (?<blueprint>[A-Za-z0-9]*)\."
+      $blueprint = $Matches.blueprint
+      return $blueprint  
+    }
+    catch {
+      LogError "Error while calculating blueprint hash for ${conda_yaml}: $($_.Exception.Message)"
+      exit 1
+    }  
+  }
+  
 }
 
 function CatalogContainsAgentBlueprint {
@@ -995,12 +1009,12 @@ function HolotreeContainsAgentSpaces {
   $spaces_string = $holotree_spaces -join "\n"
   LogDebug "Holotree spaces: \n$spaces_string"
   # AGENT SPACE
-  $agent_match = ($spaces_string -match "rcc.$rcc_ctrl_rmk\s+$rcc_space_rmkagent\s+$blueprint")
+  $agent_match = ($spaces_string -match "rcc.$rcc_ctrl_rmk\s+$rcc_space_rmk_agent\s+$blueprint")
   if (-Not ($agent_match)) {
-    LogWarn "Conda hash '$blueprint' not found for holotree space 'rcc.$rcc_ctrl_rmk/$rcc_space_rmkagent'."
+    LogWarn "Conda hash '$blueprint' not found for holotree space 'rcc.$rcc_ctrl_rmk/$rcc_space_rmk_agent'."
   }
   else {
-    LogDebug "OK: Conda hash '$blueprint' found for holotree space 'rcc.$rcc_ctrl_rmk/$rcc_space_rmkagent'."
+    LogDebug "OK: Conda hash '$blueprint' found for holotree space 'rcc.$rcc_ctrl_rmk/$rcc_space_rmk_agent'."
   }	
   # OUTPUT SPACE
   $output_match = ($spaces_string -match "rcc.$rcc_ctrl_rmk\s+$rcc_space_rmk_output\s+$blueprint")
@@ -1111,7 +1125,7 @@ function RCCIsAvailable {
 
 function CreateRCCEnvironment {
   # Creates a RCC environment for Robotmk agent
-  Params(
+  Param (
     [Parameter(Mandatory = $True)]
     [string]$blueprint
   )
@@ -1125,7 +1139,7 @@ function CreateRCCEnvironment {
   else {
     LogInfo "Catalog must be created from network (hololib.zip not found in $RMKCfgDir)"		
     # Create a separate Holotree Space for agent and output	
-    RCCEnvironmentCreate "$RMKCfgDir\robot.yaml" $rcc_ctrl_rmk $rcc_space_rmkagent
+    RCCEnvironmentCreate "$RMKCfgDir\robot.yaml" $rcc_ctrl_rmk $rcc_space_rmk_agent
     RCCEnvironmentCreate "$RMKCfgDir\robot.yaml" $rcc_ctrl_rmk $rcc_space_rmk_output
   }
   # This takes some minutes... 
@@ -1149,7 +1163,7 @@ function RunRobotmkTask {
     [string]$rmkmode
   )	
   $rcctask = "robotmk-$rmkmode"
-  #RCCTaskRun "robotmk-agent" "$RMKCfgDir\robot.yaml" $rcc_ctrl_rmk $rcc_space_rmkagent
+  #RCCTaskRun "robotmk-agent" "$RMKCfgDir\robot.yaml" $rcc_ctrl_rmk $rcc_space_rmk_agent
   $space = (Get-Variable -Name "rcc_space_rmk_$rmkmode").Value
   LogDebug "Running Robotmk task '$rcctask' in Holotree space '$rcc_ctrl_rmk/$space'"
   $Arguments = "task run --controller $rcc_ctrl_rmk --space $space -t $rcctask -r $RMKCfgDir\robot.yaml"
@@ -1420,8 +1434,8 @@ function SetScriptVars {
   $Global:RMKAgentName = "${RMKAgent}.ps1"
   $Global:RMKAgentFullName = "$RMKAgentInstallDir\${RMKAgentName}"
   # TODO: only for Debugging!
-  #$Global:RMKAgentFullNameEscaped = $RMKAgentFullName -replace "\\", "\\" 
-  $Global:RMKAgentFullNameEscaped = "C:\\Windows\\System32\\PSService.ps1"
+  $Global:RMKAgentFullNameEscaped = $RMKAgentFullName -replace "\\", "\\" 
+  #$Global:RMKAgentFullNameEscaped = "C:\\Windows\\System32\\PSService.ps1"
 
   # Where to install the service files
   $Global:RMKAgentExeName = "$RMKAgentServiceName.exe"
@@ -1473,7 +1487,7 @@ function SetScriptVars {
   # - controller
   $Global:rcc_ctrl_rmk = "robotmk"
   # - space for agent and output
-  $Global:rcc_space_rmkagent = "agent"
+  $Global:rcc_space_rmk_agent = "agent"
   $Global:rcc_space_rmk_output = "output"
 
 
@@ -1553,19 +1567,19 @@ function SetScriptVars {
       SetServiceStatus(ServiceHandle, ref serviceStatus);               // SET STATUS ]
       // Start a child process with another copy of this script
       try {
-        // # Process p = new Process();
-        // # // Redirect the output stream of the child process.
-        // # p.StartInfo.UseShellExecute = false;
-        // # p.StartInfo.RedirectStandardOutput = true;
-        // # p.StartInfo.FileName = "PowerShell.exe";
-        // # p.StartInfo.Arguments = "-ExecutionPolicy Bypass -c & '$RMKAgentFullNameEscaped' -SCMStart"; // Works if path has spaces, but not if it contains ' quotes.
-        // # p.Start();
-        // # // Read the output stream first and then wait. (To avoid deadlocks says Microsoft!)
-        // # string output = p.StandardOutput.ReadToEnd();
-        // # // Wait for the completion of the script startup code, that launches the -Service instance
-        // # p.WaitForExit();
-        // # EventLog.WriteEntry(ServiceName, "$RMKAgentExeName OnStart(): SCMStart came back with exit code " + p.ExitCode); // EVENT LOG
-        // # if (p.ExitCode != 0) throw new Win32Exception((int)(Win32Error.ERROR_APP_INIT_FAILURE));
+        Process p = new Process();
+        // Redirect the output stream of the child process.
+        p.StartInfo.UseShellExecute = false;
+        p.StartInfo.RedirectStandardOutput = true;
+        p.StartInfo.FileName = "PowerShell.exe";
+        p.StartInfo.Arguments = "-ExecutionPolicy Bypass -c & '$RMKAgentFullNameEscaped' -SCMStart"; // Works if path has spaces, but not if it contains ' quotes.
+        p.Start();
+        // Read the output stream first and then wait. (To avoid deadlocks says Microsoft!)
+        string output = p.StandardOutput.ReadToEnd();
+        // Wait for the completion of the script startup code, that launches the -Service instance
+        p.WaitForExit();
+        EventLog.WriteEntry(ServiceName, "$RMKAgentExeName OnStart(): SCMStart came back with exit code " + p.ExitCode); // EVENT LOG
+        if (p.ExitCode != 0) throw new Win32Exception((int)(Win32Error.ERROR_APP_INIT_FAILURE));
         // Success. Set the service state to Running.                   // SET STATUS
         serviceStatus.dwCurrentState = ServiceState.SERVICE_RUNNING;    // SET STATUS
       } catch (Exception e) {
@@ -1592,18 +1606,18 @@ function SetScriptVars {
       EventLog.WriteEntry(ServiceName, "$RMKAgentExeName OnStop() // Entry");   // EVENT LOG
       // Start a child process with another copy of ourselves
       try {
-        // # Process p = new Process();
-        // # // Redirect the output stream of the child process.
-        // # p.StartInfo.UseShellExecute = false;
-        // # p.StartInfo.RedirectStandardOutput = true;
-        // # p.StartInfo.FileName = "PowerShell.exe";
-        // # p.StartInfo.Arguments = "-ExecutionPolicy Bypass -c & '$RMKAgentFullNameEscaped' -SCMStop"; // Works if path has spaces, but not if it contains ' quotes.
-        // # p.Start();
-        // # // Read the output stream first and then wait. (To avoid deadlocks says Microsoft!)
-        // # string output = p.StandardOutput.ReadToEnd();
-        // # // Wait for the PowerShell script to be fully stopped.
-        // # p.WaitForExit();
-        // # if (p.ExitCode != 0) throw new Win32Exception((int)(Win32Error.ERROR_APP_INIT_FAILURE));
+        Process p = new Process();
+        // Redirect the output stream of the child process.
+        p.StartInfo.UseShellExecute = false;
+        p.StartInfo.RedirectStandardOutput = true;
+        p.StartInfo.FileName = "PowerShell.exe";
+        p.StartInfo.Arguments = "-ExecutionPolicy Bypass -c & '$RMKAgentFullNameEscaped' -SCMStop"; // Works if path has spaces, but not if it contains ' quotes.
+        p.Start();
+        // Read the output stream first and then wait. (To avoid deadlocks says Microsoft!)
+        string output = p.StandardOutput.ReadToEnd();
+        // Wait for the PowerShell script to be fully stopped.
+        p.WaitForExit();
+        if (p.ExitCode != 0) throw new Win32Exception((int)(Win32Error.ERROR_APP_INIT_FAILURE));
         // Success. Set the service state to Stopped.                   // SET STATUS
         serviceStatus.dwCurrentState = ServiceState.SERVICE_STOPPED;      // SET STATUS
       } catch (Exception e) {
@@ -1768,7 +1782,7 @@ function LogRCCConfig {
   LogDebug "- RCCEXE: $RCCEXE"	
   LogDebug "- RMKCfgDir: $RMKCfgDir"
   LogDebug "- Robotmk RCC holotree spaces:"
-  LogDebug "  - Robotmk agent: rcc.$rcc_ctrl_rmk/$rcc_space_rmkagent"
+  LogDebug "  - Robotmk agent: rcc.$rcc_ctrl_rmk/$rcc_space_rmk_agent"
   LogDebug "  - Robotmk output: rcc.$rcc_ctrl_rmk/$rcc_space_rmk_output"
 }
 
