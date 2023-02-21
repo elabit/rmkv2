@@ -312,19 +312,23 @@ function SCMController() {
 
 # Ref bbc7b0e
 function RMKAgentMonitor {
-  # Start-Transcript -Path $null
+  $out = @()
+  $out += $CMKAgentSection
+  #$out += $SubsecController.Replace("xxx", "begin")
   $status = RMKAgentStatus
   if ($status -ne "Stopped" -and $status -ne "Running" -and $status -ne "Not Installed") {
-    LogWarn "Trying to clean up everything."
+    LogWarn "Trying to clean up everything." 
     RMKAgentStop
     $status = RMKAgentStatus
     if ($status -ne "Stopped") {
-      LogWarn "Service $RMKAgentServiceName is still not stopped. Trying to forcefully stop it."
+      LogWarn "Service $RMKAgentServiceName could not be stopped gracefully. Trying to force it."
       RMKAgentStop
       if ((RMKAgentStatus) -ne "Stopped") {
-        LogError "Service $RMKAgentServiceName is still not stopped. Exiting."
+        LogError "Fatal: Service $RMKAgentServiceName could not be forced to stop."
+        LogInfo "Exiting now."
         # TODO: Status must be returned to CMK Agent
-        return
+        $out += "Fatal: Service $RMKAgentServiceName could not be forced to stop."
+        return ($out -join "`r`n" | Out-String)
       }
     }
 
@@ -340,10 +344,14 @@ function RMKAgentMonitor {
   }
   elseif ($status -eq "Running") {
     LogDebug "Service $RMKAgentServiceName is running."
-    # Re-Initializes the service if necessary
-    if (! (EnsureRMKAgentServiceUpdated)) {
-      # No change ocurred. Nothing to do.
-      return
+    # Re-Initializes the service if necessary (Stop/Start/SaveHash)
+    if ((RMKAgentServiceScriptNeedsUpdate) -or (RCCEnvNeedsUpdate)) {      
+      ResetRMKAgentService
+    }
+    else {
+      # No change ocurred. Nothing to do, we can leave
+      $out += "OK: Service $RMKAgentServiceName is running and up-to-date."
+      return ($out -join "`r`n" | Out-String)
     }
   }
 
@@ -354,9 +362,16 @@ function RMKAgentMonitor {
   Start-Sleep  5
   $status = RMKAgentStatus
   if ($status -ne "Running") {
-    LogError "Service $RMKAgentServiceName is not running. Exiting."
+    LogError "Service $RMKAgentServiceName could not be started. "
+    LogInfo "Exiting."
+    $out += "Service $RMKAgentServiceName could not be started."
   }
-  #Stop-Transcript
+  else {
+    $out += "OK: Service $RMKAgentServiceName was just started."
+  }
+  return ($out -join "`r`n" | Out-String) 
+
+  
 
   # TODO: Produce CMK Agent output
   # - is RCC environment up-to-date or building right now? 
@@ -400,7 +415,8 @@ function RMKAgentSetup {
   # RobotmkAgent.exe: Generate the binary the C# source embedded in this script
   try {
     LogDebug "Installing C# Service Stub $RMKAgentExeFullName"
-    $source | Out-File "${RMKAgentExeFullName}_csharp.txt"
+    # Uncomment this to debug the C# stub
+    #$source | Out-File "${RMKAgentExeFullName}_csharp.txt"
     Add-Type -TypeDefinition $source -Language CSharp -OutputAssembly $RMKAgentExeFullName -OutputType ConsoleApplication -ReferencedAssemblies "System.ServiceProcess" -Debug:$false
   }
   catch {
@@ -410,7 +426,7 @@ function RMKAgentSetup {
   }
   # Register the service
   LogInfo "Registering service $RMKAgentServiceName (user: LocalSystem)"
-  # TODO: Dependency adden!
+  # TODO: Dependency adden?
   $pss = New-Service $RMKAgentServiceName $RMKAgentExeFullName -DisplayName $RMKAgentServiceDisplayName -Description $RMKAgentServiceDescription -StartupType $RMKAgentServiceStartupType 
   #$pss = New-Service $RMKAgentServiceName $RMKAgentExeFullName -DisplayName $RMKAgentServiceDisplayName -Description $RMKAgentServiceDescription -StartupType $RMKAgentServiceStartupType -DependsOn $RMKAgentServiceDependsOn		
 
@@ -702,7 +718,7 @@ function RMKAgent {
 
 
 # Ref 5887a1
-function EnsureRMKAgentServiceUpdated {
+function ResetRMKAgentService {
   # There are two situations when a environment need tabula rasa:
   # 1. The PS script in /plugins is newer than the Service script. 
   $agent_needs_update = RMKAgentServiceScriptNeedsUpdate
@@ -1406,16 +1422,18 @@ Function Now {
 function SetScriptVars {
   # TODO: Set RObocorp Home with robotmk.yaml
 
-	
+  $Global:CMKAgentSection = "<<<robotmk:sep(0)>>>"
+  $Global:SubsecController = "[[[robotmk-ctrl]]]"
+
 	
   # Programdata var
   $PData = [System.Environment]::GetFolderPath("CommonApplicationData")
   $Global:PDataCMK = "$PData\checkmk"
   $Global:PDataCMKAgent = "$PDataCMK\agent"
   # Set to tmp dir for testing
-  $Global:RMKAgentInstallDir = "${ENV:windir}\System32"
+  #$Global:RMKAgentInstallDir = "${ENV:windir}\System32"
   #$Global:RMKAgentInstallDir = "$PDataCMK\robotmk"
-  #$Global:RMKAgentInstallDir = "${PData}\robotmk\plugins"
+  $Global:RMKAgentInstallDir = "${PData}\checkmk\robotmk"
 
   # The name of the Checkmk Agent Plugin
   $Global:RMK_Controller = "robotmk-ctrl"
@@ -1433,9 +1451,8 @@ function SetScriptVars {
   $Global:RMKAgent = $RMKAgentServiceName
   $Global:RMKAgentName = "${RMKAgent}.ps1"
   $Global:RMKAgentFullName = "$RMKAgentInstallDir\${RMKAgentName}"
-  # TODO: only for Debugging!
   $Global:RMKAgentFullNameEscaped = $RMKAgentFullName -replace "\\", "\\" 
-  #$Global:RMKAgentFullNameEscaped = "C:\\Windows\\System32\\PSService.ps1"
+  
 
   # Where to install the service files
   $Global:RMKAgentExeName = "$RMKAgentServiceName.exe"
