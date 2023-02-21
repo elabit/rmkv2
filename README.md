@@ -9,34 +9,22 @@
 
 Add to `C:\ProgramData\checkmk\agent\bakery\check_mk.bakery.yml``:
 
-```
-plugins:
-  enabled: true
-  execution:
-  - async: true
-    pattern: $CUSTOM_PLUGINS_PATH$\robotmk-ctrl.ps1
-    run: true
-```
+
+Now start the CMK agent. 
+
+`robotmk-ctrl.ps1` (logfile: `C:\ProgramData\checkmk\agent\log\robotmk\robotmk-ctrl.log`) will 
+- copy itself and the service stub exe to `ProgamData/checkmk/robotmk/RobotmkAgent.exe/.ps1` (is not present)
+- Register and start the RobotmkAgent service (if not present/running)
+- touch the deadman switch file 
+
+`RobotmkAgent.ps1` (logfile: `C:\ProgramData\checkmk\agent\log\robotmk\RobotmkAgent.log`) is started by the service and will
+- create the RCC environment for Robotmk (if not present)
+- start the Robotmk agent task in RCC
+  - the agent runs in a loop and executes Robotmk in sub-processes (not implemented yet)
+  - Dummy activity of the Robotmk Agent can be seen in `ProgramData/agent/tmp/robotmk/` (bulk creation of tmp files)
+- monitor the deadman switch file (and exit if the file ages out)
 
 
-Now start the CMK agent and watch `C:\ProgramData\checkmk\agent\log\robotmk\robotmk-ctrl-plugin.log` . 
-You should see the Phase 1 prcess starting the Phase 2 process. 
-The Process list should only show up the Phase 2 process (Phase 1 behaves like a normal Plugin and is meant to run shortly).
-
-The very first start of Phase 2 will take longer because `robotmk-ctrl.ps1` starts rcc.exe to create a new RCC environment for robotmk to run. 
-During this process, `rcc_env_creation_in_progress.lock` will be present in `ProgramData/agent/tmp/robotmk/`. 
-As long, further executions of `robotmk-ctrl.ps` will not trigger any other environment creations.
-
-After the environment was built, the lockfile in `tmp` gets replaced by `rcc_env_robotmk_agent_ready`. 
-The next execution of the controller will start the Robotmk Python agent within the new RCC environment. 
-(The Daemon will be responsible to start Robot suites in individual intervals in multiple proceses)
-Dummy activity of this Daemon action can be seen in `ProgramData/agent/tmp/robotmk/`.
-
----
-
-**GOAL**: When the CMK agent gets stopped or executed/triggered from CMK, the Phase 2 process should survive. 
-
-**PROBLEM**: Stopping/executing the Agent kills the Phase2 Powrshell process and Robotmk below of it, although it does not have a parent process id. 
 
 --- 
 ## I. Robotmk als Agent Plugin  
@@ -204,11 +192,6 @@ DONE:
 - Vermeide RW-Konflikt, wenn Resultfiles geschrieben werden und gleichzeitig gelesen!
 - `rcc interactive configuration` => yaml Profile erzeugen (http proxy, PEM certificates etc. )
 
-## Setup 
-
-pipenv install 
-pipenv install -e . 
-pipenv shell 
 
 
 ## Notizen 
@@ -240,45 +223,6 @@ ROBOTMK_global_mode=suite
 ROBOTMK_suites_suiteA_use_rcc=yes
 ```
 
-
-## FLit / bumpversion workflow
-
-Start with a clean bash:
-
-```bash
-# enter project dir
-cd rmkv2
-# install dependencies
-pipenv sync --dev
-# install editable robotmk to develop 
-cd robotmk-agent 
-flit install -s
-```
-
-
-Release: 
-```
-cd robotmk-agent
-git add .. ; git commit -m "xxxxx"; bumpversion patch; git add .. ; git commit -m "xxxx"
-flit publish --repository testpypi 
-flit publish
-```
-
-conda.yaml anpassen auf neue Version 
-
-robotmk-ctrl.ps1 => neues RCC env bauen
-```
-
-
-[bumpversion]
-current_version = 0.0.7
-commit = False
-tag = False
-
-[bumpversion:file:robotmk/__init__.py]
-
-
-```
 ## Problem 
 
 
