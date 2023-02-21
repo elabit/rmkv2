@@ -148,6 +148,7 @@ function RMKOutputProducer {
     $blueprint = GetCondaBlueprint $RMKCfgDir\conda.yaml		
     if ( IsRCCEnvReady $blueprint ) {
       LogInfo "Robotmk RCC environment is ready to use, Output can be generated"
+      # Ref 9177b1b
       RunRobotmkTask "output"
       #$output_str = [string]::Concat($output)
       foreach ($line in $output) {
@@ -440,13 +441,15 @@ function RMKAgentStart {
   Start-Service $RMKAgentServiceName # Ask Service Control Manager to start it
 }
 
+# Ref 3c3c3c3
 function RMKAgentTester {
   # Starts agent in foreground and logs to console and file
   RMKAgent
 }
 
+# Ref 4d4d4d4
 function RMKAgentRunner {
-  # STarted by RobotmkAgent.ps1 -Service, Job
+  # STarted by RobotmkAgent.ps1 -Service
   RMKAgent
 }
 
@@ -682,6 +685,9 @@ function RMKAgentService {
   return
 }
 
+# Ref 3c3c3c3 (Tester)
+# Ref 4d4d4d4 (Runner)
+# Ref 9177b1b 
 function RMKAgent {
 
   LogDebug "Entering RobotmkAgent Main Routine. Checking for Rcc..."
@@ -703,7 +709,8 @@ function RMKAgent {
       LogWarn "Will now try to create a new RCC environment."
       CreateRCCEnvironment $blueprint		
     }		
-    # Run, Agent!
+    # Run, Agent! (Starts the RCC task "agent")
+    # Ref 9177b1b
     RunRobotmkTask "agent"
   }
   else {
@@ -1172,27 +1179,26 @@ function CreateRCCEnvironment {
   }
 }
 
-
+# Ref 9177b1b
 function RunRobotmkTask {
   param (
     [Parameter(Mandatory = $True)]
     [string]$rmkmode
   )	
   $rcctask = "robotmk-$rmkmode"
-  #RCCTaskRun "robotmk-agent" "$RMKCfgDir\robot.yaml" $rcc_ctrl_rmk $rcc_space_rmk_agent
+
+  # Determine which holotree space to use (agent/output)
   $space = (Get-Variable -Name "rcc_space_rmk_$rmkmode").Value
   LogDebug "Running Robotmk task '$rcctask' in Holotree space '$rcc_ctrl_rmk/$space'"
   $Arguments = "task run --controller $rcc_ctrl_rmk --space $space -t $rcctask -r $RMKCfgDir\robot.yaml"
   LogDebug "!!  $RCCExe $Arguments"
-  # As the script waits "forever", there is no PID known here. Next execution of 
-  # the controller will create it. 
   $ret = Invoke-Process -FilePath $RCCExe -ArgumentList $Arguments
   # -------------------------------------
   # --- ROBOTMK AGENT IS RUNNING HERE ---
   # ------------- DAEMONIZED ------------
   # -------------------------------------
-  # We should not come here!
-	
+
+  # We reach this point when the RCC task has been terminated.
   $rc = $ret.ExitCode
   # Read last exit code from file (RCC cannot return the exit code of the task. )
   $robotmk_agent_lastexitcode = GetAgentLastExitCode
