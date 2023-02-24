@@ -9,14 +9,7 @@ Keep that in mind when Debugging to choose the proper Debugging config.
 
 ## robotmk Python 
 
-
-### Setup 
-
-pipenv install 
-pipenv install -e . 
-pipenv shell 
-
-### FLit / bumpversion workflow
+### FLit
 
 Start with a clean bash:
 
@@ -25,13 +18,27 @@ Start with a clean bash:
 cd rmkv2
 # install dependencies
 pipenv sync --dev
-# install editable robotmk to develop 
+# install editable version to test robotmk in console
+pipenv shell 
 cd robotmk-agent 
 flit install -s
 ```
 
+VS Code: 
 
-Release: 
+
+### Release/bumpversion
+
+
+```
+[bumpversion]
+current_version = 0.0.7
+commit = False
+tag = False
+
+[bumpversion:file:robotmk/__init__.py]
+```
+
 ```
 cd robotmk-agent
 git add .. ; git commit -m "xxxxx"; bumpversion patch; git add .. ; git commit -m "xxxx"
@@ -42,15 +49,4 @@ flit publish
 conda.yaml anpassen auf neue Version 
 
 robotmk-ctrl.ps1 => neues RCC env bauen
-```
 
-
-[bumpversion]
-current_version = 0.0.7
-commit = False
-tag = False
-
-[bumpversion:file:robotmk/__init__.py]
-
-
-```

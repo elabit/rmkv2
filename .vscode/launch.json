@@ -5,15 +5,50 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "-------------- AGENT -------------------",
+            "name": "Python: Current File",
             "type": "python",
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "justMyCode": false
+            "justMyCode": true
         },
         {
-            "name": "Python: Current File",
+            "name": "Python: Current File --schedule",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "-s"
+            ]
+        },
+        {
+            "name": "-------------- Confitree -------------------",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "name": "confitree test",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "env": {
+                "ROBOTMK_robots__robot_mit_underscores__target": "fs",
+                "ROBOTMK_global_k8s-auth_user": "franz",
+                "ROBOTMK_global_robocorp-auth_user": "helene",
+                "ROBOTMK_global_robocorp-auth_pass": "fischer",
+                "ROBOTMK_robots__robot_mit_underscores__path": "okehdoch/nicht",
+                "ROBOTMK_robots__robot_mit_underscores__scheduling_interval": "99"
+            }
+        },
+        {
+            "name": "-------------- AGENT (Windows) -------------------",
             "type": "python",
             "request": "launch",
             "program": "${file}",
@@ -37,7 +72,7 @@
             "name": "robotmk output",
             "type": "python",
             "request": "launch",
-            "module": "robotmk",
+            "program": "robotmk-agent/robotmk/modes/agent/cli.py",
             "console": "integratedTerminal",
             "justMyCode": false,
             "args": [
@@ -85,40 +120,81 @@
             },
             "justMyCode": false
         },
-        {
-            "name": "RMK --version",
-            "type": "python",
-            "request": "launch",
-            "program": "robotmk/cli.py",
-            "console": "integratedTerminal",
-            "justMyCode": true,
-            "args": [
-                "--version"
-            ]
-        },
-        {
-            "name": "RMK specialagent",
-            "type": "python",
-            "request": "launch",
-            "program": "robotmk/cli.py",
-            "console": "integratedTerminal",
-            "justMyCode": true,
-            "args": [
-                "specialagent"
-            ]
-        },
-        {
-            "name": "RMK robot",
-            "type": "python",
-            "request": "launch",
-            "program": "robotmk/cli.py",
-            "console": "integratedTerminal",
-            "justMyCode": true,
-            "args": [
-                "robot"
-            ]
-        },
         //---------------------------------------------
+        {
+            "name": "-------------- AGENT (Linux) -------------------",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": false
+        },
+        {
+            "name": "robotmk (w/o arguments)",
+            "type": "python",
+            "request": "launch",
+            "module": "robotmk",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "env": {
+                "ROBOTMK_LOGDIR": "/home/simonmeggle/Documents/01_dev/rmkv2/agent/log/robotmk",
+                "ROBOTMK_TMPDIR": "C:\\Users\\vagrant\\Documents\\01_dev\\rmkv2\\agent\\tmp\\robotmk",
+                "ROBOTMK_CFGDIR": "C:\\Users\\vagrant\\Documents\\01_dev\\rmkv2\\agent\\config\\robotmk"
+            }
+        },
+        {
+            "name": "robotmk output",
+            "type": "python",
+            "request": "launch",
+            "program": "robotmk-agent/robotmk/modes/agent/cli.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "args": [
+                "output"
+            ],
+            "env": {
+                "ROBOTMK_LOGDIR": "C:\\Users\\vagrant\\Documents\\01_dev\\rmkv2\\agent\\log\\robotmk",
+                "ROBOTMK_TMPDIR": "C:\\Users\\vagrant\\Documents\\01_dev\\rmkv2\\agent\\tmp\\robotmk",
+                "ROBOTMK_CFGDIR": "C:\\Users\\vagrant\\Documents\\01_dev\\rmkv2\\agent\\config\\robotmk"
+            }
+        },
+        {
+            "name": "robotmk agent bg",
+            "type": "python",
+            "request": "launch",
+            "program": "robotmk-agent/robotmk/modes/agent/cli.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "agent",
+                "bg"
+            ],
+            "env": {
+                "ROBOTMK_LOGDIR": "C:\\Users\\vagrant\\Documents\\01_dev\\rmkv2\\agent\\log\\robotmk",
+                "ROBOTMK_TMPDIR": "C:\\Users\\vagrant\\Documents\\01_dev\\rmkv2\\agent\\tmp\\robotmk",
+                "ROBOTMK_CFGDIR": "C:\\Users\\vagrant\\Documents\\01_dev\\rmkv2\\agent\\config\\robotmk"
+            },
+            "justMyCode": false
+        },
+        {
+            "name": "robotmk agent fg",
+            "type": "python",
+            "request": "launch",
+            "program": "robotmk-agent/robotmk/modes/agent/cli.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "agent",
+                "fg"
+            ],
+            "env": {
+                "ROBOTMK_LOGDIR": "C:\\Users\\vagrant\\Documents\\01_dev\\rmkv2\\agent\\log\\robotmk",
+                "ROBOTMK_TMPDIR": "C:\\Users\\vagrant\\Documents\\01_dev\\rmkv2\\agent\\tmp\\robotmk",
+                "ROBOTMK_CFGDIR": "C:\\Users\\vagrant\\Documents\\01_dev\\rmkv2\\agent\\config\\robotmk"
+            },
+            "justMyCode": false
+        },
+        //---------------------------------------------        
         {
             "type": "bashdb",
             "request": "launch",
