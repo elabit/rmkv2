@@ -39,12 +39,11 @@
             "console": "integratedTerminal",
             "justMyCode": true,
             "env": {
-                "ROBOTMK_robots__robot_mit_underscores__target": "fs",
-                "ROBOTMK_global_k8s-auth_user": "franz",
+                "ROBOTMK_robots__robot_from_environ__target": "fs",
+                "ROBOTMK_robots__robot_from_environ__scheduling_interval": "99",
                 "ROBOTMK_global_robocorp-auth_user": "helene",
                 "ROBOTMK_global_robocorp-auth_pass": "fischer",
-                "ROBOTMK_robots__robot_mit_underscores__path": "okehdoch/nicht",
-                "ROBOTMK_robots__robot_mit_underscores__scheduling_interval": "99"
+                "ROBOTMK_global_robocorp-auth_url": "https://robocorp.com/api/v2"
             }
         },
         {
@@ -72,7 +71,7 @@
             "name": "robotmk output",
             "type": "python",
             "request": "launch",
-            "program": "robotmk-agent/robotmk/modes/agent/cli.py",
+            "program": "src/robotmk/modes/agent/cli.py",
             "console": "integratedTerminal",
             "justMyCode": false,
             "args": [
@@ -88,7 +87,7 @@
             "name": "robotmk agent bg",
             "type": "python",
             "request": "launch",
-            "program": "robotmk-agent/robotmk/modes/agent/cli.py",
+            "program": "src/robotmk/modes/agent/cli.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [
@@ -106,7 +105,7 @@
             "name": "robotmk agent fg",
             "type": "python",
             "request": "launch",
-            "program": "robotmk-agent/robotmk/modes/agent/cli.py",
+            "program": "src/robotmk/modes/agent/cli.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [
@@ -146,7 +145,7 @@
             "name": "robotmk output",
             "type": "python",
             "request": "launch",
-            "program": "robotmk-agent/robotmk/modes/agent/cli.py",
+            "program": "src/robotmk/modes/agent/cli.py",
             "console": "integratedTerminal",
             "justMyCode": false,
             "args": [
@@ -162,7 +161,7 @@
             "name": "robotmk agent bg",
             "type": "python",
             "request": "launch",
-            "program": "robotmk-agent/robotmk/modes/agent/cli.py",
+            "program": "src/robotmk/modes/agent/cli.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [
@@ -180,7 +179,7 @@
             "name": "robotmk agent fg",
             "type": "python",
             "request": "launch",
-            "program": "robotmk-agent/robotmk/modes/agent/cli.py",
+            "program": "src/robotmk/modes/agent/cli.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [

@@ -1,5 +1,9 @@
+# *) = cmdline arg
+
 global: 
-  mode: agent/specialagent/output/suite
+  *context: suite/specialagent/local
+  mode:     --   /agent/result
+  robot: suiteA
   k8s-auth:
     user: foo
     pass: bar
@@ -16,11 +20,14 @@ robots:
     scheduling: 
       interval: 1
       allow_overlap: false
-  suiteB: 
+  suiteB:
     target: fs
     use_rcc: true
     path: suiteB
     scheduling: 
       interval: 2
       allow_overlap: false
+
+
+
 

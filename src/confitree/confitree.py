@@ -15,6 +15,8 @@
 # next double underscore is protected against splitting and used as one single key.
 
 
+# TODO: print environment
+
 import os
 import yaml
 import mergedeep
@@ -124,7 +126,7 @@ class Confitree:
         """Converts a nested dict to environment variables.
         If no dict is given, self.config is used."""
         if d is None:
-            d = self._config
+            d = self.config
         for k, v in d.items():
             if isinstance(v, dict):
                 if "_" in k:
@@ -137,7 +139,6 @@ class Confitree:
 
 c = Confitree(prefix="ROBOTMK")
 c.read_yml_cfg(os.path.join(os.path.dirname(__file__), "robotmk.yml"))
-foo = c.config
 c.read_env_cfg()
 c.to_environment()
 pass

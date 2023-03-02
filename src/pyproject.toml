@@ -15,5 +15,9 @@ dependencies = [
 
 [project.scripts]
 robotmk = "robotmk.cli:main"
+# TODO: add more scripts here
+# robotmk-agent
+# robotmk-specialagent (calls internally agent & output!)
+# robotmk-output
 
 
