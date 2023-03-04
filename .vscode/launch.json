@@ -10,18 +10,16 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "justMyCode": true
+            "justMyCode": false
         },
+        //request = test is needed to F11 into foreign code
         {
-            "name": "Python: Current File --schedule",
+            "name": "Pytest Tests",
             "type": "python",
-            "request": "launch",
-            "program": "${file}",
+            "request": "test",
+            "env": {},
             "console": "integratedTerminal",
-            "justMyCode": true,
-            "args": [
-                "-s"
-            ]
+            "justMyCode": false
         },
         {
             "name": "-------------- Confitree -------------------",

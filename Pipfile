@@ -17,6 +17,7 @@ flit = "*"
 pip = "*"
 ipython = "*"
 ipdb = "*"
+pytest = "*"
 
 [requires]
 python_version = "3.10"

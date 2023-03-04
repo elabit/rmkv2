@@ -1,8 +1,7 @@
 # *) = cmdline arg
 
 global: 
-  *context: suite/specialagent/local
-  mode:     --   /agent/result
+  context: suite/specialagent/local
   robot: suiteA
   k8s-auth:
     user: foo
