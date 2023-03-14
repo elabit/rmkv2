@@ -1,7 +1,7 @@
 common: 
   b: 3
   context: suite/specialagent/local
-  robot: suiteA
+  suite: suiteA
   k8s_auth:
     user: foo
     password: bar
@@ -10,7 +10,7 @@ common:
     user: foo
     password: bar
     url: https://foo/api/v2
-robots: 
+suites: 
   suiteA: 
     target: fs
     use_rcc: true

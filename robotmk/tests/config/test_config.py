@@ -34,3 +34,6 @@ def test_read_env_cfg():
     assert str(cfg.configdict["common"]["a"]) == "1"
     assert str(cfg.configdict["common"]["b"]) == "3"
     assert str(cfg.configdict["common"]["c"]) == "4"
+
+
+# TODO: config validation

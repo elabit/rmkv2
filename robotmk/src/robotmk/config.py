@@ -20,9 +20,12 @@
 import os
 import yaml
 import mergedeep
-from collections import namedtuple
+
+# from collections import namedtuple
 from pathlib import Path
 import re
+
+# TODO: add config validation
 
 
 class Config:
@@ -71,7 +74,7 @@ class Config:
         for k, v in os.environ.items():
             if k.startswith(self.prefix):
                 k = k.replace(self.prefix + "_", "")
-                pieces = self.split_varstring(k)
+                pieces = self.__split_varstring(k)
                 cfg = temp_cfg
                 for part in pieces[:-1]:
                     if part not in cfg:
@@ -108,7 +111,7 @@ class Config:
     #             d[key] = self.__dict_to_namedtuple(value, f"{typename}_{key}")
     #     return namedtuple(typename, d.keys())(*d.values())
 
-    def split_varstring(self, s):
+    def __split_varstring(self, s):
         """Split a string into a list of substrings, separated by "_".
         Double underscores are protecting substring from splitting."""
         pieces = []
