@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
-from config import Config
+from robotmk.config import Config
+import click
 
 
 class ContextFactory:
@@ -31,44 +32,4 @@ class AbstractContext(ABC):
     def run(self):
         """The run method encapsulates everything that needs to be done to
         run robotmk in one of the three contexts."""
-        pass
-
-
-class LocalContext(AbstractContext):
-    def __init__(self):
-        super().__init__()
-
-    def load_config(self, defaults):
-        self.config.set_defaults(defaults)
-        self.config.read_yml_cfg(must_exist=True)
-        self.config.read_env_cfg()
-
-    def run(self):
-        # TODO: start the scheduler
-        pass
-
-
-class SpecialAgentContext(AbstractContext):
-    def __init__(self):
-        pass
-
-    def load_config(self, defaults):
-        self.config.set_defaults(defaults)
-        self.config.read_env_cfg()
-
-    def run(self):
-        # TODO: start the sequencer
-        pass
-
-
-class SuiteContext(AbstractContext):
-    def __init__(self):
-        pass
-
-    def load_config(self, defaults):
-        self.config.set_defaults(defaults)
-        self.config.read_env_cfg()
-
-    def run(self):
-        # TODO: execute one single suite
         pass

@@ -12,6 +12,24 @@
             "console": "integratedTerminal",
             "justMyCode": false
         },
+        {
+            "name": "Click Tutorial",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "robotmk/src/categories.json",
+                // "check_context_object",
+                // "get_keys"
+                // "get_key",
+                // "status"
+                "get_results",
+                "-k",
+                "text"
+            ]
+        },
         //request = test is needed to F11 into foreign code
         {
             "name": "Pytest Tests",
@@ -56,7 +74,7 @@
             "name": "robotmk (w/o arguments)",
             "type": "python",
             "request": "launch",
-            "module": "robotmk",
+            "program": "robotmk/src/robotmk/cli/cli.py",
             "console": "integratedTerminal",
             "justMyCode": false,
             "env": {
@@ -66,7 +84,7 @@
             }
         },
         {
-            "name": "robotmk output",
+            "name": "robotmk local",
             "type": "python",
             "request": "launch",
             "program": "src/robotmk/modes/agent/cli.py",
@@ -140,14 +158,14 @@
             }
         },
         {
-            "name": "robotmk output",
+            "name": "robotmk LOCAL",
             "type": "python",
             "request": "launch",
-            "program": "src/robotmk/modes/agent/cli.py",
+            "program": "robotmk/src/robotmk/cli/cli.py",
             "console": "integratedTerminal",
             "justMyCode": false,
             "args": [
-                "output"
+                "local"
             ],
             "env": {
                 "ROBOTMK_LOGDIR": "C:\\Users\\vagrant\\Documents\\01_dev\\rmkv2\\agent\\log\\robotmk",

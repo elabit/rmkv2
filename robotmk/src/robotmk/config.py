@@ -46,7 +46,11 @@ class Config:
     def read_yml_cfg(self, path=None, must_exist=True):
         """Reads a YML config"""
         if path is None:
-            ymlfile = self.configtuple.cfgdir / self.configtuple.robotmk_yml
+            ymlfile = (
+                Path(self.configdict["common"]["cfgdir"])
+                / self.configdict["common"]["robotmk_yml"]
+            )
+
         else:
             ymlfile = Path(path)
         if must_exist and not ymlfile.exists():

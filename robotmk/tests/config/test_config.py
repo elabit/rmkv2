@@ -6,8 +6,8 @@ import os
 def test_defaults():
     cfg = Config()
     cfg.set_defaults({"common": {"a": 1, "b": 2}})
-    assert cfg.configdict["a"] == 1
-    assert cfg.configdict["b"] == 2
+    assert cfg.configdict["common"]["a"] == 1
+    assert cfg.configdict["common"]["b"] == 2
 
 
 def test_read_yml_cfg():
@@ -16,8 +16,8 @@ def test_read_yml_cfg():
     cfg = Config()
     cfg.set_defaults({"common": {"a": 1, "b": 2}})
     cfg.read_yml_cfg(os.path.join(os.path.dirname(__file__), "robotmk.yml"))
-    assert cfg.configdict["a"] == 1
-    assert cfg.configdict["b"] == 3
+    assert cfg.configdict["common"]["a"] == 1
+    assert cfg.configdict["common"]["b"] == 3
 
 
 def test_read_env_cfg():
@@ -29,8 +29,8 @@ def test_read_env_cfg():
     cfg = Config()
     cfg.set_defaults({"common": {"a": 1, "b": 2, "c": 3}})
     cfg.read_yml_cfg(os.path.join(os.path.dirname(__file__), "robotmk.yml"))
-    os.environ["ROBOTMK_c"] = "4"
+    os.environ["ROBOTMK_common_c"] = "4"
     cfg.read_env_cfg()
-    assert str(cfg.configdict["a"]) == "1"
-    assert str(cfg.configdict["b"]) == "3"
-    assert str(cfg.configdict["c"]) == "4"
+    assert str(cfg.configdict["common"]["a"]) == "1"
+    assert str(cfg.configdict["common"]["b"]) == "3"
+    assert str(cfg.configdict["common"]["c"]) == "4"

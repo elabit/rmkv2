@@ -1,5 +1,5 @@
-b: 3
 common: 
+  b: 3
   context: suite/specialagent/local
   robot: suiteA
   k8s_auth:
