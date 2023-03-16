@@ -152,14 +152,16 @@ III) RMK startet mit `output` ODER interner call im Special Agent
 
 ## Prototyping 
 
-- Logging f. agent.py
-- agent.py schreibt kein pid file
-  - Bash 
-- holotree.zip shippen
+Prio HIGH: 
+- Windows: anlegen und triggern von Scheduled Tasks für Desktop-Tests
+- Logging 
 - apscheduler: loop/oneshot mode 
-- Conf2Env
+
+Prio MEDIUM: 
+- holotree.zip shippen
 
 DONE: 
+- Conf2Env
 - Ps1-Facade-Plugin
 - Robotmk als Python-Modul
 - RobotmkModul => start als commandline tool `robotmk`
@@ -169,27 +171,19 @@ DONE:
 - robotmk-ctrl.ps1 schreibt jedes mal ``robotmk_controller_last_execution` - wenn zu alt, Ende von Agent-Daemon
 - robotmk auf pypi
 
-SCHEDULER: 
-- 
-
 
 ## Open Questions
 
 
-- RCC als Enterprise-Feature? 
-- Wie kann `robotmk.ps1` feststellen, dass das RCC-Env da ist?  
+
+
 - Wie groß ist ein Robotmk-RCC?
   - 51 MB (standard)
   - 260MB (rpaframework)
-- holotree.zip für welche Plattformen
-- hat robotmk-ctrl die Zeit das RCC-Env zu bauen? Wird es weggeräumt ? (async)
-- Wie kann der Special Agent parametrisiert werden? (JSON ist gesetzt, aber STDIN/commandline args?)
-- %ROBOCORP_HOME%: Parametrisierbar? Wo ist der Default? 
 - Über Bakery auch rcc's settings.yaml konfigurieren 
   - proxy 
   - logo
 - Verlässliches TMP-File für RCC? 
-- Playwright nur 1 Browser? 
 - Run-UUID und State in Name von HTML/XML einbauen? 
 - Vermeide RW-Konflikt, wenn Resultfiles geschrieben werden und gleichzeitig gelesen!
 - `rcc interactive configuration` => yaml Profile erzeugen (http proxy, PEM certificates etc. )

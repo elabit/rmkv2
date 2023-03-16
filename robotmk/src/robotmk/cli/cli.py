@@ -6,7 +6,6 @@ from robotmk.main import Robotmk, DEFAULTS
 import importlib
 import pkgutil
 import os.path
-from functools import wraps
 
 
 # CMD1        CMD2     OPTION                                    CMD3            # Description
@@ -79,8 +78,7 @@ def get_commands_from_pkg(pkg) -> dict:
 def main(ctx):
     if ctx.invoked_subcommand is None:
         # Executing Robotmk without arguments means to run Robotmk in the contexts default mode.
-        ctx.robotmk = Robotmk()
-        ctx.robotmk.load_config(DEFAULTS)
+        ctx.robotmk = Robotmk(contextname=None, yml=None, vars=None)
         ctx.robotmk.run_default()
     else:
         # Robotmk was executed with a context subcommand, whose logic is defined within the context.

@@ -1,6 +1,6 @@
-from abc import ABC, abstractmethod
-from robotmk.config import Config
-import click
+from .local.local import LocalContext
+from .specialagent.specialagent import SpecialAgentContext
+from .suite.suite import SuiteContext
 
 
 class ContextFactory:
@@ -14,22 +14,6 @@ class ContextFactory:
             return SpecialAgentContext()
         elif self.context == "suite":
             return SuiteContext()
-
-
-class AbstractContext(ABC):
-    """Abstract class for context objects. Context objects are used to
-    encapsulate the different contexts in which robotmk can be run (local, specialagent, suite).
-    """
-
-    def __init__(self):
-        self.config = Config()
-
-    @abstractmethod
-    def load_config():
-        pass
-
-    @abstractmethod
-    def run(self):
-        """The run method encapsulates everything that needs to be done to
-        run robotmk in one of the three contexts."""
-        pass
+        else:
+            # TODO: catch this error
+            pass

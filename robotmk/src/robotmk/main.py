@@ -46,10 +46,17 @@ class Robotmk:
     """This is the main class of the robotmk package. It is used to create a
     Robotmk instance with a specific context."""
 
-    def __init__(self, contextname=None) -> None:
-        # context is the strategy to use and in fact a set of factory methods.
-        # If called from the CLI without context argument, the default context
-        # will be read from environment variable ROBOTMK_common_context.
+    def __init__(self, contextname=None, yml: str = None, vars: str = None) -> None:
+        """context is the strategy to use and in fact a set of factory methods.
+        If called from the CLI without context argument, the default context
+        will be read from environment variable ROBOTMK_common_context."""
+        self.__set_context(contextname)
+        self.load_config = self._context.load_config
+        self.load_config(DEFAULTS, yml, vars)
+        self.config = self._context.config
+
+    def __set_context(self, contextname: str) -> None:
+        """Sets the context of the Robotmk instance (=strategy)."""
         if contextname is None:
             contextname = os.environ.get("ROBOTMK_common_context", "not set")
         if contextname == "not set":
@@ -57,7 +64,7 @@ class Robotmk:
                 "No context given on CLI or set by environment variable ROBOTMK_common_context."
             )
         self._context = ContextFactory(contextname).get_context()
-        self.load_config = self._context.load_config
+
         # TODO: Setup Logging here
 
 
