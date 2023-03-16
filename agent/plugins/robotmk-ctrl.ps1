@@ -1483,9 +1483,9 @@ function SetScriptVars {
 
   # Expose env vars for CMK agent (they exist if called from agent, but 
   # do NOT if called while developing)
-  Set-EnvVar "ROBOTMK_LOGDIR" $RMKLogDir 
-  Set-EnvVar "ROBOTMK_TMPDIR" $RMKTmpDir 
-  Set-EnvVar "ROBOTMK_CFGDIR" $RMKCfgDir
+  Set-EnvVar "ROBOTMK_common_logfir" $RMKLogDir 
+  Set-EnvVar "ROBOTMK_common_tmpdir" $RMKTmpDir 
+  Set-EnvVar "ROBOTMK_common_cfgdir" $RMKCfgDir
 
   # FILES ========================================
 

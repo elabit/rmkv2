@@ -13,10 +13,10 @@ class AbstractContext(ABC):
     @abstractmethod
     def load_config(self, defaults, ymlfile: str, varfile: str) -> None:
         """Depening on the context strategy, the config object loads cfg from different sources."""
-        pass
+        raise NotImplementedError("Subclass must implement abstract method")
 
     @abstractmethod
-    def run(self):
-        """The run method encapsulates everything that needs to be done to
-        run robotmk in one of the three contexts."""
-        pass
+    def run_default(self):
+        """Encapsulates everything that needs to be done to
+        run robotmk when it is run only with context, but without subcommand."""
+        raise NotImplementedError("Subclass must implement abstract method")

@@ -1,4 +1,4 @@
-"""Robotmk specialagent CLI commands
+"""CLI commands for the specialagent context.
 
 Executes Robotmk in specialagent context. This CLI is rather used to debug the 
 specialagent than to run it in production."""

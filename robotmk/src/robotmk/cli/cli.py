@@ -1,11 +1,13 @@
 """Robotmk CLI Interface. 
 
-Start Robotmk in different contexts"""
+Start Robotmk in different contexts.
+Context command can also be set via environment variable ROBOTMK_common_context."""
 import click
 from robotmk.main import Robotmk, DEFAULTS
 import importlib
 import pkgutil
 import os.path
+import warnings
 
 
 # CMD1        CMD2     OPTION                                    CMD3            # Description
@@ -77,7 +79,12 @@ def get_commands_from_pkg(pkg) -> dict:
 @click.pass_context
 def main(ctx):
     if ctx.invoked_subcommand is None:
-        # Executing Robotmk without arguments means to run Robotmk in the contexts default mode.
+        # robotmk was called without argument. Try to detect the context from the default
+        # config and/or environment variables.
+        # After that run the default command of the context:
+        # - output() for local context
+        # - specialagent() for specialagent context (output + sequencer)
+        # - run() for suite context
         ctx.robotmk = Robotmk(contextname=None, yml=None, vars=None)
         ctx.robotmk.run_default()
     else:

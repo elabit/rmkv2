@@ -154,7 +154,8 @@ III) RMK startet mit `output` ODER interner call im Special Agent
 
 Prio HIGH: 
 - Windows: anlegen und triggern von Scheduled Tasks für Desktop-Tests
-- Logging 
+- Logging  
+  - https://superfastpython.com/multiprocessing-logging-in-python/
 - apscheduler: loop/oneshot mode 
 
 Prio MEDIUM: 

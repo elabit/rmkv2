@@ -54,6 +54,7 @@ class Robotmk:
         self.load_config = self._context.load_config
         self.load_config(DEFAULTS, yml, vars)
         self.config = self._context.config
+        self.run_default = self._context.run_default
 
     def __set_context(self, contextname: str) -> None:
         """Sets the context of the Robotmk instance (=strategy)."""

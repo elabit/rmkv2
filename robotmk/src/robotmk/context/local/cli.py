@@ -1,4 +1,4 @@
-"""Robotmk local CLI commands
+"""CLI commands for the local context. 
 
 Executes Robotmk in local context (Windows & Linux)"""
 import sys
@@ -22,14 +22,12 @@ def local(ctx, yml, ymldump):
     if ctx.invoked_subcommand is None:
         click.secho("No subcommand given. Use --help for help.", fg="red")
         sys.exit(1)
-    else:
-        pass
 
 
 @local.command()
 @click.pass_context
 def output(ctx):
-    click.secho("output", fg="green")
+    ctx.robotmk.produce_agent_output()
     pass
 
 

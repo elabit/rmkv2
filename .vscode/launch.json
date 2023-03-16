@@ -76,12 +76,7 @@
             "request": "launch",
             "program": "robotmk/src/robotmk/cli/cli.py",
             "console": "integratedTerminal",
-            "justMyCode": false,
-            "env": {
-                "ROBOTMK_LOGDIR": "C:\\Users\\vagrant\\Documents\\01_dev\\rmkv2\\agent\\log\\robotmk",
-                "ROBOTMK_TMPDIR": "C:\\Users\\vagrant\\Documents\\01_dev\\rmkv2\\agent\\tmp\\robotmk",
-                "ROBOTMK_CFGDIR": "C:\\Users\\vagrant\\Documents\\01_dev\\rmkv2\\agent\\config\\robotmk"
-            }
+            "justMyCode": false
         },
         {
             "name": "w robotmk local",
@@ -92,12 +87,7 @@
             "justMyCode": false,
             "args": [
                 "output"
-            ],
-            "env": {
-                "ROBOTMK_LOGDIR": "C:\\Users\\vagrant\\Documents\\01_dev\\rmkv2\\agent\\log\\robotmk",
-                "ROBOTMK_TMPDIR": "C:\\Users\\vagrant\\Documents\\01_dev\\rmkv2\\agent\\tmp\\robotmk",
-                "ROBOTMK_CFGDIR": "C:\\Users\\vagrant\\Documents\\01_dev\\rmkv2\\agent\\config\\robotmk"
-            }
+            ]
         },
         //---------------------------------------------
         {
@@ -114,11 +104,17 @@
             "request": "launch",
             "program": "robotmk/src/robotmk/cli/cli.py",
             "console": "integratedTerminal",
+            "justMyCode": false
+        },
+        {
+            "name": "l robotmk w/o args (env:local)",
+            "type": "python",
+            "request": "launch",
+            "program": "robotmk/src/robotmk/cli/cli.py",
+            "console": "integratedTerminal",
             "justMyCode": false,
             "env": {
-                "ROBOTMK_LOGDIR": "C:\\Users\\vagrant\\Documents\\01_dev\\rmkv2\\agent\\log\\robotmk",
-                "ROBOTMK_TMPDIR": "C:\\Users\\vagrant\\Documents\\01_dev\\rmkv2\\agent\\tmp\\robotmk",
-                "ROBOTMK_CFGDIR": "C:\\Users\\vagrant\\Documents\\01_dev\\rmkv2\\agent\\config\\robotmk"
+                "ROBOTMK_common_context": "local"
             }
         },
         {
@@ -130,12 +126,7 @@
             "justMyCode": false,
             "args": [
                 "local"
-            ],
-            "env": {
-                "ROBOTMK_LOGDIR": "C:\\Users\\vagrant\\Documents\\01_dev\\rmkv2\\agent\\log\\robotmk",
-                "ROBOTMK_TMPDIR": "C:\\Users\\vagrant\\Documents\\01_dev\\rmkv2\\agent\\tmp\\robotmk",
-                "ROBOTMK_CFGDIR": "C:\\Users\\vagrant\\Documents\\01_dev\\rmkv2\\agent\\config\\robotmk"
-            }
+            ]
         },
         {
             "name": "l robotmk specialagent",
@@ -146,12 +137,7 @@
             "justMyCode": false,
             "args": [
                 "specialagent"
-            ],
-            "env": {
-                "ROBOTMK_LOGDIR": "C:\\Users\\vagrant\\Documents\\01_dev\\rmkv2\\agent\\log\\robotmk",
-                "ROBOTMK_TMPDIR": "C:\\Users\\vagrant\\Documents\\01_dev\\rmkv2\\agent\\tmp\\robotmk",
-                "ROBOTMK_CFGDIR": "C:\\Users\\vagrant\\Documents\\01_dev\\rmkv2\\agent\\config\\robotmk"
-            }
+            ]
         },
         {
             "name": "l robotmk suite",
@@ -162,12 +148,7 @@
             "justMyCode": false,
             "args": [
                 "suite"
-            ],
-            "env": {
-                "ROBOTMK_LOGDIR": "C:\\Users\\vagrant\\Documents\\01_dev\\rmkv2\\agent\\log\\robotmk",
-                "ROBOTMK_TMPDIR": "C:\\Users\\vagrant\\Documents\\01_dev\\rmkv2\\agent\\tmp\\robotmk",
-                "ROBOTMK_CFGDIR": "C:\\Users\\vagrant\\Documents\\01_dev\\rmkv2\\agent\\config\\robotmk"
-            }
+            ]
         },
         {
             "name": "l robotmk local --yml scheduler",
@@ -181,12 +162,24 @@
                 "--yml",
                 "./robotmk/tests/context/local/robotmk.yml",
                 "scheduler"
-            ],
-            "env": {
-                "ROBOTMK_LOGDIR": "C:\\Users\\vagrant\\Documents\\01_dev\\rmkv2\\agent\\log\\robotmk",
-                "ROBOTMK_TMPDIR": "C:\\Users\\vagrant\\Documents\\01_dev\\rmkv2\\agent\\tmp\\robotmk",
-                "ROBOTMK_CFGDIR": "C:\\Users\\vagrant\\Documents\\01_dev\\rmkv2\\agent\\config\\robotmk"
-            }
+            ]
+        },
+        {
+            "name": "l robotmk suite logs -n 1 -p 44 foo",
+            "type": "python",
+            "request": "launch",
+            "program": "robotmk/src/robotmk/cli/cli.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "args": [
+                "suite",
+                "logs",
+                "-n",
+                "2",
+                "-p",
+                "44",
+                "foo"
+            ]
         },
         //---------------------------------------------        
         {

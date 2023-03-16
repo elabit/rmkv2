@@ -17,6 +17,7 @@ class LocalContext(AbstractContext):
         self.config.read_yml_cfg(must_exist=True, path=ymlfile)
         self.config.read_cfg_vars(path=None)
 
-    def run(self):
-        # TODO: start the scheduler
+    def run_default(self):
+        """Implements the default action for local context."""
+        print("Local context default action = output")
         pass

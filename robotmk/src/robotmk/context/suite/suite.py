@@ -18,6 +18,8 @@ class SuiteContext(AbstractContext):
         self.config.read_yml_cfg(must_exist=False)
         self.config.read_cfg_vars(path=varfile)
 
-    def run(self):
+    def run_default(self):
+        """Implements the default action for suite context."""
         # TODO: execute one single suite
+        print("Suite context default action = execute single suite ")
         pass

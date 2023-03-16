@@ -4,15 +4,15 @@ from .suite.suite import SuiteContext
 
 
 class ContextFactory:
-    def __init__(self, context) -> None:
-        self.context = context
+    def __init__(self, contextname) -> None:
+        self.contextname = contextname
 
     def get_context(self) -> None:
-        if self.context == "local":
+        if self.contextname == "local":
             return LocalContext()
-        elif self.context == "specialagent":
+        elif self.contextname == "specialagent":
             return SpecialAgentContext()
-        elif self.context == "suite":
+        elif self.contextname == "suite":
             return SuiteContext()
         else:
             # TODO: catch this error

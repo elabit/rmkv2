@@ -18,6 +18,8 @@ class SpecialAgentContext(AbstractContext):
         self.config.set_defaults(defaults)
         self.config.read_cfg_vars(path=varfile)
 
-    def run(self):
+    def run_default(self):
+        """Implements the default action for specialagent context."""
         # TODO: start the sequencer
+        print("Specialagent context default action = trigger APIs and output")
         pass
