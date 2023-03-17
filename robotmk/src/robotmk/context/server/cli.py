@@ -10,6 +10,7 @@ from robotmk.main import Robotmk, DEFAULTS
 @click.command(help=__doc__)
 @click.pass_context
 def server(ctx):
+    click.secho("server", fg="green")
     click.echo("Serving the Robotmk webinterface on http://localhost:8099 ...")
     # ctx.robotmk = Robotmk("server")
     pass

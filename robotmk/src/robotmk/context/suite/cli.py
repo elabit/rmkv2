@@ -28,7 +28,7 @@ def run(ctx, suite):
 
     SUITE is a directory or .robot file under $ROBOTDIR (can also be set by env:ROBOTMK_common_suite)
     """
-    click.echo("run suite")
+    click.secho("run", fg="green")
     pass
 
 
@@ -50,7 +50,7 @@ def logs(ctx, suite, number, pid):
 
     SUITE is a directory or .robot file under $ROBOTDIR (can also be set by env:ROBOTMK_common_suite)
     """
-
+    click.secho("logs", fg="green")
     if int(number) != 1 and pid != None:
         raise click.BadParameter("Cannot use --number and --pid at the same time %d")
     click.echo("These are the logs of suite %s %d:" % (suite, number))
@@ -69,5 +69,5 @@ def ymldump(ctx, file):
 @suite.command()
 @click.pass_context
 def vardump(ctx):
-    click.echo("vardump")
+    click.secho("vardump", fg="green")
     pass

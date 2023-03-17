@@ -15,9 +15,9 @@ from robotmk.main import Robotmk, DEFAULTS
 )
 # @click.option("--vars", "-v", help="Read vars from .env file (ignores environment)")
 def local(ctx, yml, ymldump):
-    ctx.robotmk = Robotmk("local", yml=yml)
+    ctx.obj = Robotmk("local", yml=yml)
     if ymldump:
-        click.secho(ctx.robotmk.config.to_yml(), fg="bright_white")
+        click.secho(ctx.obj.config.to_yml(), fg="bright_white")
         sys.exit(0)
     if ctx.invoked_subcommand is None:
         click.secho("No subcommand given. Use --help for help.", fg="red")
@@ -27,7 +27,8 @@ def local(ctx, yml, ymldump):
 @local.command()
 @click.pass_context
 def output(ctx):
-    ctx.robotmk.produce_agent_output()
+    click.secho("output", fg="green")
+    ctx.obj.produce_agent_output()
     pass
 
 
@@ -35,4 +36,5 @@ def output(ctx):
 @click.pass_context
 def scheduler(ctx):
     click.secho("scheduler", fg="green")
+    ctx.obj.run()
     pass

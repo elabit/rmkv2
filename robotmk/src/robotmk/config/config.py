@@ -31,7 +31,7 @@ from typing import Union
 
 # from collections import namedtuple
 from pathlib import Path
-import re
+from .yml import RobotmkConfigSchema
 
 # TODO: add config validation
 
@@ -57,6 +57,8 @@ class Config:
     def read_yml_cfg(self, path=None, must_exist=True):
         """Reads a YML config"""
         if path is None:
+            # Linux default: /etc/check_mk/robotmk.yml
+            # Windows default: C:\Program Data\check_mk\agent\config\robotmk.yml
             ymlfile = (
                 Path(self.configdict["common"]["cfgdir"])
                 / self.configdict["common"]["robotmk_yml"]
@@ -69,11 +71,20 @@ class Config:
             raise FileNotFoundError(f"YML config file not found: {ymlfile}")
         else:
             # try to read the file
+            ymltemp = {}
             try:
                 with open(ymlfile, "r") as f:
-                    self.yml_config = yaml.load(f, Loader=yaml.FullLoader)
+                    ymltemp = yaml.load(f, Loader=yaml.FullLoader)
             except Exception as e:
                 raise e
+            # validate the config
+            schema = RobotmkConfigSchema(ymltemp)
+            if not schema.validate():
+                raise ValueError(
+                    f"YML config file {ymlfile} is invalid: {schema.error}"
+                )
+            else:
+                self.yml_config = ymltemp
 
     # variables (env AND! file)
     def read_cfg_vars(self, path=None, d=None):

@@ -23,3 +23,13 @@ class SpecialAgentContext(AbstractContext):
         # TODO: start the sequencer
         print("Specialagent context default action = trigger APIs and output")
         pass
+
+    def run(self):
+        """Implements the run action for specialagent context."""
+        print("Specialagent context run action")
+        pass
+
+    def produce_agent_output(self):
+        """Implements the agent output for local context."""
+        print("Specialagent context output")
+        pass

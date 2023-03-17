@@ -23,3 +23,14 @@ class SuiteContext(AbstractContext):
         # TODO: execute one single suite
         print("Suite context default action = execute single suite ")
         pass
+
+    def run(self):
+        """Implements the action for suite context."""
+        print("Suite context action")
+        pass
+
+    def produce_agent_output(self):
+        """Implements the agent output for local context."""
+        # NOT IMPLEMENTED
+        # print("Local context agent output")
+        pass

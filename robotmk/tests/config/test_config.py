@@ -1,5 +1,5 @@
 import yaml
-from robotmk.config import Config
+from robotmk.config.config import Config
 import os
 
 cwd = os.path.dirname(__file__)

@@ -129,6 +129,32 @@
             ]
         },
         {
+            "name": "l robotmk local output",
+            "type": "python",
+            "request": "launch",
+            "program": "robotmk/src/robotmk/cli/cli.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "args": [
+                "local",
+                "--yml",
+                "./robotmk/tests/context/local/robotmk.yml",
+                "output"
+            ]
+        },
+        {
+            "name": "l robotmk local scheduler",
+            "type": "python",
+            "request": "launch",
+            "program": "robotmk/src/robotmk/cli/cli.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "args": [
+                "local",
+                "scheduler"
+            ]
+        },
+        {
             "name": "l robotmk specialagent",
             "type": "python",
             "request": "launch",

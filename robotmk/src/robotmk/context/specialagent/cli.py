@@ -27,12 +27,12 @@ def specialagent(ctx, vars, ymldump):
 @specialagent.command()
 @click.pass_context
 def sequencer(ctx):
-    click.echo("sequencer")
+    click.secho("sequencer", fg="green")
     pass
 
 
 @specialagent.command()
 @click.pass_context
 def output(ctx):
-    click.echo("output")
+    click.secho("output", fg="green")
     pass
