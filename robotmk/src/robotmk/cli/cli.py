@@ -92,5 +92,27 @@ def main(ctx):
         pass
 
 
+@main.command()
+def diagnose():
+    """Print diagnostic information."""
+    click.secho("diagnose", fg="yellow")
+    # TODO implement diagnose()
+    # - environment with ROBOTOMK vars
+    # YML present?
+    # RCC present
+    # OS
+    # Python version
+    # Robotmk version
+    # Robot version
+    # configdump
+    # create a dummy suite with api and run it in suite mode
+    # CPU cores
+    # RAM
+    # disk space
+    # network
+
+    pass
+
+
 if __name__ == "__main__":
     main()

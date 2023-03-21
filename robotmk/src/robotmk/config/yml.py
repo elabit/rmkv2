@@ -27,7 +27,7 @@ class RobotmkConfigSchema:
                     Optional("tag"): str,
                     Optional("piggybackhost"): str,
                     "use_rcc": Or(True, False),
-                    "need_desktop": Or(True, False),
+                    "headless": Or(True, False),
                     # Optional("robot_params"): And(dict, Use(subdict_schema.validate)),
                     # Optional("failed_handling"): And(
                     #     dict, Use(failed_handling_schema.validate)

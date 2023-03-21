@@ -5,13 +5,14 @@
 
 There is a special order in which the sources are read:
 - 1. OS defaults for each supported OS (Linux, Windows)
-- 2. config from file, either
-    - a) YML config, either
-        - the default config file (robotmk.yml)
-        - or a custom config file (given as parameter --yml)
+- 2. config from YML file, either
+    - the default config file (robotmk.yml)
     OR
-    - b) variable file (given as parameter --vars)
-- 3. environment variables
+    - a custom config file (given as parameter --yml)
+- 3. variables from 
+    - variable file (given as parameter --vars)
+    AND
+    - environment variables (ROBOTMK_*)
 
 | context       | yml    | vars |
 | ---           | ---    | ---  |
@@ -31,18 +32,23 @@ from typing import Union
 
 # from collections import namedtuple
 from pathlib import Path
-from .yml import RobotmkConfigSchema
+from dotmap import DotMap
+from robotmk.config.yml import RobotmkConfigSchema
 
 # TODO: add config validation
 
 
-class Config:
+class ConfigFactory:
     def __init__(self, envvar_prefix="ROBOTMK"):
-        self._config = {}
         self.envvar_prefix = envvar_prefix
         self.default_cfg = {}
         self.yml_config = {}
         self.env_config = {}
+        self._merged_config_dict = {}
+
+    def create_config(self):
+        """Returns a DotMap object containing the merged config."""
+        return DotMap(self.configdict)
 
     # 1. Defaults (common/OS specific)
     def set_defaults(self, os_defaults: dict = None) -> None:
@@ -53,7 +59,7 @@ class Config:
         if os.name in os_defaults:
             self.default_cfg["common"].update(os_defaults[os.name])
 
-    # 2.a) YML
+    # 2. YML
     def read_yml_cfg(self, path=None, must_exist=True):
         """Reads a YML config"""
         if path is None:
@@ -71,22 +77,16 @@ class Config:
             raise FileNotFoundError(f"YML config file not found: {ymlfile}")
         else:
             # try to read the file
-            ymltemp = {}
+            config = {}
             try:
                 with open(ymlfile, "r") as f:
-                    ymltemp = yaml.load(f, Loader=yaml.FullLoader)
+                    config = yaml.load(f, Loader=yaml.FullLoader)
             except Exception as e:
                 raise e
-            # validate the config
-            schema = RobotmkConfigSchema(ymltemp)
-            if not schema.validate():
-                raise ValueError(
-                    f"YML config file {ymlfile} is invalid: {schema.error}"
-                )
-            else:
-                self.yml_config = ymltemp
 
-    # variables (env AND! file)
+            self.yml_config = config
+
+    # 3. variables (env AND! file)
     def read_cfg_vars(self, path=None, d=None):
         """Reads variables file (if path is given) and/or environment variables.
         Creates a nested dict from vars starting with a certain prefix (given as
@@ -101,9 +101,7 @@ class Config:
         The dict is stored in self.config or in the dict given as parameter d."""
         temp_cfg = {}
         if path:
-            # 2.b)
             self.__source_vars_from_file(path)
-        # 2.a)
         for k, v in os.environ.items():
             if k.startswith(self.envvar_prefix):
                 k = k.replace(self.envvar_prefix + "_", "")
@@ -119,34 +117,9 @@ class Config:
         else:
             return temp_cfg
 
-    @property
-    def merged_config_dict(self) -> dict:
-        """This property merges the three config sources in the right order."""
-        merged_config = mergedeep.merge(
-            self.default_cfg, self.yml_config, self.env_config
-        )
-        return merged_config
-
-    @property
-    def configdict(self):
-        """This property returns the merged config dict"""
-        return self.merged_config_dict
-
-    # @property
-    # def configtuple(self):
-    #     """This property returns the merged config dict as a named tuple."""
-    #     return self.__dict_to_namedtuple(self.merged_config_dict, "config")
-
-    # def __dict_to_namedtuple(self, d, typename):
-    #     """Helper function to convert a dict to a named tuple."""
-    #     for key, value in d.items():
-    #         if isinstance(value, dict):
-    #             d[key] = self.__dict_to_namedtuple(value, f"{typename}_{key}")
-    #     return namedtuple(typename, d.keys())(*d.values())
-
-    # 2.b)
     def __source_vars_from_file(self, file):
-        """Reads variables from a file and sources them in the current environment."""
+        """Helper function to read variables from a file and source them in the
+        current environment."""
         try:
             with open(file, "r") as f:
                 for line in f:
@@ -162,8 +135,17 @@ class Config:
         except Exception as e:
             raise FileNotFoundError(f"Could not read environment file: {file}")
 
+    @property
+    def configdict(self):
+        """This property merges the three config sources in the right order."""
+
+        self._merged_config_dict = mergedeep.merge(
+            self.default_cfg, self.yml_config, self.env_config
+        )
+        return self._merged_config_dict
+
     def __split_varstring(self, s):
-        """Split a string into a list of substrings, separated by "_".
+        """Helper function to split a string into a list of substrings, separated by "_".
         Double underscores are protecting substring from splitting."""
         pieces = []
         current_piece = ""
@@ -205,14 +187,21 @@ class Config:
 
         return pieces
 
-    def get(self, *keys):
-        d = self._config
-        for key in keys:
-            if key in d:
-                d = d[key]
-            else:
-                return None
-        return d
+    # def get(self, *keys):
+    #     d = self._config
+    #     for key in keys:
+    #         if key in d:
+    #             d = d[key]
+    #         else:
+    #             return None
+    #     return d
+
+    def validate(self, schema: RobotmkConfigSchema):
+        """Validates the whole config according to the given context schema."""
+
+        schema = RobotmkConfigSchema(self.configdict)
+        if not schema.validate():
+            raise ValueError(f"Config is invalid: {schema.error}")
 
     def to_environment(self, d=None, envvar_prefix=""):
         """Converts a nested dict to environment variables.

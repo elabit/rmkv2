@@ -1,12 +1,11 @@
-import time
+import time, sys
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.executors.pool import ProcessPoolExecutor
 from .abstract import AbstractExecutor
 
 
 class Scheduler(AbstractExecutor):
-    def __init__(self, config):
-        # Create the scheduler.
+    def __init__(self, config, *args, **kwargs):
         # TODO: Max. number of prcesses must be lower than the number of CPUs
         super().__init__(config)
         self.scheduler = BackgroundScheduler(
@@ -44,6 +43,8 @@ class Scheduler(AbstractExecutor):
         """Start the scheduler and update the jobs every 5 seconds"""
         # self.scheduler.add_listener(log)
         # Start the scheduler
+        print("Scheduler.run()")
+        sys.exit(0)
         self.scheduler.start()
         while True:
             self.__schedule_jobs()

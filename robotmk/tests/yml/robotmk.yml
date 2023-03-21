@@ -15,29 +15,38 @@ common:
     password: bar
     url: https://foo/api/v2
 suites: 
-  suiteA: 
-    path: suiteA
-    tag: footag
-    piggybackhost: bazhost
-    target: fs
-    use_rcc: true
-    need_desktop: true
-    params:
-      variables: 
-        vara: a
-        varb: b
-    failed_handling:
-      max_attempts: 2
-    scheduling: 
-      interval: 1
-      allow_overlap: false
-  suite-B:
-    path: suiteB
-    target: fs
-    use_rcc: true
-    scheduling: 
-      interval: 2
-      allow_overlap: false
+  local: 
+    suiteA: 
+      path: suiteA
+      tag: footag
+      piggybackhost: bazhost
+      target: fs
+      use_rcc: true
+      headless: true
+      params:
+        variables: 
+          vara: a
+          varb: b
+      failed_handling:
+        max_attempts: 2
+      scheduling: 
+        interval: 1
+        allow_overlap: false
+    suite-B:
+      path: suiteB
+      target: fs
+      use_rcc: true
+      scheduling: 
+        interval: 2
+        allow_overlap: false
+  remote: 
+    robocorp:
+      suite-C:
+        scheduling: 
+        interval: 2
+      suite-D: 
+        scheduling: 
+        interval: 4
 
 
 

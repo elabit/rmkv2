@@ -1,9 +1,14 @@
 from ..abstract import AbstractContext
 
+# TODO: this is not specific for suite context yet
+from robotmk.config.yml import RobotmkConfigSchema
+from robotmk.executor.sequencer import Sequencer
+
 
 class SpecialAgentContext(AbstractContext):
     def __init__(self):
         super().__init__()
+        self.ymlschema = RobotmkConfigSchema
 
     def load_config(self, defaults, ymlfile: str, varfile: str) -> None:
         """Load the config for specialagent context.
@@ -17,6 +22,12 @@ class SpecialAgentContext(AbstractContext):
         """
         self.config.set_defaults(defaults)
         self.config.read_cfg_vars(path=varfile)
+        # TODO: validate later so that config can be dumped
+        # self.config.validate(self.ymlschema)
+
+    def refresh_config(self) -> bool:
+        """Re-loads the config and returns True if it changed"""
+        # TODO: implement this
 
     def run_default(self):
         """Implements the default action for specialagent context."""
@@ -24,12 +35,14 @@ class SpecialAgentContext(AbstractContext):
         print("Specialagent context default action = trigger APIs and output")
         pass
 
-    def run(self):
+    def execute(self, *args, **kwargs):
         """Implements the run action for specialagent context."""
         print("Specialagent context run action")
-        pass
+        self.executor = Sequencer(self.config)
+        self.executor.run()
 
-    def produce_agent_output(self):
+    def output(self):
         """Implements the agent output for local context."""
         print("Specialagent context output")
+        self.outputter = SpecialAgentOutput(self.config)
         pass

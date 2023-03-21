@@ -144,6 +144,26 @@ III) RMK startet mit `output` ODER interner call im Special Agent
 ---
 
 
+- **SUITE**-Context: `robotmk suite foosuiteA`:
+  - if `RCC_possible`:
+    - create RCC env 
+    - source the vars of RC env
+  - run the Robot Framework suite 
+  - store JSON files 
+  - 
+
+
+- `robotmk suite` + `ROBOTMK_common_suite_suiteA` 
+  - if RCC is possible: 
+    - conf2env
+    - `ROBOTMK_suites_suiteA__shared_python` = False
+    - `rcc task run robotmk robotmk.yml`
+- `robotmk suite` + `ROBOTMK_common_suite_suiteA` +  `ROBOTMK_suites_suiteA__shared_python` = False
+  - (This omits RCC and uses the same python interpreter)
+  - create statefiles
+  - handle reexecution 
+  - run robo_cli with **shared** Python Interpreter inincl. Args
+  - write Output
 
 
 

@@ -1,26 +1,52 @@
-global: 
-  mode: agent/specialagent/output/suite
-  k8s-auth:
+common: 
+  context: local
+  cfgdir: foo
+  logdir: bar
+  tmpdir: baz 
+  log_level: debug
+  log_rotation: 14
+  suite_id: suiteA_footag
+  k8s_auth:
     user: foo
-    pass: bar
+    password: bar
     url: https://foo/api/v2
-  robocorp-auth:
+  robocorp_auth:
     user: foo
-    pass: bar
+    password: bar
     url: https://foo/api/v2
-robots: 
-  suiteA: 
-    target: fs
-    use_rcc: true
+suites: 
+  suiteA_footag: 
+    target: local
     path: suiteA
+    tag: footag
+    piggybackhost: bazhost
+    shared_python: false
+    headless: true
+    params:
+      variables: 
+        vara: a
+        varb: b
+    failed_handling:
+      max_attempts: 2
     scheduling: 
       interval: 1
       allow_overlap: false
-  suiteB: 
-    target: fs
-    use_rcc: true
+  suite-B:
+    target: local
     path: suiteB
+    shared_python: false
     scheduling: 
       interval: 2
       allow_overlap: false
+  suite-C:
+    target: remote
+    scheduling: 
+      interval: 2
+  suite-D: 
+    target: remote    
+    scheduling: 
+      interval: 4
+
+
+
 

@@ -2,12 +2,16 @@ from abc import ABC, abstractmethod
 
 
 class AbstractExecutor:
-    """Abstract class for the executor"""
+    """Base class for the executor.
 
-    def __init__(self, config):
+    This is the abstraction class for the executors of
+    - local suites (-> SuiteRunner)
+    - remote suites=API calls (-> )"""
+
+    def __init__(self, config, *args, **kwargs):
         self.config = config
 
     @abstractmethod
-    def run(self):
+    def execute(self):
         """Abstract method for the default run action of the executor"""
         pass

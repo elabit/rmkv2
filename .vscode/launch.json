@@ -173,8 +173,17 @@
             "console": "integratedTerminal",
             "justMyCode": false,
             "args": [
-                "suite"
-            ]
+                "suite",
+                //     "foo",
+                //     "-n",
+                //     "2",
+                //     "-p",
+                //     "44",
+                //     "foo"
+            ],
+            "env": {
+                "ROBOTMK_common_robotdir": "/home/simonmeggle/Documents/01_dev/rmkv2/agent/robots"
+            }
         },
         {
             "name": "l robotmk local --yml scheduler",

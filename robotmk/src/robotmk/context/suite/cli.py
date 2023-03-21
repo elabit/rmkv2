@@ -17,18 +17,43 @@ def suite(ctx, yml, vars):
     if vars and yml:
         raise click.BadParameter("Cannot use --yml and --vars at the same time")
     click.echo("suite")
-    ctx.robotmk = Robotmk("suite", yml=yml, vars=vars)
+    ctx.obj = Robotmk("suite", yml=yml, vars=vars)
 
 
 @suite.command(default=True)
 @click.argument("suite", required=False)
+# @click.option(
+#     "--share-python",
+#     "share_python",
+#     default=False,
+#     is_flag=True,
+#     show_default=True,
+#     help="""If set, SUITE will be run with the same Python interpreter as Robotmk was called with.
+#     Default is False (always try to create and use RCC environments, if this feature is available).
+#     See https://docs.robotmk.org for more information on RCC.""",
+# )
 @click.pass_context
 def run(ctx, suite):
-    """Run a single SUITE.
+    # def run(ctx, suite, share_python):
+    """Run a Robot Framework SUITE.
 
     SUITE is a directory or .robot file under $ROBOTDIR (can also be set by env:ROBOTMK_common_suite)
     """
-    click.secho("run", fg="green")
+    click.secho("run suite %s" % suite, fg="green")
+    ctx.obj.execute()
+    pass
+
+
+@suite.command()
+@click.argument("suite", required=False)
+@click.pass_context
+def output(ctx, suite):
+    """Print the CMK agent output of SUITE on STDOUT.
+
+    SUITE is a directory or .robot file under $ROBOTDIR (can also be set by env:ROBOTMK_common_suite)
+    """
+    click.secho("output of suite %s" % suite, fg="green")
+    ctx.obj.output()
     pass
 
 
@@ -46,7 +71,7 @@ def run(ctx, suite):
 )
 @click.pass_context
 def logs(ctx, suite, number, pid):
-    """Display the log files of a single SUITE.
+    """Display the log files of SUITE.
 
     SUITE is a directory or .robot file under $ROBOTDIR (can also be set by env:ROBOTMK_common_suite)
     """
@@ -57,13 +82,18 @@ def logs(ctx, suite, number, pid):
     pass
 
 
-@suite.command(help="Dump the YML config to file or STDOUT")
-# add file arg
-@click.argument("file", required=False, type=click.Path(exists=False))
+# TODO: implement this
+@suite.command()
+@click.argument("suite", required=False)
 @click.pass_context
-def ymldump(ctx, file):
-    click.secho(ctx.robotmk.config.to_yml(file), fg="bright_white")
-    sys.exit(0)
+def shell(ctx, suite):
+    """Open a shell in the RCC python environment of SUITE.
+
+    SUITE is a directory or .robot file under $ROBOTDIR (can also be set by env:ROBOTMK_common_suite)
+    """
+    click.secho("$> RCC shell of suite %s" % suite, fg="yellow")
+
+    pass
 
 
 @suite.command()
@@ -71,3 +101,12 @@ def ymldump(ctx, file):
 def vardump(ctx):
     click.secho("vardump", fg="green")
     pass
+
+
+@suite.command(help="Dump the config as YML to STDOUT or FILE")
+# add file arg
+@click.argument("file", required=False, type=click.Path(exists=False))
+@click.pass_context
+def ymldump(ctx, file):
+    click.secho(ctx.obj.config.to_yml(file), fg="bright_white")
+    sys.exit(0)

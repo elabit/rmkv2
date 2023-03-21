@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from robotmk.config.config import Config
+from robotmk.config.config import ConfigFactory
 
 
 class AbstractContext(ABC):
@@ -8,7 +8,7 @@ class AbstractContext(ABC):
     """
 
     def __init__(self):
-        self.config = Config()
+        self._config_factory = ConfigFactory()
 
     @abstractmethod
     def load_config(self, defaults, ymlfile: str, varfile: str) -> None:
@@ -27,11 +27,11 @@ class AbstractContext(ABC):
         raise NotImplementedError("Subclass must implement abstract method")
 
     @abstractmethod
-    def run(self):
+    def execute(self, *args, **kwargs):
         """Encapsulates everything that needs to be done to run robotmk."""
         raise NotImplementedError("Subclass must implement abstract method")
 
     @abstractmethod
-    def produce_agent_output(self):
+    def output(self):
         """Encapsulates everything that needs to be done to produce agent output."""
         raise NotImplementedError("Subclass must implement abstract method")
