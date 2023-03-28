@@ -5,7 +5,7 @@ common:
   tmpdir: baz 
   log_level: debug
   log_rotation: 14
-  suite_id: suiteA_footag
+  suiteid: suiteA_footag
   k8s_auth:
     user: foo
     password: bar

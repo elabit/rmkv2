@@ -2,6 +2,8 @@ import subprocess
 import json
 from pathlib import Path
 
+# TODO: is_rcc_compatible() should be a method of RCCenv
+
 
 class RCCEnv:
     def __init__(self, blueprint_path):
@@ -66,7 +68,10 @@ class RCCDir:
         Such a suite dir must at least contain conda.yml and robot.yml.
         """
         path = Path(abspath)
-        if path.joinpath("conda.yml").exists() and path.joinpath("robot.yml").exists():
+        if (
+            path.joinpath("conda.yaml").exists()
+            and path.joinpath("robot.yaml").exists()
+        ):
             return True
         else:
             return False

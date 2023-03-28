@@ -10,7 +10,7 @@ from ..abstract import AbstractContext
 from robotmk.config.yml import RobotmkConfigSchema
 from robotmk.rcc import RCCEnv, RCCDir
 from .head import HeadFactory
-from .target import SharedPythonTarget, RCCPythonTarget, RemoteTarget
+from .target import Target, SharedPythonTarget, RCCPythonTarget, RemoteTarget
 
 
 class SuiteContext(AbstractContext):
@@ -20,38 +20,43 @@ class SuiteContext(AbstractContext):
         self._suite = None
 
     @property
-    def suite_id(self):
+    def suiteid(self):
         """suite_id under "common" sets the suite to start (suitename + tag)"""
-        return self.config.common.suite_id
+        if self.config.common.suiteid:
+            return self.config.common.suiteid
+        else:
+            # TODO: What if suite is not found?
+            pass
 
     @property
-    def suite(self):
+    def suite(self) -> Target:
         if not self._suite:
-            suite_cfg = getattr(self.config.suites, self.suite_id)
+            # get the dotmap config for the suite to run
+            suite_cfg = getattr(self.config.suites, self.suiteid)
+            # Depending on the target, create a local or a remote suite
             if suite_cfg.target == "local":
+                # create a head strategy for this OS / kind of suite
                 head_strategy = HeadFactory(
                     platform.system(), suite_cfg.headless
                 ).create_head_strategy()
                 path = Path(self.config.common.robotdir).joinpath(suite_cfg.path)
-                # TODO: Path exists?
+                # TODO: What if Path does not exist?
                 if path.exists():
-                    if suite_cfg.shared_python is True and RCCDir.is_rcc_compatible(
-                        path
-                    ):
-                        # OS Python
+                    if suite_cfg.shared_python is True:
+                        # Same Python
                         self._suite = SharedPythonTarget(
-                            self.suite_id, self.config, head_strategy
+                            self.suiteid, self.config, head_strategy
                         )
                     else:
-                        # RCC Python
+                        # run in separate RCC Python
                         self._suite = RCCPythonTarget(
-                            self.suite_id, self.config, head_strategy
+                            self.suiteid, self.config, head_strategy
                         )
                 else:
                     raise ValueError("Suite path does not exist: " + str(path))
             elif suite_cfg.target == "remote":
                 # TODO: implement remote suite
-                self._suite = RemoteTarget(self.suite_id, self.config)
+                self._suite = RemoteTarget(self.suiteid, self.config)
         return self._suite
 
     def load_config(self, defaults, ymlfile: str, varfile: str) -> None:

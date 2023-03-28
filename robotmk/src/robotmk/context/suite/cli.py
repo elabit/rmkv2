@@ -21,7 +21,7 @@ def suite(ctx, yml, vars):
 
 
 @suite.command(default=True)
-@click.argument("suite", required=False)
+@click.argument("suiteid", required=False)
 # @click.option(
 #     "--share-python",
 #     "share_python",
@@ -33,13 +33,15 @@ def suite(ctx, yml, vars):
 #     See https://docs.robotmk.org for more information on RCC.""",
 # )
 @click.pass_context
-def run(ctx, suite):
+def run(ctx, suiteid):
     # def run(ctx, suite, share_python):
     """Run a Robot Framework SUITE.
 
-    SUITE is a directory or .robot file under $ROBOTDIR (can also be set by env:ROBOTMK_common_suite)
+    SUITEID is eiher equal to the suite dir or a combination of suite dir and its unique tag as set in the configuration.
+    Examples are: suite1, suite2_tagfoo, suite3_tagbaz
+    (SUITEID can also be set by env:ROBOTMK_common_suiteid.)
     """
-    click.secho("run suite %s" % suite, fg="green")
+    click.secho("run suite %s" % suiteid, fg="green")
     ctx.obj.execute()
     pass
 
@@ -50,7 +52,9 @@ def run(ctx, suite):
 def output(ctx, suite):
     """Print the CMK agent output of SUITE on STDOUT.
 
-    SUITE is a directory or .robot file under $ROBOTDIR (can also be set by env:ROBOTMK_common_suite)
+    SUITEID is eiher equal to the suite dir or a combination of suite dir and its unique tag as set in the configuration.
+    Examples are: suite1, suite2_tagfoo, suite3_tagbaz
+    (SUITEID can also be set by env:ROBOTMK_common_suiteid.)
     """
     click.secho("output of suite %s" % suite, fg="green")
     ctx.obj.output()
@@ -73,7 +77,9 @@ def output(ctx, suite):
 def logs(ctx, suite, number, pid):
     """Display the log files of SUITE.
 
-    SUITE is a directory or .robot file under $ROBOTDIR (can also be set by env:ROBOTMK_common_suite)
+    SUITEID is eiher equal to the suite dir or a combination of suite dir and its unique tag as set in the configuration.
+    Examples are: suite1, suite2_tagfoo, suite3_tagbaz
+    (SUITEID can also be set by env:ROBOTMK_common_suiteid.)
     """
     click.secho("logs", fg="green")
     if int(number) != 1 and pid != None:
@@ -89,7 +95,9 @@ def logs(ctx, suite, number, pid):
 def shell(ctx, suite):
     """Open a shell in the RCC python environment of SUITE.
 
-    SUITE is a directory or .robot file under $ROBOTDIR (can also be set by env:ROBOTMK_common_suite)
+    SUITEID is eiher equal to the suite dir or a combination of suite dir and its unique tag as set in the configuration.
+    Examples are: suite1, suite2_tagfoo, suite3_tagbaz
+    (SUITEID can also be set by env:ROBOTMK_common_suiteid.)
     """
     click.secho("$> RCC shell of suite %s" % suite, fg="yellow")
 
