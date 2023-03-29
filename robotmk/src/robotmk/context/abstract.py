@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
 from robotmk.config.config import ConfigFactory
+from robotmk.logger import RobotmkLogger
+from pathlib import Path
 
 
 class AbstractContext(ABC):
@@ -9,6 +11,26 @@ class AbstractContext(ABC):
 
     def __init__(self):
         self._config_factory = ConfigFactory()
+        self._logger = None
+        self.init_logger()
+
+    @property
+    def logger(self):
+        # self.__init_logger()
+        return self._logger
+
+    def init_logger(self):
+        # initialize the logger only when config was loaded
+        if self._logger is None and getattr(self, "config", None):
+            self._logger = RobotmkLogger(
+                Path(self.config.common.logdir).joinpath("robotmk.log"),
+                self.config.common.log_level,
+            )
+            self.debug = self._logger.debug
+            self.info = self._logger.info
+            self.warning = self._logger.warning
+            self.error = self._logger.error
+            self.critical = self._logger.critical
 
     @abstractmethod
     def load_config(self, defaults, ymlfile: str, varfile: str) -> None:

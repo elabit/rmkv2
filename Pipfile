@@ -11,6 +11,7 @@ apscheduler = "<4"
 pyyaml = "*"
 mergedeep = "*"
 dotmap = "*"
+loguru = "*"
 
 [dev-packages]
 black = "*"

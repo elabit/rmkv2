@@ -2,67 +2,115 @@ from abc import ABC, abstractmethod
 
 
 class HeadStrategy(ABC):
+    def run(self):
+        """Template method which bundles the methods to run."""
+        self.prepare()
+        self.execute()
+        self.cleanup()
+
     @abstractmethod
-    def prepare(self, suite):
+    def prepare(self):
         """Prepares the given suite."""
         pass
 
     @abstractmethod
-    def execute(self, suite):
-        """Executes the given suite."""
+    def execute(self):
+        """Execute the the given suite."""
         pass
 
     @abstractmethod
-    def cleanup(self, suite):
+    def cleanup(self):
         """Cleans up the given suite."""
-        pass
-
-
-class HeadedWindows(HeadStrategy):
-    """Executes a suite with a user interface on Windows."""
-
-    def prepare(self, suite):
-        pass
-
-    def execute(self, suite):
-        pass
-
-    def cleanup(self, suite):
-        pass
-
-
-class HeadedLinux(HeadStrategy):
-    """Executes a suite with a user interface on Linux."""
-
-    def prepare(self, suite):
-        pass
-
-    def execute(self, suite):
-        pass
-
-    def cleanup(self, suite):
         pass
 
 
 class Headless(HeadStrategy):
     """Executes a suite without any user interaction."""
 
-    def prepare(self, suite):
+    def prepare(self):
         pass
 
-    def execute(self, suite):
+    def execute(self):
+        # Call RobotFramework as in former times...
         pass
 
-    def cleanup(self, suite):
+    def cleanup(self):
+        pass
+
+
+class WindowsScheduledTask(HeadStrategy):
+    """Concrete class to run a suite with UI on Windows.
+
+    This is done not by executing the suite itself, but by
+    installing and running a Scheduled Task under the user which runs the current desktop.
+    """
+
+    def prepare(self):
+        # create the scheduled task for the given user
+        pass
+
+    def execute(self):
+        # run schtask.exe to run the task
+        pass
+
+    def cleanup(self):
+        pass
+
+
+class WindowsRDP(HeadStrategy):
+    """Concrete class to run a suite in a loopback RDP session.
+
+    This will require a Windows Server with RDP enabled and a proper
+    MSTC license. Although there is https://github.com/stascorp/rdpwrap
+    (https://www.anyviewer.com/how-to/windows-10-pro-remote-desktop-multiple-users-0427.html)
+    """
+
+    def prepare(self):
+        # create RDP file:
+        # rdp_file = "loopback.rdp"
+        # with open(rdp_file, "w") as f:
+        #     f.write(f"""\
+        # username:s:{username}
+        # password 51:b:{password}
+        # full address:s:127.0.0.2
+        # """)
+        pass
+
+    def execute(self):
+        # Launch the RDP session with the specified command
+        # os.system(f"mstsc /v:127.0.0.2 /f /w:800 /h:600 /v:127.0.0.2 /u:{username} /p:{password} /v:{rdp_file} /start:{command}")
+        # os.system(f'mstsc /v:127.0.0.1 /f /w:800 /h:600 /u:{username} /p:{password} /v:127.0.0.1 /w:800 /h:600 /v:127.0.0.1 /w:800 /h:600 /admin /restrictedAdmin cmd /c "{command}"')
+
+        pass
+
+    def cleanup(self):
+        # Close the RDP session
+        # os.system(f'tscon /dest:console')
+        pass
+
+
+class LinuxXVFB(HeadStrategy):
+    """Executes a suite with a user interface on Linux."""
+
+    def prepare(self):
+        pass
+
+    def execute(self):
+        pass
+
+    def cleanup(self):
         pass
 
 
 class HeadFactory:
-    """Factory for creating head strategies.
+    """Factory for creating different head strategies.
 
-    Creation:
-        headless (bool): Whether the suite should be executed headless.
-        platform (str): The platform the suite should be executed on."""
+    Strategies:
+        - Headless
+        - WindowsScheduledTask
+        - WindowsRDP
+        - LinuxXVFB
+    """
 
     def __init__(self, platform: str, headless: bool):
         self._platform = platform.lower()
@@ -78,8 +126,8 @@ class HeadFactory:
             return Headless()
         else:
             if self._platform == "windows":
-                return HeadedWindows()
+                return WindowsScheduledTask()
             elif self._platform == "linux":
-                return HeadedLinux()
+                return LinuxXVFB()
             else:
                 raise ValueError("Unsupported platform: " + self._platform)

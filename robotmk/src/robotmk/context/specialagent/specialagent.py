@@ -1,6 +1,7 @@
+from pathlib import Path
+
 from ..abstract import AbstractContext
 
-# TODO: this is not specific for suite context yet
 from robotmk.config.yml import RobotmkConfigSchema
 from robotmk.executor.sequencer import Sequencer
 
@@ -9,6 +10,15 @@ class SpecialAgentContext(AbstractContext):
     def __init__(self):
         super().__init__()
         self.ymlschema = RobotmkConfigSchema
+
+    @property
+    def logger(self):
+        if not self._logger:
+            self._logger = RobotmkLogger(
+                Path(self.config.common.logdir).joinpath("robotmk.log"),
+                self.config.common.log_level,
+            )
+        return self._logger
 
     def load_config(self, defaults, ymlfile: str, varfile: str) -> None:
         """Load the config for specialagent context.

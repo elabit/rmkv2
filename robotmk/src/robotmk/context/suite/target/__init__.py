@@ -1,4 +1,4 @@
 from .target import Target
-from .rcc import RCCPythonTarget
-from .sharedpython import SharedPythonTarget
+from .rcc import RCCTarget
+from .robotframework import RobotFrameworkTarget
 from .remote import RemoteTarget

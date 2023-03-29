@@ -177,6 +177,7 @@ Prio HIGH:
 - Logging  
   - https://superfastpython.com/multiprocessing-logging-in-python/
 - apscheduler: loop/oneshot mode 
+- ExitHandler Powershell: https://chat.openai.com/chat/738cfffa-39ab-4368-bc20-b1a8e53546d8
 
 Prio MEDIUM: 
 - holotree.zip shippen

@@ -1,23 +1,19 @@
 """This module encapsulates everyhting related so a single suite 
 execution, either locally or remotely."""
 
-from abc import ABC, abstractmethod
-import platform
 from pathlib import Path
 from ..abstract import AbstractContext
 
-# TODO: this is not specific for suite context yet
 from robotmk.config.yml import RobotmkConfigSchema
-from robotmk.rcc import RCCEnv, RCCDir
-from .head import HeadFactory
-from .target import Target, SharedPythonTarget, RCCPythonTarget, RemoteTarget
+
+from .target import Target, RobotFrameworkTarget, RCCTarget, RemoteTarget
 
 
 class SuiteContext(AbstractContext):
     def __init__(self):
         super().__init__()
-        self.ymlschema = RobotmkConfigSchema
         self._suite = None
+        self._ymlschema = RobotmkConfigSchema
 
     @property
     def suiteid(self):
@@ -29,34 +25,32 @@ class SuiteContext(AbstractContext):
             pass
 
     @property
-    def suite(self) -> Target:
+    def target(self) -> Target:
+        """Returns a Target object using the Bridge pattern which combines
+        - Local Targets (Shared Python/RCC)   with
+        - Head Strategies (Headless/Headed, Win/linux)"""
+        # TODO: notify the logger initialization as soon as there is config loaded
+        # to prevent this call
         if not self._suite:
+            self.init_logger()
             # get the dotmap config for the suite to run
-            suite_cfg = getattr(self.config.suites, self.suiteid)
+            suite_cfg = getattr(self.config.suites, self.suiteid, None)
             # Depending on the target, create a local or a remote suite
             if suite_cfg.target == "local":
-                # create a head strategy for this OS / kind of suite
-                head_strategy = HeadFactory(
-                    platform.system(), suite_cfg.headless
-                ).create_head_strategy()
                 path = Path(self.config.common.robotdir).joinpath(suite_cfg.path)
-                # TODO: What if Path does not exist?
                 if path.exists():
-                    if suite_cfg.shared_python is True:
-                        # Same Python
-                        self._suite = SharedPythonTarget(
-                            self.suiteid, self.config, head_strategy
-                        )
+                    if suite_cfg.rcc is True:
+                        self._suite = RCCTarget(self.suiteid, self.config, self.logger)
                     else:
-                        # run in separate RCC Python
-                        self._suite = RCCPythonTarget(
-                            self.suiteid, self.config, head_strategy
+                        self._suite = RobotFrameworkTarget(
+                            self.suiteid, self.config, self.logger
                         )
                 else:
-                    raise ValueError("Suite path does not exist: " + str(path))
+                    self.error("Suite path does not exist: " + str(path))
             elif suite_cfg.target == "remote":
-                # TODO: implement remote suite
-                self._suite = RemoteTarget(self.suiteid, self.config)
+                self._suite = RemoteTarget(self.suiteid, self.config, self.logger)
+            else:
+                self.error("Unknown target type for suite %s!" % self.suiteid)
         return self._suite
 
     def load_config(self, defaults, ymlfile: str, varfile: str) -> None:
@@ -73,7 +67,7 @@ class SuiteContext(AbstractContext):
         self._config_factory.read_cfg_vars(path=varfile)
         self.config = self._config_factory.create_config()
         # TODO: validate later so that config can be dumped
-        # self.config.validate(self.ymlschema)
+        # self.config.validate(self._ymlschema)
 
     def refresh_config(self) -> bool:
         """Re-loads the config and returns True if it changed"""
@@ -88,7 +82,7 @@ class SuiteContext(AbstractContext):
 
     def execute(self):
         """Runs a single suite, either locally or remotely (via API call)."""
-        self.suite.run()
+        self.target.run()
 
     def output(self):
         # TODO: make this possible in CLI

@@ -1,1 +1,1 @@
-from .head import HeadStrategy, HeadedWindows, HeadedLinux, Headless, HeadFactory
+from .head import HeadStrategy, WindowsScheduledTask, LinuxXVFB, Headless, HeadFactory

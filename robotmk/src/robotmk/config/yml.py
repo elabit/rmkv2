@@ -15,6 +15,7 @@ class RobotmkConfigSchema:
                 "cfgdir": str,
                 "logdir": str,
                 "tmpdir": str,
+                "resultdir": str,
                 "log_level": Or("debug", "info", "warning", "error", "critical"),
                 "log_rotation": int,
                 Optional("suite"): str,
@@ -26,8 +27,19 @@ class RobotmkConfigSchema:
                     "path": str,
                     Optional("tag"): str,
                     Optional("piggybackhost"): str,
-                    "use_rcc": Or(True, False),
-                    "headless": Or(True, False),
+                    "rcc": Or(True, False),
+                    "headless": Or(
+                        {
+                            "mode": "headless",
+                        },
+                        {
+                            "mode": Or(
+                                "windows_schedtask", "windows_rdp", "linux_xvfb"
+                            ),
+                            "user": str,
+                            "password": str,
+                        },
+                    ),
                     # Optional("robot_params"): And(dict, Use(subdict_schema.validate)),
                     # Optional("failed_handling"): And(
                     #     dict, Use(failed_handling_schema.validate)

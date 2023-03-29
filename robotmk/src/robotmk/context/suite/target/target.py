@@ -1,5 +1,8 @@
 from abc import ABC, abstractmethod
-from ..head import HeadStrategy
+from ..head import HeadStrategy, HeadFactory
+import platform
+
+from robotmk.logger import RobotmkLogger
 
 
 class Target(ABC):
@@ -10,9 +13,17 @@ class Target(ABC):
     - an API call to an external platform ("target: remote") like Robocorp or Kubernetes
     """
 
-    def __init__(self, suite_id: str, config):
+    def __init__(self, suite_id: str, config, logger: RobotmkLogger):
         self.suite_id = suite_id
-        self.config = getattr(config.suites, suite_id)
+        self.config = config
+        self.suite_cfg = getattr(self.config.suites, suite_id)
+
+        self._logger = logger
+        self.debug = self._logger.debug
+        self.info = self._logger.info
+        self.warning = self._logger.warning
+        self.error = self._logger.error
+        self.critical = self._logger.critical
 
     @abstractmethod
     def run(self):
@@ -21,22 +32,32 @@ class Target(ABC):
     @abstractmethod
     def output(self):
         pass
-
-
-# ---
 
 
 class LocalTarget(Target):
-    def __init__(self, name: str, config: dict, head_strategy: HeadStrategy):
-        super().__init__(name, config)
-        self.head_strategy = head_strategy
+    """A local target is a single Robot Fremework suite or a RCC task for this suite.
 
-    @abstractmethod
+    It also encapsulates the implementation details of the head strategy, which is
+    either a headless or a headed execution (RDP, XVFB, Scheduled Task)."""
+
+    def __init__(
+        self,
+        suiteid: str,
+        config: dict,
+        logger: RobotmkLogger,
+    ):
+        super().__init__(suiteid, config, logger)
+        # create a head strategy for this OS / kind of suite
+        self.head_strategy = HeadFactory(
+            platform.system(), self.suite_cfg.headless
+        ).create_head_strategy()
+
     def run(self):
-        pass
+        self.head_strategy.run()
 
-    @abstractmethod
     def output(self):
+        # None of the head strategies used for "run" are needed to get the output,
+        # so we can just read the result artifacts from the filesystem.
         pass
 
 

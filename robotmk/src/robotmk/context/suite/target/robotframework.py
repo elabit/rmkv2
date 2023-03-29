@@ -1,10 +1,9 @@
-from robotmk.rcc import RCCEnv
 from .target import LocalTarget
 from ..head import HeadStrategy
 from robotmk.logger import RobotmkLogger
 
 
-class RCCTarget(LocalTarget):
+class RobotFrameworkTarget(LocalTarget):
     def __init__(
         self,
         suiteid: str,

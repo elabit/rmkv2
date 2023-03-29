@@ -17,28 +17,17 @@ def suite(ctx, yml, vars):
     if vars and yml:
         raise click.BadParameter("Cannot use --yml and --vars at the same time")
     click.echo("suite")
-    ctx.obj = Robotmk("suite", yml=yml, vars=vars)
+    ctx_loglevel = ctx.parent.params.get("loglevel", DEFAULTS["common"]["log_level"])
+    ctx.obj = Robotmk(contextname="suite", log_level=ctx_loglevel, yml=yml, vars=vars)
 
 
 @suite.command(default=True)
 @click.argument("suiteid", required=False)
-# @click.option(
-#     "--share-python",
-#     "share_python",
-#     default=False,
-#     is_flag=True,
-#     show_default=True,
-#     help="""If set, SUITE will be run with the same Python interpreter as Robotmk was called with.
-#     Default is False (always try to create and use RCC environments, if this feature is available).
-#     See https://docs.robotmk.org for more information on RCC.""",
-# )
 @click.pass_context
 def run(ctx, suiteid):
-    # def run(ctx, suite, share_python):
-    """Run a Robot Framework SUITE.
+    """Trigger the start of a Robot Framework SUITE.
 
-    SUITEID is eiher equal to the suite dir or a combination of suite dir and its unique tag as set in the configuration.
-    Examples are: suite1, suite2_tagfoo, suite3_tagbaz
+    The SUITE (in fact the SUITEID) must be a configuration subkey of the "suites" section.
     (SUITEID can also be set by env:ROBOTMK_common_suiteid.)
     """
     click.secho("run suite %s" % suiteid, fg="green")

@@ -3,7 +3,7 @@
 Start Robotmk in different contexts.
 Context command can also be set via environment variable ROBOTMK_common_context."""
 import click
-from robotmk.main import Robotmk, DEFAULTS
+from robotmk.main import Robotmk, DEFAULTS, LOG_LEVELS
 import importlib
 import pkgutil
 import os.path
@@ -76,8 +76,15 @@ def get_commands_from_pkg(pkg) -> dict:
     invoke_without_command=True,
     commands=get_commands_from_pkg("robotmk.context"),
 )
+@click.option(
+    "--loglevel",
+    "-l",
+    default=DEFAULTS["common"]["log_level"],
+    type=click.Choice(LOG_LEVELS),
+    help="Log level",
+)
 @click.pass_context
-def main(ctx):
+def main(ctx, loglevel):
     if ctx.invoked_subcommand is None:
         # robotmk was called without argument. Try to detect the context from the default
         # config and/or environment variables.
@@ -85,7 +92,7 @@ def main(ctx):
         # - output() for local context
         # - specialagent() for specialagent context (output + sequencer)
         # - run() for suite context
-        ctx.robotmk = Robotmk(contextname=None, yml=None, vars=None)
+        ctx.robotmk = Robotmk(contextname=None, log_level=loglevel, yml=None, vars=None)
         ctx.robotmk.run_default()
     else:
         # Robotmk was executed with a context subcommand, whose logic is defined within the context.

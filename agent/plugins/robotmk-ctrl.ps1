@@ -1467,7 +1467,8 @@ function SetScriptVars {
 
   # Try to read the environment variables from the agent. If not set, use defaults.
   $Global:MK_LOGDIR = "$PDataCMKAgent\log"
-  $Global:RMKLogDir = "$MK_LOGDIR\robotmk"
+  $Global:RMKLogDir = "$MK_LOGDIR\robotmk\logs"
+  $Global:RMKResultDir = "$MK_LOGDIR\robotmk\results"  
   $Global:MK_TEMPDIR = "$PDataCMKAgent\tmp"
   $Global:RMKTmpDir = "$MK_TEMPDIR\robotmk"
   $Global:MK_CONFDIR = "$PDataCMKAgent\config"
@@ -1483,7 +1484,8 @@ function SetScriptVars {
 
   # Expose env vars for CMK agent (they exist if called from agent, but 
   # do NOT if called while developing)
-  Set-EnvVar "ROBOTMK_common_logfir" $RMKLogDir 
+  Set-EnvVar "ROBOTMK_common_logdir" $RMKLogDir
+  Set-EnvVar "ROBOTMK_common_resultdir" $RMKResultDir 
   Set-EnvVar "ROBOTMK_common_tmpdir" $RMKTmpDir 
   Set-EnvVar "ROBOTMK_common_cfgdir" $RMKCfgDir
 

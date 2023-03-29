@@ -3,8 +3,9 @@ common:
   cfgdir: foo
   logdir: bar
   tmpdir: baz 
+  resultdir: ban
   log_level: debug
-  log_rotation: 14
+  log_retention: 14
   suiteid: suiteA_footag
   k8s_auth:
     user: foo
