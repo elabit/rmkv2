@@ -27,15 +27,18 @@ class RobotmkConfigSchema:
                     "path": str,
                     Optional("tag"): str,
                     Optional("piggybackhost"): str,
-                    "rcc": Or(True, False),
-                    "headless": Or(
+                    "run": Or(
                         {
-                            "mode": "headless",
+                            "mode": "default",
+                            "target": "local",
+                            "rcc": Or(True, False),
                         },
                         {
                             "mode": Or(
-                                "windows_schedtask", "windows_rdp", "linux_xvfb"
+                                "windows-1desktop", "windows-ndesktop", "linux-ndesktop"
                             ),
+                            "target": "local",
+                            "rcc": Or(True, False),
                             "user": str,
                             "password": str,
                         },

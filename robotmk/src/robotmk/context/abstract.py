@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from robotmk.config.config import ConfigFactory
+from robotmk.config import Config
 from robotmk.logger import RobotmkLogger
 from pathlib import Path
 
@@ -10,7 +10,7 @@ class AbstractContext(ABC):
     """
 
     def __init__(self):
-        self._config_factory = ConfigFactory()
+        self._config_factory = Config()
         self._logger = None
         self.init_logger()
 

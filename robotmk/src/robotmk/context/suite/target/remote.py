@@ -1,5 +1,5 @@
 from .target import Target
-from ..head import HeadStrategy
+from ..strategies import RunStrategy
 from robotmk.logger import RobotmkLogger
 
 

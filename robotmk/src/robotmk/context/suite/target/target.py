@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
-from ..head import HeadStrategy, HeadFactory
-import platform
+from dotmap import DotMap
+from ..strategies import RunStrategy, RunStrategyFactory
+
 
 from robotmk.logger import RobotmkLogger
 
@@ -13,12 +14,13 @@ class Target(ABC):
     - an API call to an external platform ("target: remote") like Robocorp or Kubernetes
     """
 
-    def __init__(self, suite_id: str, config, logger: RobotmkLogger):
-        self.suite_id = suite_id
+    def __init__(self, suiteid: str, config: DotMap, logger: RobotmkLogger):
+        self.suiteid = suiteid
         self.config = config
-        self.suite_cfg = getattr(self.config.suites, suite_id)
+        self.suitecfg = getattr(self.config.suites, suiteid)
 
         self._logger = logger
+        # TODO: Boilerplate alarm
         self.debug = self._logger.debug
         self.info = self._logger.info
         self.warning = self._logger.warning
@@ -27,17 +29,19 @@ class Target(ABC):
 
     @abstractmethod
     def run(self):
+        """Abstract method to run a suite/target."""
         pass
 
     @abstractmethod
     def output(self):
+        """Abstract method to get the output of a suite/target."""
         pass
 
 
 class LocalTarget(Target):
     """A local target is a single Robot Fremework suite or a RCC task for this suite.
 
-    It also encapsulates the implementation details of the head strategy, which is
+    It also encapsulates the implementation details of the run strategy, which is
     either a headless or a headed execution (RDP, XVFB, Scheduled Task)."""
 
     def __init__(
@@ -47,16 +51,17 @@ class LocalTarget(Target):
         logger: RobotmkLogger,
     ):
         super().__init__(suiteid, config, logger)
-        # create a head strategy for this OS / kind of suite
-        self.head_strategy = HeadFactory(
-            platform.system(), self.suite_cfg.headless
-        ).create_head_strategy()
+        # create a run strategy for this OS / kind of suite
+        self.run_strategy = RunStrategyFactory(
+            self.suiteid, self.config, self._logger
+        ).create_run_strategy()
 
+    @abstractmethod
     def run(self):
-        self.head_strategy.run()
+        pass
 
     def output(self):
-        # None of the head strategies used for "run" are needed to get the output,
+        # None of the run strategies used for "run" are needed to get the output,
         # so we can just read the result artifacts from the filesystem.
         pass
 
@@ -71,7 +76,7 @@ class LocalTarget(Target):
 #     whether to run the suite with the OS Python or within
 #     a RCC environment."""
 
-#     # self.suite_cfg = getattr(self.config.suites, self.suitename)
+#     # self.suitecfg = getattr(self.config.suites, self.suitename)
 
 #     def __init__(self, name: str, config: dict):
 #         super().__init__(name, config)

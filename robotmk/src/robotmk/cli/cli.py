@@ -81,7 +81,6 @@ def get_commands_from_pkg(pkg) -> dict:
     "-l",
     default=DEFAULTS["common"]["log_level"],
     type=click.Choice(LOG_LEVELS),
-    help="Log level",
 )
 @click.pass_context
 def main(ctx, loglevel):

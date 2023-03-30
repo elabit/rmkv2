@@ -184,7 +184,7 @@
             "env": {
                 "ROBOTMK_common_robotdir": "/home/simonmeggle/Documents/01_dev/rmkv2/agent/robots",
                 "ROBOTMK_common_logdir": "/home/simonmeggle/Documents/01_dev/rmkv2/agent/log/robotmk/logs",
-                // "ROBOTMK_common_suiteid": "suiteA_footag"
+                "ROBOTMK_common_suiteid": "suite_default_rcc"
             }
         },
         {

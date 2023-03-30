@@ -38,13 +38,15 @@ from robotmk.config.yml import RobotmkConfigSchema
 # TODO: add config validation
 
 
-class ConfigFactory:
-    def __init__(self, envvar_prefix="ROBOTMK"):
+class Config:
+    def __init__(self, envvar_prefix: str = "ROBOTMK", configdict: dict = None):
         self.envvar_prefix = envvar_prefix
         self.default_cfg = {}
         self.yml_config = {}
         self.env_config = {}
         self._merged_config_dict = {}
+        if configdict:
+            self.configdict = configdict
 
     def create_config(self):
         """Returns a DotMap object containing the merged config."""

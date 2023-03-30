@@ -17,7 +17,7 @@ class SuiteContext(AbstractContext):
 
     @property
     def suiteid(self):
-        """suite_id under "common" sets the suite to start (suitename + tag)"""
+        """suiteid under "common" sets the suite to start (suitename + tag)"""
         if self.config.common.suiteid:
             return self.config.common.suiteid
         else:
@@ -34,12 +34,12 @@ class SuiteContext(AbstractContext):
         if not self._suite:
             self.init_logger()
             # get the dotmap config for the suite to run
-            suite_cfg = getattr(self.config.suites, self.suiteid, None)
+            suitecfg = getattr(self.config.suites, self.suiteid, None)
             # Depending on the target, create a local or a remote suite
-            if suite_cfg.target == "local":
-                path = Path(self.config.common.robotdir).joinpath(suite_cfg.path)
+            if suitecfg.run.target == "local":
+                path = Path(self.config.common.robotdir).joinpath(suitecfg.path)
                 if path.exists():
-                    if suite_cfg.rcc is True:
+                    if suitecfg.run.rcc is True:
                         self._suite = RCCTarget(self.suiteid, self.config, self.logger)
                     else:
                         self._suite = RobotFrameworkTarget(
@@ -47,7 +47,7 @@ class SuiteContext(AbstractContext):
                         )
                 else:
                     self.error("Suite path does not exist: " + str(path))
-            elif suite_cfg.target == "remote":
+            elif suitecfg.run.target == "remote":
                 self._suite = RemoteTarget(self.suiteid, self.config, self.logger)
             else:
                 self.error("Unknown target type for suite %s!" % self.suiteid)
