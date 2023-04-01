@@ -14,10 +14,14 @@ class RCCTarget(LocalTarget):
     ):
         super().__init__(suiteid, config, logger)
 
+    @property
+    def cmdline(self):
+        # returns the command line to run a RCC task
+        pass
+
     def run(self):
-        # Change the suite config so that inside of the RCC run
-        # a Robot FrameworkTarget is created.
-        self.config.set("suites.suite_default_rcc.run.rcc", "foo")
-        self.suitecfg.run.rcc = False
+        # When running Robotmk inside of a RCC, it must be told not
+        # to use RCC again. (Otherwise, it would run RCC inside of RCC.)
+        self.config.set("suites.suite_default_rcc.run.rcc", False)
 
         self.run_strategy.run()

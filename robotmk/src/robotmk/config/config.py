@@ -51,19 +51,32 @@ class Config:
         # they are applied last and can overwrite any other config values.
         self.added_config = {}
 
-    def get(self, name: str) -> str:
+    def get(self, name: str, default=None) -> str:
+        """Get a value from the object with dot notation.
+
+        Example:
+            cfg.get("common.cfgdir")
+        """
         m = self.configdict
         prev = self.configdict
-        for k in name.split("."):
-            prev = m
-            prev_k = k
-            m = m.get(k)
-        if type(m) is dict:
-            return Config(initdict=m)
-        else:
-            return m
+        try:
+            for k in name.split("."):
+                prev = m
+                prev_k = k
+                m = m.get(k)
+            if type(m) is dict:
+                return Config(initdict=m)
+            else:
+                return m
+        except:
+            return default
 
     def set(self, name: str, value: any) -> None:
+        """Set a value in the object with dot notation.
+
+        Example:
+            cfg.set("common.cfgdir", "/etc/check_mk")
+        """
         keys = name.split(".")
         curdict = self.added_config
         for key in keys[:-1]:

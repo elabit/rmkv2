@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from dotmap import DotMap
+from pathlib import Path
 from ..strategies import RunStrategy, RunStrategyFactory
 
 
@@ -18,6 +19,7 @@ class Target(ABC):
         self.suiteid = suiteid
         self.config = config
         self.suitecfg = self.config.get("suites.%s" % suiteid)
+        self.commoncfg = self.config.get("common")
 
         self._logger = logger
         # TODO: Boilerplate alarm
@@ -51,6 +53,10 @@ class LocalTarget(Target):
         logger: RobotmkLogger,
     ):
         super().__init__(suiteid, config, logger)
+        self.path = Path(self.config.get("common.robotdir")).joinpath(
+            self.suitecfg.get("path")
+        )
+
         # create a run strategy for this OS / kind of suite
         self.run_strategy = RunStrategyFactory(
             self.suiteid, self.config, self._logger

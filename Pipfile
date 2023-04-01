@@ -12,6 +12,7 @@ pyyaml = "*"
 mergedeep = "*"
 dotmap = "*"
 loguru = "*"
+robotframework = "*"
 
 [dev-packages]
 black = "*"

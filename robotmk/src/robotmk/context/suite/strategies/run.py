@@ -39,8 +39,12 @@ class RunStrategy(ABC):
         pass
 
 
-class Default(RunStrategy):
-    """Executes a Robot Framework suite."""
+class Runner(RunStrategy):
+    """This Strategy is the only one which executes a 'job' in fact.
+
+    - run a Robot Framework Suite
+    - run a RCC task
+    """
 
     def __init__(self, suiteid: str, config: DotMap, logger: RobotmkLogger) -> None:
         super().__init__(suiteid, config, logger)
@@ -49,7 +53,7 @@ class Default(RunStrategy):
         pass
 
     def execute(self):
-        # Call RobotFramework as in former times...
+        # Call a command.
         pass
 
     def cleanup(self):
@@ -160,14 +164,7 @@ class LinuxMultiDesktop(RunStrategy):
 
 
 class RunStrategyFactory:
-    """Factory for creating the proper run strategy for a given suite.
-
-    Strategies:
-        - Headless
-        - WindowsScheduledTask
-        - WindowsRDP
-        - LinuxXVFB
-    """
+    """Factory for creating the proper run strategy for a given suite/OS."""
 
     def __init__(self, suiteid: str, config: DotMap, logger: RobotmkLogger):
         self.suiteid = suiteid
@@ -189,7 +186,7 @@ class RunStrategyFactory:
         """
         mode = self.config.get("suites.%s.run.mode" % self.suiteid)
         if mode == "default":
-            return Default(self.suiteid, self.config, self._logger)
+            return Runner(self.suiteid, self.config, self._logger)
         elif mode == "windows-1desktop" and self.platform == "windows":
             return WindowsSingleDesktop(self.suiteid, self.config, self._logger)
         elif mode == "windows-ndesktop" and self.platform == "windows":

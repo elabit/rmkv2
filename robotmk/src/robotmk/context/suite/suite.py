@@ -35,6 +35,7 @@ class SuiteContext(AbstractContext):
         if not self._suite:
             self.init_logger()
             # get the dotmap config for the suite to run
+            # TODO: what if suite is not part of the config?
             suitecfg = self.config.get("suites.%s" % self.suiteid)
             # Depending on the target, create a local or a remote suite
             target = suitecfg.get("run.target")
