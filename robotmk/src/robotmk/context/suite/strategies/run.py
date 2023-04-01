@@ -187,7 +187,7 @@ class RunStrategyFactory:
         Returns:
             RunStrategy: The run strategy to use.
         """
-        mode = getattr(self.config.suites, self.suiteid).run.mode
+        mode = self.config.get("suites.%s.run.mode" % self.suiteid)
         if mode == "default":
             return Default(self.suiteid, self.config, self._logger)
         elif mode == "windows-1desktop" and self.platform == "windows":

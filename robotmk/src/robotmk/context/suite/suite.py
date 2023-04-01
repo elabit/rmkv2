@@ -4,7 +4,7 @@ execution, either locally or remotely."""
 from pathlib import Path
 from ..abstract import AbstractContext
 
-from robotmk.config.yml import RobotmkConfigSchema
+from robotmk.config import Config, RobotmkConfigSchema
 
 from .target import Target, RobotFrameworkTarget, RCCTarget, RemoteTarget
 
@@ -18,11 +18,12 @@ class SuiteContext(AbstractContext):
     @property
     def suiteid(self):
         """suiteid under "common" sets the suite to start (suitename + tag)"""
-        if self.config.common.suiteid:
-            return self.config.common.suiteid
-        else:
-            # TODO: What if suite is not found?
+        try:
+            suiteid = self.config.get("common.suiteid")
+        except AttributeError:
             pass
+            # TODO: What if suite is not found?
+        return suiteid
 
     @property
     def target(self) -> Target:
@@ -34,12 +35,16 @@ class SuiteContext(AbstractContext):
         if not self._suite:
             self.init_logger()
             # get the dotmap config for the suite to run
-            suitecfg = getattr(self.config.suites, self.suiteid, None)
+            suitecfg = self.config.get("suites.%s" % self.suiteid)
             # Depending on the target, create a local or a remote suite
-            if suitecfg.run.target == "local":
-                path = Path(self.config.common.robotdir).joinpath(suitecfg.path)
+            target = suitecfg.get("run.target")
+            rcc = suitecfg.get("run.rcc")
+            if target == "local":
+                path = Path(self.config.get("common.robotdir")).joinpath(
+                    suitecfg.get("path")
+                )
                 if path.exists():
-                    if suitecfg.run.rcc is True:
+                    if rcc is True:
                         self._suite = RCCTarget(self.suiteid, self.config, self.logger)
                     else:
                         self._suite = RobotFrameworkTarget(
@@ -47,7 +52,7 @@ class SuiteContext(AbstractContext):
                         )
                 else:
                     self.error("Suite path does not exist: " + str(path))
-            elif suitecfg.run.target == "remote":
+            elif target == "remote":
                 self._suite = RemoteTarget(self.suiteid, self.config, self.logger)
             else:
                 self.error("Unknown target type for suite %s!" % self.suiteid)
@@ -62,10 +67,14 @@ class SuiteContext(AbstractContext):
         - + var file (= --vars)
         - + environment variables
         """
-        self._config_factory.set_defaults(defaults)
-        self._config_factory.read_yml_cfg(path=ymlfile, must_exist=False)
-        self._config_factory.read_cfg_vars(path=varfile)
-        self.config = self._config_factory.create_config()
+        self.config = Config()
+        self.config.set_defaults(defaults)
+        self.config.read_yml_cfg(path=ymlfile, must_exist=False)
+        self.config.read_cfg_vars(path=varfile)
+        # self._config_factory.set_defaults(defaults)
+        # self._config_factory.read_yml_cfg(path=ymlfile, must_exist=False)
+        # self._config_factory.read_cfg_vars(path=varfile)
+        # self.config = self._config_factory.create_config()
         # TODO: validate later so that config can be dumped
         # self.config.validate(self._ymlschema)
 

@@ -10,7 +10,7 @@ class AbstractContext(ABC):
     """
 
     def __init__(self):
-        self._config_factory = Config()
+        # self._config_factory = Config()
         self._logger = None
         self.init_logger()
 
@@ -23,8 +23,8 @@ class AbstractContext(ABC):
         # initialize the logger only when config was loaded
         if self._logger is None and getattr(self, "config", None):
             self._logger = RobotmkLogger(
-                Path(self.config.common.logdir).joinpath("robotmk.log"),
-                self.config.common.log_level,
+                Path(self.config.get("common.logdir")).joinpath("robotmk.log"),
+                self.config.get("common.log_level"),
             )
             self.debug = self._logger.debug
             self.info = self._logger.info

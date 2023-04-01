@@ -17,7 +17,7 @@ class Target(ABC):
     def __init__(self, suiteid: str, config: DotMap, logger: RobotmkLogger):
         self.suiteid = suiteid
         self.config = config
-        self.suitecfg = getattr(self.config.suites, suiteid)
+        self.suitecfg = self.config.get("suites.%s" % suiteid)
 
         self._logger = logger
         # TODO: Boilerplate alarm

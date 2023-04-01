@@ -32,25 +32,54 @@ from typing import Union
 
 # from collections import namedtuple
 from pathlib import Path
-from dotmap import DotMap
-from robotmk.config.yml import RobotmkConfigSchema
+from .yml import RobotmkConfigSchema
 
 # TODO: add config validation
+# ["%s:%s" % (v, os.environ[v]) for v in os.environ if v.startswith("ROBO")]
 
 
 class Config:
-    def __init__(self, envvar_prefix: str = "ROBOTMK", configdict: dict = None):
+    def __init__(self, envvar_prefix: str = "ROBOTMK", initdict: dict = None):
         self.envvar_prefix = envvar_prefix
-        self.default_cfg = {}
+        if initdict:
+            self.default_cfg = initdict
+        else:
+            self.default_cfg = {}
         self.yml_config = {}
         self.env_config = {}
-        self._merged_config_dict = {}
-        if configdict:
-            self.configdict = configdict
+        # this is a dict of all config values that were added by the user.
+        # they are applied last and can overwrite any other config values.
+        self.added_config = {}
 
-    def create_config(self):
-        """Returns a DotMap object containing the merged config."""
-        return DotMap(self.configdict)
+    def get(self, name: str) -> str:
+        m = self.configdict
+        prev = self.configdict
+        for k in name.split("."):
+            prev = m
+            prev_k = k
+            m = m.get(k)
+        if type(m) is dict:
+            return Config(initdict=m)
+        else:
+            return m
+
+    def set(self, name: str, value: any) -> None:
+        keys = name.split(".")
+        curdict = self.added_config
+        for key in keys[:-1]:
+            if not key in curdict:
+                curdict[key] = {}
+            curdict = curdict[key]
+
+        curdict[keys[-1]] = value
+
+    @property
+    def configdict(self):
+        """This property merges the three config sources in the right order."""
+
+        return mergedeep.merge(
+            self.default_cfg, self.yml_config, self.env_config, self.added_config
+        )
 
     # 1. Defaults (common/OS specific)
     def set_defaults(self, os_defaults: dict = None) -> None:
@@ -89,62 +118,75 @@ class Config:
             self.yml_config = config
 
     # 3. variables (env AND! file)
-    def read_cfg_vars(self, path=None, d=None):
-        """Reads variables file (if path is given) and/or environment variables.
-        Creates a nested dict from vars starting with a certain prefix (given as
-        a parameter "envvar_prefix" to the constructor). The prefix is used to
-        only read variables that are relevant for the application.
-        Each Variable starting with the prefix is split into a list of substrings,
-        separated by "_".
-        Each split iteration creates a new level in the nested dict.
-        If there is a substring starting with double underscore, everything until the
-        next double underscore is protected against splitting and used as one single key.
-        It then creates a nested dict from them.
-        The dict is stored in self.config or in the dict given as parameter d."""
-        temp_cfg = {}
-        if path:
-            self.__source_vars_from_file(path)
+    def read_cfg_vars(self, path=None):
+        """Read ROBOTMK variables from file and/or environment.
+
+        Environment vars have precedence over file vars."""
+
+        filevars = self._filevar2dict(path)
+        envvars = self._envvar2dict()
+        # a dict with still flat var names
+        vars = mergedeep.merge(filevars, envvars)
+        # convert flat vars to nested dicts
+        vardict = {}
+        for k, v in vars.items():
+            d = self._var2dict(k, v)
+            vardict = mergedeep.merge(vardict, d)
+        self.env_config = mergedeep.merge(self.env_config, vardict)
+
+    def _envvar2dict(self) -> dict:
+        """Returns all environment variables starting with the ROBOTMK prefix.
+
+        Example:
+        {"ROBOTMK_foo_bar": "baz",
+         "ROBOTMK_foo_baz": "bar"}
+        """
+        vardict = {}
         for k, v in os.environ.items():
             if k.startswith(self.envvar_prefix):
-                k = k.replace(self.envvar_prefix + "_", "")
-                pieces = self.__split_varstring(k)
-                cfg = temp_cfg
-                for part in pieces[:-1]:
-                    if part not in cfg:
-                        cfg[part] = {}
-                    cfg = cfg[part]
-                cfg[pieces[-1]] = v
-        if d is None:
-            self.env_config = mergedeep.merge(self.env_config, temp_cfg)
-        else:
-            return temp_cfg
+                vardict[k] = v
+        return vardict
 
-    def __source_vars_from_file(self, file):
-        """Helper function to read variables from a file and source them in the
-        current environment."""
-        try:
-            with open(file, "r") as f:
-                for line in f:
-                    line = line.strip()
-                    # Ignore empty lines and lines starting with "#" (comments)
-                    if line.strip() and not line.strip().startswith("#"):
-                        if line.startswith("export ") or line.startswith("set "):
-                            line = line.partition(" ")[2]
-                        # Split each line into a key-value pair
-                        key, value = line.strip().split("=")
-                        # Add the variable to the environment
-                        os.environ[key] = value
-        except Exception as e:
-            raise FileNotFoundError(f"Could not read environment file: {file}")
+    def _filevar2dict(self, file) -> dict:
+        """Returns all variables from a given file (strips 'set' and 'export' statements).
 
-    @property
-    def configdict(self):
-        """This property merges the three config sources in the right order."""
+        Example:
+        {"ROBOTMK_foo_bar": "baz",
+         "ROBOTMK_foo_baz": "bar"}
+        """
+        vardict = {}
+        if file:
+            try:
+                with open(file, "r") as f:
+                    for line in f:
+                        line = line.strip()
+                        # Ignore empty lines and lines starting with "#" (comments)
+                        if line.strip() and not line.strip().startswith("#"):
+                            if line.startswith("export ") or line.startswith("set "):
+                                line = line.partition(" ")[2]
+                            # Split each line into a key-value pair
+                            key, value = line.strip().split("=")
+                            if key.startswith(self.envvar_prefix):
+                                vardict[key] = value
+            except Exception as e:
+                raise FileNotFoundError(f"Could not read environment file: {file}")
+        return vardict
 
-        self._merged_config_dict = mergedeep.merge(
-            self.default_cfg, self.yml_config, self.env_config
-        )
-        return self._merged_config_dict
+    def _var2dict(self, o_varname, value) -> dict:
+        """Helper function to convert a variable to a dict and assigns the value."""
+
+        varname = o_varname.replace(self.envvar_prefix + "_", "")
+        my_dict = {}
+        current_dict = my_dict
+
+        keys = self.__split_varstring(varname)
+        for key in keys[:-1]:
+            current_dict[key] = {}
+            current_dict = current_dict[key]
+
+        current_dict[keys[-1]] = value
+
+        return my_dict
 
     def __split_varstring(self, s):
         """Helper function to split a string into a list of substrings, separated by "_".
@@ -188,15 +230,6 @@ class Config:
             pieces.append(current_piece)
 
         return pieces
-
-    # def get(self, *keys):
-    #     d = self._config
-    #     for key in keys:
-    #         if key in d:
-    #             d = d[key]
-    #         else:
-    #             return None
-    #     return d
 
     def validate(self, schema: RobotmkConfigSchema):
         """Validates the whole config according to the given context schema."""
