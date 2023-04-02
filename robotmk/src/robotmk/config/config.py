@@ -86,6 +86,10 @@ class Config:
 
         curdict[keys[-1]] = value
 
+    def asdict(self):
+        """Returns the config as a dict."""
+        return self.configdict
+
     @property
     def configdict(self):
         """This property merges the three config sources in the right order."""

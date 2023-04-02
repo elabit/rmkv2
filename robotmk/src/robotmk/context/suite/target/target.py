@@ -43,7 +43,7 @@ class Target(ABC):
 class LocalTarget(Target):
     """A local target is a single Robot Fremework suite or a RCC task for this suite.
 
-    It also encapsulates the implementation details of the run strategy, which is
+    It also encapsulates the implementation details of the RUN strategy, which is
     either a headless or a headed execution (RDP, XVFB, Scheduled Task)."""
 
     def __init__(
@@ -56,11 +56,9 @@ class LocalTarget(Target):
         self.path = Path(self.config.get("common.robotdir")).joinpath(
             self.suitecfg.get("path")
         )
-
-        # create a run strategy for this OS / kind of suite
-        self.run_strategy = RunStrategyFactory(
-            self.suiteid, self.config, self._logger
-        ).create_run_strategy()
+        self.run_strategy = RunStrategyFactory(self).create()
+        # list of subprocess' results and console output
+        self.results = {}
 
     @abstractmethod
     def run(self):

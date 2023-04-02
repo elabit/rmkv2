@@ -1,16 +1,21 @@
 from abc import ABC, abstractmethod
 import os
 from pathlib import Path
+
+from .retry import RetryStrategyFactory, CompleteRetry, IncrementalRetry
 from ..target import LocalTarget
 from ...strategies import RunStrategy
+
 from robotmk.logger import RobotmkLogger
 from robotmk.config import Config
 
 import robot
-from robot.rebot import rebot
+import mergedeep
 
 from uuid import uuid4
-import datetime
+from datetime import datetime
+
+local_tz = datetime.utcnow().astimezone().tzinfo
 
 # This is the "heavy" part of the code. It contains the logic to run RF.
 # Here I place all the Robotmk v1 shit.
@@ -24,8 +29,24 @@ class RobotFrameworkTarget(LocalTarget):
         logger: RobotmkLogger,
     ):
         super().__init__(suiteid, config, logger)
-        self.retry_strategy = RetryStrategyFactory(self.suitecfg).create()
-        self.uuid = uuid4()
+        self.retry_strategy = RetryStrategyFactory(self).create()
+        self.uuid = uuid4().hex
+        self.shortuuid = self.uuid[:8]
+        self._timestamp = self.get_now_as_epoch()
+        # params for RF: global ones & re-execution
+        # self.robotmk_params = {"console": "NONE", "report": "NONE"}
+        self.robotmk_params = {"report": "NONE"}
+
+    def run(self):
+        # TODO: max_parallel is task of scheduler!)
+        if self.is_disabled_by_flagfile:
+            # TODO: Log skipped
+            # reason = self.get_disabled_reason()
+            return
+        else:
+            # TODO: write state with UUID and start_time
+            self.robotmk_params.update({"outputdir": self.config.get("common.outdir")})
+            self.retry_strategy.run()
 
     @property
     def is_disabled_by_flagfile(self):
@@ -33,24 +54,18 @@ class RobotFrameworkTarget(LocalTarget):
         Robotmk to execute the suite."""
         return self.path.joinpath("DISABLED").exists()
 
-    @property
-    def cmdline(self):
-        # returns the command line to run a RF suite
-        pass
-
-    def run(self):
-        # TODO: Skip a disabled suite & log it
-        # TODO: write state with UUID and start_time
-        # failed handling
-
-        self.run_strategy.run()
-        # TODO: hier Ausnahmen und die ganze Logik zur Robot-Ausführung hier rein packen?
-
     def get_now_as_dt(self):
         return datetime.now(local_tz)
 
     def get_now_as_epoch(self):
         return int(self.get_now_as_dt().timestamp())
+
+    @property
+    def timestamp(self):
+        """Returns the timestamp the suite execution was started. This is
+        used for all executions of the suite, including retries in order
+        to group the result files."""
+        return self._timestamp
 
     def get_disabled_reason(self) -> str:
         """Report back the reason why the suite was disabled."""
@@ -65,27 +80,82 @@ class RobotFrameworkTarget(LocalTarget):
             except:
                 return ""
 
-    def output_filename(self, timestamp, attempt=None):
-        """Create output file name. If attempt is given, it gets appended to the file name."""
-        if attempt is None:
-            suite_filename = "robotframework_%s_%s" % (self.id, timestamp)
+    @property
+    def output_filename(self):
+        """Returns the output filename string, including the retry number.
+
+        Example:
+            robotframework_suite1_978741fb_1680335851
+            robotframework_suite1_978741fb_1680335851_retry-1"""
+        if self.attempt == 1:
+            suite_filename = "robotframework_%s_%s_%s" % (
+                self.suiteid,
+                self.timestamp,
+                self.shortuuid,
+            )
         else:
-            suite_filename = "robotframework_%s_%s_attempt-%d" % (
-                self.id,
-                timestamp,
-                attempt,
+            suite_filename = "robotframework_%s_%s_%s_retry-%d" % (
+                self.suiteid,
+                self.timestamp,
+                self.shortuuid,
+                int(self.attempt - 1),
             )
         return suite_filename
 
-    def bump_output_filenames(self, attempt=None):
-        """Parametrize the output files"""
-        output_prefix = self.output_filename(str(self.timestamp), attempt)
-        self.suite_dict["robot_params"].update(
+    @property
+    def output_xml(self):
+        return self.output_filename + ".xml"
+
+    @property
+    def log_html(self):
+        return self.output_filename + ".html"
+
+    @property
+    def command(self):
+        # Builds the complete commandline to execute the suite.
+        # (See https://robot-framework.readthedocs.io/en/latest/autodoc/robot.html#robot.run.run_cli)
+        # TODO: Logging
+        self.robotmk_params.update(
             {
-                "output": "%s_output.xml" % output_prefix,
-                "log": "%s_log.html" % output_prefix,
+                "log": self.log_html,
+                "output": self.output_xml,
             }
         )
+
+        suite_params = mergedeep.merge(
+            self.suitecfg.get("params").asdict(), self.robotmk_params
+        )
+        arglist = ["robot"]
+        for k, v in suite_params.items():
+            arg = f"--{k}"
+            # create something we can iterate over
+            if isinstance(v, str):
+                # key:value    => convert to 1 el list
+                vlist = [v]
+            elif isinstance(v, dict):
+                if k == "variable":
+                    # key:var-dict => convert to list of varkey:varvalue
+                    vlist = list(map(lambda x: f"{x[0]}:{x[1]}", v.items()))
+                else:
+                    self._suite.logger.warn(
+                        f"The Robot Framework parameter {k} is a dict but cannot be converted to cmdline arguments (values: {str(v)})"
+                    )
+            elif isinstance(v, list):
+                if k == "argumentfile" or k == "variablefile":
+                    # make the file args absolute file paths
+                    v = [str(self._suite.pathdir.joinpath(n)) for n in v]
+                # key:list     => no conversion
+                vlist = v
+
+            for value in vlist:
+                # values which are boolean(-like) are single parameters without option
+                if type(value) is bool or value in ["yes", "no", "True", "False"]:
+                    arglist.extend([arg])
+                else:
+                    arglist.extend([arg, value])
+        # the path of the robot suite is the very last argument
+        arglist.append(str(self.path))
+        return arglist
 
     # Suite timestamp for filenames
     @property
@@ -95,128 +165,3 @@ class RobotFrameworkTarget(LocalTarget):
     @timestamp.setter
     def timestamp(self, t):
         self._timestamp = t
-
-
-# ----------------------------------------------------------------------------------------------
-#   _ __ ___ ______ _____  _____  ___
-#  | '__/ _ \______/ _ \ \/ / _ \/ __|
-#  | | |  __/     |  __/>  <  __/ (__
-#  |_|  \___|      \___/_/\_\___|\___|
-
-
-class RetryStrategyFactory:
-    """Factory for execution strategies"""
-
-    def __init__(self, suitecfg):
-        self.suitecfg = suitecfg
-
-    def create(self):
-        """Create the execution strategy"""
-        strategy = self.suitecfg.get("retry_failed.strategy", "complete")
-        if strategy == "complete":
-            return CompleteRetry(self.suitecfg)
-        elif strategy == "incremental":
-            return IncrementalRetry(self.suitecfg)
-        else:
-            raise Exception("Unknown retry strategy: %s" % strategy)
-
-
-class RetryStrategy(ABC):
-    """Execution strategy interface for suites"""
-
-    def __init__(self, suitecfg):
-        self.suitecfg = suitecfg
-
-    @abstractmethod
-    def parametrize(self, suite):
-        pass
-
-    @abstractmethod
-    def finalize_results(self):
-        pass
-
-    @property
-    def max_attempts(self):
-        """Maximum number of attempts to execute a suite (1st + retries)"""
-        return 1 + self.suitecfg.get("retry_failed.retry_attempts", 0)
-
-
-class CompleteRetry(RetryStrategy):
-    """Execution strategy for suites with complete re-execution"""
-
-    def __str__(self):
-        return "Strategy: Complete"
-
-    def parametrize(self):
-        pass
-
-    def finalize_results(self):
-        """Only takes the last result into account"""
-        # Pretty much the same method as in incremental strategy; however,
-        # keep them separate to be able to change them independently
-        self.suite.bump_output_filenames()
-        outputfiles = self.suite._runner.glob_suite_outputfiles(self.suite)
-        outputfiles.sort()
-        self.suite._runner.logdebug(
-            "Piled up the following result files of complete executions:"
-        )
-        filenames = [Path(f).name for f in outputfiles]
-        for f in filenames:
-            self.suite._runner.logdebug(" - %s" % f)
-        # rebot wants to print out the generated file names on stdout; write to devnull
-        devnull = open(os.devnull, "w")
-        rebot(
-            *outputfiles,
-            outputdir=self.suite.outputdir,
-            output=self.suite.output,
-            log=self.suite.log,
-            report=None,
-            merge=True,
-            stdout=devnull,
-        )
-        self.suite._runner.loginfo("Taking the last/best result as:")
-        self.suite._runner.loginfo(" - %s" % self.suite.output)
-        self.suite._runner.loginfo(" - %s" % self.suite.log)
-
-
-class IncrementalRetry(RetryStrategy):
-    """Provides methods to re-execute suites incrementally (no test interdependency)"""
-
-    def __str__(self):
-        return "Strategy: Incremental"
-
-    def parametrize(self):
-        """Parametrize the Robot command line which tests to re-execute"""
-        # save the current output XML and use it for the rerun
-        failed_xml = Path(self.suite.outputdir).joinpath(self.suite.output)
-        self.suite.suite_dict["robot_params"].update({"rerunfailed": str(failed_xml)})
-        # Attempt 2ff can be filtered, add the parameters to the Robot cmdline
-        self.suite.suite_dict["robot_params"].update(self.suite.rerun_selection)
-
-        self.suite._runner.loginfo(
-            f"   Reading failed tests from '{failed_xml.name}', setting robot parameters for rexecution"
-        )
-
-    def finalize_results(self):
-        """Merges the last and best test results into a new final result"""
-        self.suite.bump_output_filenames()
-        outputfiles = self.suite._runner.glob_suite_outputfiles(self.suite)
-        outputfiles.sort()
-        self.suite._runner.logdebug("Result files to merge:")
-        filenames = [Path(f).name for f in outputfiles]
-        for f in filenames:
-            self.suite._runner.logdebug(" - %s" % f)
-        # rebot wants to print out the generated file names on stdout; write to devnull
-        devnull = open(os.devnull, "w")
-        rebot(
-            *outputfiles,
-            outputdir=self.suite.outputdir,
-            output=self.suite.output,
-            log=self.suite.log,
-            report=None,
-            merge=True,
-            stdout=devnull,
-        )
-        self.suite._runner.loginfo("Merged results of all reexecutions into:")
-        self.suite._runner.loginfo(" - %s" % self.suite.output)
-        self.suite._runner.loginfo(" - %s" % self.suite.log)

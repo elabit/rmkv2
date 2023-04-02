@@ -33,7 +33,7 @@ DEFAULTS = {
         "robotdir": "C:/ProgramData/checkmk/agent/robot",
         "cfgdir": "C:/ProgramData/checkmk/agent/config",
         "logdir": "C:/ProgramData/checkmk/agent/log/robotmk",
-        "resultdir": "C:/ProgramData/checkmk/agent/log/robotmk/results",
+        "outdir": "C:/ProgramData/checkmk/agent/log/robotmk/results",
         "tmpdir": "C:/ProgramData/checkmk/agent/tmp/robotmk",
     },
     # Default values for the "common" config section (Linux)
@@ -41,7 +41,7 @@ DEFAULTS = {
         "robotdir": "/usr/lib/check_mk_agent/robot",
         "cfgdir": "/etc/check_mk",
         "logdir": "/var/log/robotmk",
-        "resultdir": "/var/log/robotmk/results",
+        "outdir": "/var/log/robotmk/results",
         "tmpdir": "/tmp/robotmk",
     },
 }
