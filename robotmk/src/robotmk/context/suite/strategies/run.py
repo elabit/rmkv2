@@ -9,7 +9,7 @@ class RunStrategy(ABC):
     def __init__(self, target) -> None:
         self.target = target
 
-        # self.suiteid = suiteid
+        # self.suiteuname = suiteuname
         # self.config = config
         # self._logger = logger
         # self.debug = self._logger.debug
@@ -57,13 +57,23 @@ class Runner(RunStrategy):
 
     def execute(self) -> int:
         result = subprocess.run(self.target.command, capture_output=True)
+        stdout_str = result.stdout.decode("utf-8").splitlines()
+        stderr_str = result.stderr.decode("utf-8").splitlines()
+        result_dict = {
+            "args": result.args,
+            "returncode": result.returncode,
+            "stdout": stdout_str,
+            "stderr": stderr_str,
+        }
         # TODO: log console output? Save it anyway because a a fatal RF error must be tracable.
-        self.target.results[self.target.attempt] = result
+        self.target.console_results[self.target.attempt] = result_dict
         return result.returncode
 
     def cleanup(self) -> int:
         # nothing to do
         return 0
+
+    # def _write_console_output(self, result):
 
 
 class WindowsTask(RunStrategy):
@@ -182,7 +192,7 @@ class RunStrategyFactory:
             RunStrategy: The run strategy to use.
         """
         mode = self.target.config.get(
-            "suites.%s.run.mode" % self.target.config.get("common.suiteid")
+            "suites.%s.run.mode" % self.target.config.get("common.suiteuname")
         )
         _platform = platform.system().lower()
         if mode == "default":

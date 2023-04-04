@@ -14,6 +14,7 @@ from robotmk.main import Robotmk, DEFAULTS
 def specialagent(ctx, vars):
     click.echo("Executing specialagent....")
     ctx.obj = Robotmk("specialagent", vars=vars)
+    ctx.obj.config.set("common.context", "specialagent")
 
     pass
 

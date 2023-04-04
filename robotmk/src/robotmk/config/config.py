@@ -63,9 +63,12 @@ class Config:
             for k in name.split("."):
                 prev = m
                 prev_k = k
-                m = m.get(k)
+                m = m.get(k, {})
             if type(m) is dict:
-                return Config(initdict=m)
+                if m:
+                    return Config(initdict=m)
+                else:
+                    return default
             else:
                 return m
         except:

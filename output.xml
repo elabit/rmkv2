@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot generator="Robot 6.1a1 (Python 3.10.6 on linux)" generated="20230403 12:32:30.252" rpa="true" schemaversion="4">
+<suite id="s1" name="Tasks" source="/home/simonmeggle/Documents/01_dev/rmkv2/agent/robots/suiteA/tasks.robot">
+<test id="s1-t1" name="Minimal task" line="6">
+<kw name="Log" library="BuiltIn">
+<arg>Done.</arg>
+<doc>Logs the given message with the given level.</doc>
+<msg timestamp="20230403 12:32:30.267" level="INFO">Done.</msg>
+<msg timestamp="20230403 12:32:30.270" level="INFO">robot: 2023-04-03 12:32:30 UTC pid: 795937 - Write from robot to dap (_RobotTargetComm) - EXCEPTION - robocorp_ls_core.debug_adapter_core.debug_adapter_threads
+Error serializing &lt;robocorp_ls_core.debug_adapter_core.dap.dap_schema.StartSuiteEvent object at 0x7efccd9143a0&gt; to json.
+
+Traceback (most recent call last):
+  File "/home/simonmeggle/.vscode/extensions/robocorp.robotframework-lsp-1.9.0/src/robotframework_ls/vendored/robocorp_ls_core/debug_adapter_core/debug_adapter_threads.py", line 249, in writer_thread
+    to_write = to_json(update_ids_to_dap=update_ids_to_dap)
+  File "/home/simonmeggle/.vscode/extensions/robocorp.robotframework-lsp-1.9.0/src/robotframework_ls/vendored/robocorp_ls_core/debug_adapter_core/dap/dap_base_schema.py", line 36, in to_json
+    return json.dumps(self.to_dict(update_ids_to_dap=update_ids_to_dap))
+  File "/usr/lib/python3.10/json/__init__.py", line 231, in dumps
+    return _default_encoder.encode(obj)
+  File "/usr/lib/python3.10/json/encoder.py", line 199, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+  File "/usr/lib/python3.10/json/encoder.py", line 257, in iterencode
+    return _iterencode(o, 0)
+  File "/usr/lib/python3.10/json/encoder.py", line 179, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type PosixPath is not JSON serializable
+robot: 2023-04-03 12:32:30 UTC pid: 795937 - Write from robot to dap (_RobotTargetComm) - EXCEPTION - robocorp_ls_core.debug_adapter_core.debug_adapter_threads
+Error serializing &lt;robocorp_ls_core.debug_adapter_core.dap.dap_schema.StartTestEvent object at 0x7efccd9144c0&gt; to json.
+
+Traceback (most recent call last):
+  File "/home/simonmeggle/.vscode/extensions/robocorp.robotframework-lsp-1.9.0/src/robotframework_ls/vendored/robocorp_ls_core/debug_adapter_core/debug_adapter_threads.py", line 249, in writer_thread
+    to_write = to_json(update_ids_to_dap=update_ids_to_dap)
+  File "/home/simonmeggle/.vscode/extensions/robocorp.robotframework-lsp-1.9.0/src/robotframework_ls/vendored/robocorp_ls_core/debug_adapter_core/dap/dap_base_schema.py", line 36, in to_json
+    return json.dumps(self.to_dict(update_ids_to_dap=update_ids_to_dap))
+  File "/usr/lib/python3.10/json/__init__.py", line 231, in dumps
+    return _default_encoder.encode(obj)
+  File "/usr/lib/python3.10/json/encoder.py", line 199, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+  File "/usr/lib/python3.10/json/encoder.py", line 257, in iterencode
+    return _iterencode(o, 0)
+  File "/usr/lib/python3.10/json/encoder.py", line 179, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type PosixPath is not JSON serializable</msg>
+<status status="PASS" starttime="20230403 12:32:30.266" endtime="20230403 12:32:30.270"/>
+</kw>
+<kw name="Fail" library="BuiltIn">
+<doc>Fails the test with the given message and optionally alters its tags.</doc>
+<msg timestamp="20230403 12:32:30.272" level="FAIL">AssertionError</msg>
+<status status="FAIL" starttime="20230403 12:32:30.271" endtime="20230403 12:32:30.274"/>
+</kw>
+<status status="FAIL" starttime="20230403 12:32:30.266" endtime="20230403 12:32:30.277">AssertionError</status>
+</test>
+<doc>Template robot main suite.</doc>
+<status status="FAIL" starttime="20230403 12:32:30.254" endtime="20230403 12:32:30.279"/>
+</suite>
+<statistics>
+<total>
+<stat pass="0" fail="1" skip="0">All Tasks</stat>
+</total>
+<tag>
+</tag>
+<suite>
+<stat pass="0" fail="1" skip="0" id="s1" name="Tasks">Tasks</stat>
+</suite>
+</statistics>
+<errors>
+<msg timestamp="20230403 12:32:30.273" level="ERROR">Calling method 'log_message' of listener 'robotframework_debug_adapter.events_listener.EventsListenerV2' failed: AttributeError: 'PosixPath' object has no attribute 'endswith'</msg>
+</errors>
+</robot>

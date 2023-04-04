@@ -4,10 +4,20 @@ from datetime import datetime
 
 
 class AbstractLogger(ABC):
-    def __init__(self):
+    def __init__(self, log_level):
+        self.log_level = log_level
         if not getattr(self, "logger", None):
             self.logger = loguru.logger
-            self.logger.remove()  # Remove default configuration
+            # Disable the logger completely if log level is not set
+            if self.log_level is None:
+                self.logger.disable()
+            else:
+                self.logger.remove()  # Remove default configuration
+                self.add_logger()
+
+    @abstractmethod
+    def add_logger(self):
+        pass
 
     def debug(self, message, *args, **kwargs):
         self.logger.debug(message, *args, **kwargs)
@@ -27,10 +37,12 @@ class AbstractLogger(ABC):
 
 class RobotmkLogger(AbstractLogger):
     def __init__(self, log_file_path, log_level="INFO"):
-        super().__init__()
         self.log_file_path = log_file_path
+        super().__init__(log_level)
+
+    def add_logger(self):
         # Add the file sink
-        self.logger.add(self.log_file_path, level=log_level)
+        self.logger.add(self.log_file_path, level=self.log_level)
 
 
 # class JSONLogger(AbstractLogger):

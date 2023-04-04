@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 
 from .retry import RetryStrategyFactory, CompleteRetry, IncrementalRetry
+from .state import RFState
 from ..target import LocalTarget
 from ...strategies import RunStrategy
 
@@ -12,7 +13,7 @@ from robotmk.config import Config
 import robot
 import mergedeep
 
-from uuid import uuid4
+
 from datetime import datetime
 
 local_tz = datetime.utcnow().astimezone().tzinfo
@@ -24,97 +25,33 @@ local_tz = datetime.utcnow().astimezone().tzinfo
 class RobotFrameworkTarget(LocalTarget):
     def __init__(
         self,
-        suiteid: str,
+        suiteuname: str,
         config: dict,
         logger: RobotmkLogger,
     ):
-        super().__init__(suiteid, config, logger)
+        super().__init__(suiteuname, config, logger)
+
         self.retry_strategy = RetryStrategyFactory(self).create()
-        self.uuid = uuid4().hex
+
         self.shortuuid = self.uuid[:8]
+        # this timestamp is used to keep all result files in order; it is used
+        # for all target executions
         self._timestamp = self.get_now_as_epoch()
+        self._state = RFState(self)
         # params for RF: global ones & re-execution
         # self.robotmk_params = {"console": "NONE", "report": "NONE"}
         self.robotmk_params = {"report": "NONE"}
 
-    def run(self):
-        # TODO: max_parallel is task of scheduler!)
-        if self.is_disabled_by_flagfile:
-            # TODO: Log skipped
-            # reason = self.get_disabled_reason()
-            return
-        else:
-            # TODO: write state with UUID and start_time
-            self.robotmk_params.update({"outputdir": self.config.get("common.outdir")})
-            self.retry_strategy.run()
-
-    @property
-    def is_disabled_by_flagfile(self):
-        """The presence of a file DISABLED inside of a Robot suite will prevent
-        Robotmk to execute the suite."""
-        return self.path.joinpath("DISABLED").exists()
-
-    def get_now_as_dt(self):
-        return datetime.now(local_tz)
-
-    def get_now_as_epoch(self):
-        return int(self.get_now_as_dt().timestamp())
-
-    @property
-    def timestamp(self):
-        """Returns the timestamp the suite execution was started. This is
-        used for all executions of the suite, including retries in order
-        to group the result files."""
-        return self._timestamp
-
-    def get_disabled_reason(self) -> str:
-        """Report back the reason why the suite was disabled."""
-        if self.is_disabled_by_flagfile:
-            try:
-                with open(self.path.joinpath("DISABLED"), "r") as f:
-                    reason = f.read()
-                    if len(reason) > 0:
-                        return "Reason: " + reason
-                    else:
-                        return ""
-            except:
-                return ""
-
-    @property
-    def output_filename(self):
-        """Returns the output filename string, including the retry number.
-
-        Example:
-            robotframework_suite1_978741fb_1680335851
-            robotframework_suite1_978741fb_1680335851_retry-1"""
-        if self.attempt == 1:
-            suite_filename = "robotframework_%s_%s_%s" % (
-                self.suiteid,
-                self.timestamp,
-                self.shortuuid,
-            )
-        else:
-            suite_filename = "robotframework_%s_%s_%s_retry-%d" % (
-                self.suiteid,
-                self.timestamp,
-                self.shortuuid,
-                int(self.attempt - 1),
-            )
-        return suite_filename
-
-    @property
-    def output_xml(self):
-        return self.output_filename + ".xml"
-
-    @property
-    def log_html(self):
-        return self.output_filename + ".html"
+    def __str__(self) -> str:
+        return "robotframework"
 
     @property
     def command(self):
-        # Builds the complete commandline to execute the suite.
-        # (See https://robot-framework.readthedocs.io/en/latest/autodoc/robot.html#robot.run.run_cli)
-        # TODO: Logging
+        """The command will be used by the Run strategy (self.target.command).
+
+        In RF target, the complete commandline must be built to execute the RF suite.
+        (See https://robot-framework.readthedocs.io/en/latest/autodoc/robot.html#robot.run.run_cli)
+        TODO: Logging"""
         self.robotmk_params.update(
             {
                 "log": self.log_html,
@@ -156,6 +93,98 @@ class RobotFrameworkTarget(LocalTarget):
         # the path of the robot suite is the very last argument
         arglist.append(str(self.path))
         return arglist
+
+    def run(self):
+        # Do not run if the suite dir contains a DISABLED file
+        if self.is_disabled_by_flagfile:
+            # TODO: Log skipped
+            # reason = self.get_disabled_reason()
+            return
+        else:
+            # Tell Robot Framework to write its "output" files into the log dir.
+            # The "outputdir" is where RMK produces files later for the agent.
+            self.robotmk_params.update({"outputdir": self.logdir})
+            self._state.timer_start()
+            self.rc = self.retry_strategy.run()
+            self._state.timer_stop()
+            self._state.write()
+            pass
+
+    def get_now_as_dt(self):
+        return datetime.now(local_tz)
+
+    def get_now_as_epoch(self):
+        return int(self.get_now_as_dt().timestamp())
+
+    @property
+    def outdir(self):
+        return self.config.get("common.outdir")
+
+    @property
+    def timestamp(self):
+        """Returns the timestamp the suite execution was started. This is
+        used for all executions of the suite, including retries in order
+        to group the result files."""
+        return self._timestamp
+
+    def get_disabled_reason(self) -> str:
+        """Report back the reason why the suite was disabled."""
+        if self.is_disabled_by_flagfile:
+            try:
+                with open(self.path.joinpath("DISABLED"), "r") as f:
+                    reason = f.read()
+                    if len(reason) > 0:
+                        return "Reason: " + reason
+                    else:
+                        return ""
+            except:
+                return ""
+
+    @property
+    def output_filename(self):
+        """Returns the output filename string, including the retry number.
+
+        Example:
+            rf_suite1_978741fb_1680335851
+            rf_suite1_978741fb_1680335851-1"""
+        if self.attempt is None:
+            suite_filename = "rf_%s_%s_%s" % (
+                self.suiteuname,
+                self.timestamp,
+                self.shortuuid,
+            )
+        else:
+            suite_filename = "rf_%s_%s_%s-%d" % (
+                self.suiteuname,
+                self.timestamp,
+                self.shortuuid,
+                int(self.attempt),
+            )
+        return suite_filename
+
+    @property
+    def statefile_fullpath(self):
+        return str(Path(self.outdir).joinpath(self.suiteuname + ".json"))
+
+    @property
+    def output_xml_fullpath(self):
+        return self.logdir.joinpath(self.output_xml)
+
+    @property
+    def output_xml(self):
+        return self.output_filename + ".xml"
+
+    @property
+    def output_xml_fullpath(self):
+        return str(Path(self.logdir).joinpath(self.output_xml))
+
+    @property
+    def log_html(self):
+        return self.output_filename + ".html"
+
+    @property
+    def log_html_fullpath(self):
+        return str(Path(self.logdir).joinpath(self.log_html))
 
     # Suite timestamp for filenames
     @property

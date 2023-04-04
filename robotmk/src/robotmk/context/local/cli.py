@@ -14,6 +14,7 @@ from robotmk.main import Robotmk, DEFAULTS
 # @click.option("--vars", "-v", help="Read vars from .env file (ignores environment)")
 def local(ctx, yml):
     ctx.obj = Robotmk("local", yml=yml)
+    ctx.obj.config.set("common.context", "local")
     if ctx.invoked_subcommand is None:
         click.secho("No subcommand given. Use --help for help.", fg="red")
         sys.exit(1)

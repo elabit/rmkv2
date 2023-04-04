@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from dotmap import DotMap
 from pathlib import Path
+from uuid import uuid4
 from ..strategies import RunStrategy, RunStrategyFactory
 
 
@@ -15,10 +16,10 @@ class Target(ABC):
     - an API call to an external platform ("target: remote") like Robocorp or Kubernetes
     """
 
-    def __init__(self, suiteid: str, config: DotMap, logger: RobotmkLogger):
-        self.suiteid = suiteid
+    def __init__(self, suiteuname: str, config: DotMap, logger: RobotmkLogger):
+        self.suiteuname = suiteuname
         self.config = config
-        self.suitecfg = self.config.get("suites.%s" % suiteid)
+        self.suitecfg = self.config.get("suites.%s" % suiteuname)
         self.commoncfg = self.config.get("common")
 
         self._logger = logger
@@ -48,17 +49,37 @@ class LocalTarget(Target):
 
     def __init__(
         self,
-        suiteid: str,
+        suiteuname: str,
         config: dict,
         logger: RobotmkLogger,
     ):
-        super().__init__(suiteid, config, logger)
+        super().__init__(suiteuname, config, logger)
+
+        # Store RCC and RF logs in separate folders
+        self.config.set(
+            "common.logdir", "%s/%s" % (self.config.get("common.logdir"), str(self))
+        )
+
         self.path = Path(self.config.get("common.robotdir")).joinpath(
             self.suitecfg.get("path")
         )
         self.run_strategy = RunStrategyFactory(self).create()
         # list of subprocess' results and console output
-        self.results = {}
+        self.console_results = {}
+
+    @property
+    def uuid(self):
+        return self.suitecfg.get("uuid", uuid4().hex)
+
+    @property
+    def logdir(self):
+        return self.config.get("common.logdir")
+
+    @property
+    def is_disabled_by_flagfile(self):
+        """The presence of a file DISABLED inside of a Robot suite will prevent
+        Robotmk to execute the suite, either by RCC or RobotFramework."""
+        return self.path.joinpath("DISABLED").exists()
 
     @abstractmethod
     def run(self):

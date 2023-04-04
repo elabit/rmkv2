@@ -13,4 +13,5 @@ def server(ctx):
     click.secho("server", fg="green")
     click.echo("Serving the Robotmk webinterface on http://localhost:8099 ...")
     # ctx.robotmk = Robotmk("server")
+    # ctx.obj.config.set("common.context", "server")
     pass

@@ -16,23 +16,28 @@ from robotmk.main import Robotmk, DEFAULTS
 def suite(ctx, yml, vars):
     if vars and yml:
         raise click.BadParameter("Cannot use --yml and --vars at the same time")
-    click.echo("suite")
+    # click.echo("suite")
     ctx_loglevel = ctx.parent.params.get("loglevel", DEFAULTS["common"]["log_level"])
     ctx.obj = Robotmk(contextname="suite", log_level=ctx_loglevel, yml=yml, vars=vars)
+    ctx.obj.config.set("common.context", "suite")
 
 
 @suite.command(default=True)
-@click.argument("suiteid", required=False)
+@click.argument("suite", required=False)
 @click.pass_context
-def run(ctx, suiteid):
+def run(ctx, suite):
     """Trigger the start of a Robot Framework SUITE.
 
-    The SUITE (in fact the SUITEID) must be a configuration subkey of the "suites" section.
-    (SUITEID can also be set by env:ROBOTMK_common_suiteid.)
+    SUITE must be a configuration subkey of the "suites" section.
+    (can also be set by env:ROBOTMK_common_suiteuname.)
     """
-    click.secho("run suite %s" % suiteid, fg="green")
-    ctx.obj.execute()
-    pass
+    # click.secho("run suite %s" % suite, fg="green")
+    if suite:
+        ctx.obj.config.set("common.suiteuname", suite)
+    if ctx.obj.config.get("common.suiteuname", None):
+        ctx.obj.execute()
+    else:
+        click.secho("Suite '%s' not found in configuration" % suite, fg="red")
 
 
 @suite.command()
@@ -43,7 +48,7 @@ def output(ctx, suite):
 
     SUITEID is eiher equal to the suite dir or a combination of suite dir and its unique tag as set in the configuration.
     Examples are: suite1, suite2_tagfoo, suite3_tagbaz
-    (SUITEID can also be set by env:ROBOTMK_common_suiteid.)
+    (can also be set by env:ROBOTMK_common_suiteuname.)
     """
     click.secho("output of suite %s" % suite, fg="green")
     ctx.obj.output()
@@ -68,7 +73,7 @@ def logs(ctx, suite, number, pid):
 
     SUITEID is eiher equal to the suite dir or a combination of suite dir and its unique tag as set in the configuration.
     Examples are: suite1, suite2_tagfoo, suite3_tagbaz
-    (SUITEID can also be set by env:ROBOTMK_common_suiteid.)
+    (can also be set by env:ROBOTMK_common_suiteuname.)
     """
     click.secho("logs", fg="green")
     if int(number) != 1 and pid != None:
@@ -86,7 +91,7 @@ def shell(ctx, suite):
 
     SUITEID is eiher equal to the suite dir or a combination of suite dir and its unique tag as set in the configuration.
     Examples are: suite1, suite2_tagfoo, suite3_tagbaz
-    (SUITEID can also be set by env:ROBOTMK_common_suiteid.)
+    (can also be set by env:ROBOTMK_common_suiteuname.)
     """
     click.secho("$> RCC shell of suite %s" % suite, fg="yellow")
 
@@ -97,6 +102,7 @@ def shell(ctx, suite):
 @click.pass_context
 def vardump(ctx):
     click.secho("vardump", fg="green")
+    # TODO: implement this
     pass
 
 

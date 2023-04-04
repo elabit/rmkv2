@@ -12,31 +12,33 @@ from .target import Target, RobotFrameworkTarget, RCCTarget, RemoteTarget
 class SuiteContext(AbstractContext):
     def __init__(self):
         super().__init__()
-        self._suite = None
+        self._target = None
         self._ymlschema = RobotmkConfigSchema
 
     @property
-    def suiteid(self):
-        """suiteid under "common" sets the suite to start (suitename + tag)"""
+    def suiteuname(self):
+        """suiteuname under "common" sets the suite to start (suitename + tag)"""
         try:
-            suiteid = self.config.get("common.suiteid")
+            suiteuname = self.config.get("common.suiteuname")
         except AttributeError:
             pass
             # TODO: What if suite is not found?
-        return suiteid
+        return suiteuname
 
-    @property
-    def target(self) -> Target:
+    def get_target(self) -> Target:
         """Returns a Target object using the Bridge pattern which combines
         - Local Targets (Shared Python/RCC)   with
         - Head Strategies (Headless/Headed, Win/linux)"""
         # TODO: notify the logger initialization as soon as there is config loaded
         # to prevent this call
-        if not self._suite:
+        if not self._target:
             self.init_logger()
             # get the dotmap config for the suite to run
             # TODO: what if suite is not part of the config?
-            suitecfg = self.config.get("suites.%s" % self.suiteid)
+            suitecfg = self.config.get("suites.%s" % self.suiteuname)
+            if suitecfg == None:
+                self.error("Suite '%s' is not part of the config!" % self.suiteuname)
+
             # Depending on the target, create a local or a remote suite
             target = suitecfg.get("run.target")
             rcc = suitecfg.get("run.rcc")
@@ -46,18 +48,25 @@ class SuiteContext(AbstractContext):
                 )
                 if path.exists():
                     if rcc is True:
-                        self._suite = RCCTarget(self.suiteid, self.config, self.logger)
+                        self._target = RCCTarget(
+                            self.suiteuname, self.config, self.logger
+                        )
                     else:
-                        self._suite = RobotFrameworkTarget(
-                            self.suiteid, self.config, self.logger
+                        self._target = RobotFrameworkTarget(
+                            self.suiteuname, self.config, self.logger
                         )
                 else:
+                    # TBD: check this if this gets logged...
                     self.error("Suite path does not exist: " + str(path))
             elif target == "remote":
-                self._suite = RemoteTarget(self.suiteid, self.config, self.logger)
+                self._target = RemoteTarget(self.suiteuname, self.config, self.logger)
             else:
-                self.error("Unknown target type for suite %s!" % self.suiteid)
-        return self._suite
+                self.error("Unknown target type for suite %s!" % self.suiteuname)
+        return self._target
+
+    @property
+    def target(self) -> Target:
+        return self._target
 
     def load_config(self, defaults, ymlfile: str, varfile: str) -> None:
         """Load the config for suite context.
@@ -92,7 +101,7 @@ class SuiteContext(AbstractContext):
 
     def execute(self):
         """Runs a single suite, either locally or remotely (via API call)."""
-        self.target.run()
+        self.get_target().run()
 
     def output(self):
         # TODO: make this possible in CLI

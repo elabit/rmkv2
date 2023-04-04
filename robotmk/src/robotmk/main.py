@@ -73,6 +73,10 @@ class Robotmk:
         self.execute = self._context.execute
         self.output = self._context.output
 
+    @property
+    def config(self):
+        return self._context.config
+
     def __set_context(self, contextname: str, log_level: str = None) -> None:
         """Sets the context of the Robotmk instance (=strategy)."""
         if contextname is None:
