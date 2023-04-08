@@ -7,6 +7,36 @@ robotmk_yml = os.path.join(cwd, "robotmk.yml")
 robotmk_env = os.path.join(cwd, "robotmk.env")
 
 
+def test_var2dict():
+    cfg = Config()
+    varname = "ROBOTMK_one__single__key_key1_key2_key3_another__big__subkey"
+    value = "1"
+    vardict = cfg._var2dict(varname, value)
+    assert vardict == {
+        "one_single_key": {"key1": {"key2": {"key3": {"another_big_subkey": "1"}}}}
+    }
+    # single key at end
+    varname = "ROBOTMK_one__single__key_key1_key2_key3_another__big__subkey_foo"
+    value = "1"
+    vardict = cfg._var2dict(varname, value)
+    assert vardict == {
+        "one_single_key": {
+            "key1": {"key2": {"key3": {"another_big_subkey": {"foo": "1"}}}}
+        }
+    }
+    # single key at front
+    varname = "ROBOTMK_bar_one__single__key_key1_key2_key3_another__big__subkey_foo"
+    value = "1"
+    vardict = cfg._var2dict(varname, value)
+    assert vardict == {
+        "bar": {
+            "one_single_key": {
+                "key1": {"key2": {"key3": {"another_big_subkey": {"foo": "1"}}}}
+            }
+        }
+    }
+
+
 def test_defaults():
     cfg = Config()
     cfg.set_defaults({"common": {"a": 1, "b": 2}})
@@ -36,6 +66,7 @@ def test_read_var_env_cfg():
     cfg = Config()
     cfg.set_defaults({"common": {"a": 1, "b": 2, "c": 3}})
     cfg.read_yml_cfg(path=robotmk_yml)
+    # TODO: remove this line, it is only for testing
     os.environ["ROBOTMK_common_c"] = "4"
     os.environ["ROBOTMK_common_cc"] = "4"
     os.environ["ROBOTMK_common_cff"] = "4"

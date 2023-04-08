@@ -6,3 +6,4 @@ robotmk.egg-info
 robotmk-agent/dist/*
 agent/tmp/*
 agent/log/*
+dist

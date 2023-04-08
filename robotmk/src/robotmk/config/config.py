@@ -210,46 +210,34 @@ class Config:
 
     def __split_varstring(self, s):
         """Helper function to split a string into a list of substrings, separated by "_".
-        Double underscores are protecting substring from splitting."""
-        pieces = []
-        current_piece = ""
-        preserved_piece = False
+        A double underscore protects the string from splitting."""
+        keys = []
+        starti = 0
         i = 0
         while i < len(s):
-            if s[i : i + 2] == "__":
-                # Double underscore, add current piece to list and start a new one
-                if current_piece:
-                    if not preserved_piece:
-                        # add a normal piece, start a preserved one
-                        pieces.append(current_piece)
-                        current_piece = ""
-                        preserved_piece = True
+            poschar = s[i]
+            if poschar == "_" or i == len(s) - 1:
+                if len(s) > i + 1 and s[i + 1] == "_":
+                    # not at and and double underscore in front of us!
+                    # skip next underscore and continue until next SINGLE underscore
+                    i += 2
+                    continue
+                else:
+                    # Single underscore in front or last piece; add current piece to list (replace __ by _) and start a new one
+                    if len(s) > i + 1:
+                        # last piece
+                        last_single_usc_index = i
                     else:
-                        # add a preserved piece, start a normal one
-                        pieces.append(current_piece)
-                        current_piece = ""
-                        preserved_piece = False
-                # Skip the double underscore
-                i += 2
-            elif s[i] == "_":
-                # Single underscore, add current piece to list and start a new one
-                if current_piece:
-                    if not preserved_piece:
-                        pieces.append(current_piece)
-                        current_piece = ""
-                    else:
-                        current_piece += "_"
-                i += 1
+                        # not last piece
+                        last_single_usc_index = i + 1
+                    piece = s[starti:last_single_usc_index].replace("__", "_")
+                    keys.append(piece)
+                    starti = i + 1
             else:
                 # Add the current character to the current piece
-                current_piece += s[i]
-                i += 1
-
-        # Add the last piece to the list
-        if current_piece:
-            pieces.append(current_piece)
-
-        return pieces
+                pass
+            i += 1
+        return keys
 
     def validate(self, schema: RobotmkConfigSchema):
         """Validates the whole config according to the given context schema."""
@@ -260,17 +248,17 @@ class Config:
 
     def to_environment(self, d=None, envvar_prefix=""):
         """Converts a nested dict to environment variables.
-        If no dict is given, self.config is used."""
+        If no dict is given, self.configdict is used."""
         if d is None:
-            d = self.configtuple
+            d = self.configdict
         for k, v in d.items():
             if isinstance(v, dict):
                 if "_" in k:
                     k = f"_{k}_"
                 self.to_environment(v, envvar_prefix=f"{envvar_prefix}_{k}")
             else:
-                print(f"{self.prefix}{envvar_prefix}_{k} = {v}")
-                os.environ[f"{self.prefix}{envvar_prefix}_{k}"] = str(v)
+                print(f"{self.envvar_prefix}{envvar_prefix}_{k} = {v}")
+                os.environ[f"{self.envvar_prefix}{envvar_prefix}_{k}"] = str(v)
 
     def to_yml(self, file=None) -> Union[str, None]:
         """Dumps the config to a file returns it."""
