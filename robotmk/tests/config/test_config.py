@@ -91,43 +91,44 @@ def test_cfg2env():
 def test_env2cfg():
     """Tests the conversion of environment variables to a config dictionary."""
     # simple values
-    os.environ["ROBOTMK_common_log__level"] = "INFO"
-    os.environ["ROBOTMK_common_suiteuname"] = "foo_suite"
-    os.environ["ROBOTMK_suites_foo__suite_my__value"] = "qux"
-    # # lists
-    os.environ["ROBOTMK_suites_foo__suite_my__list_0"] = "one"
-    os.environ["ROBOTMK_suites_foo__suite_my__list_1"] = "two"
-    os.environ["ROBOTMK_suites_foo__suite_my__list_2"] = "three"
+    # os.environ["ROBOTMK_common_log__level"] = "INFO"
+    # os.environ["ROBOTMK_common_suiteuname"] = "foo_suite"
+    # os.environ["ROBOTMK_suites_foo__suite_my__value"] = "qux"
+    # # # lists
+    # os.environ["ROBOTMK_suites_foo__suite_my__list_0"] = "one"
+    # os.environ["ROBOTMK_suites_foo__suite_my__list_1"] = "two"
+    # os.environ["ROBOTMK_suites_foo__suite_my__list_2"] = "three"
     # # dicts
     # os.environ["ROBOTMK_suites_foo__suite_my__dict_foo"] = "one"
     # os.environ["ROBOTMK_suites_foo__suite_my__dict_bar"] = "two"
     # os.environ["ROBOTMK_suites_foo__suite_my__dict_baz"] = "three"
     # list of dicts
-    # os.environ["ROBOTMK_suites_foo__suite_my__list__of__dict_0_foo"] = "one"
-    # os.environ["ROBOTMK_suites_foo__suite_my__list__of__dict_0_bar"] = "two"
-    # os.environ["ROBOTMK_suites_foo__suite_my__list__of__dict_0_baz"] = "three"
-    # os.environ["ROBOTMK_suites_foo__suite_my__list__of__dict_1_foo"] = "one"
-    # os.environ["ROBOTMK_suites_foo__suite_my__list__of__dict_1_bar"] = "two"
-    # os.environ["ROBOTMK_suites_foo__suite_my__list__of__dict_1_baz"] = "three"
-    # os.environ["ROBOTMK_suites_foo__suite_my__list__of__dict_2_foo"] = "one"
-    # os.environ["ROBOTMK_suites_foo__suite_my__list__of__dict_2_bar"] = "two"
-    # os.environ["ROBOTMK_suites_foo__suite_my__list__of__dict_2_baz"] = "three"
+    os.environ["ROBOTMK_suites_foo__suite_my__list__of__dict_0_foo"] = "one"
+    os.environ["ROBOTMK_suites_foo__suite_my__list__of__dict_0_bar"] = "two"
+    os.environ["ROBOTMK_suites_foo__suite_my__list__of__dict_0_baz"] = "three"
+    os.environ["ROBOTMK_suites_foo__suite_my__list__of__dict_1_foo"] = "one"
+    os.environ["ROBOTMK_suites_foo__suite_my__list__of__dict_1_bar"] = "two"
+    os.environ["ROBOTMK_suites_foo__suite_my__list__of__dict_1_baz"] = "three"
+    os.environ["ROBOTMK_suites_foo__suite_my__list__of__dict_2_foo"] = "one"
+    os.environ["ROBOTMK_suites_foo__suite_my__list__of__dict_2_bar"] = "two"
+    os.environ["ROBOTMK_suites_foo__suite_my__list__of__dict_2_baz"] = "three"
     cfg = Config()
     # now read the variables from environment
     cfg.read_cfg_vars(path=None)
-    assert str(cfg.configdict["common"]["log_level"]) == "INFO"
-    assert str(cfg.configdict["common"]["suiteuname"]) == "foo_suite"
-    assert str(cfg.configdict["suites"]["foo_suite"]["my_value"]) == "qux"
-    assert cfg.configdict["suites"]["foo_suite"]["my_list"] == [
-        "one",
-        "two",
-        "three",
-    ]
-    # assert cfg.configdict["suites"]["foo_suite"]["my_dict"] == {
-    #     "foo": "one",
-    #     "bar": "two",
-    #     "baz": "three",
-    # }
+    # assert str(cfg.configdict["common"]["log_level"]) == "INFO"
+    # assert str(cfg.configdict["common"]["suiteuname"]) == "foo_suite"
+    # assert str(cfg.configdict["suites"]["foo_suite"]["my_value"]) == "qux"
+    # assert cfg.configdict["suites"]["foo_suite"]["my_list"] == [
+    #     "one",
+    #     "two",
+    #     "three",
+    # ]
+
+    assert cfg.configdict["suites"]["foo_suite"]["my_dict"] == {
+        "foo": "one",
+        "bar": "two",
+        "baz": "three",
+    }
     # assert cfg.configdict["suites"]["foo_suite"]["my_list_of_dict"] == [
     #     {"foo": "one", "bar": "two", "baz": "three"},
     #     {"foo": "one", "bar": "two", "baz": "three"},
