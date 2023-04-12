@@ -1,2 +1,2 @@
 """Robot Framework test execution and result parsing for Check_MK"""
-__version__ = "0.0.45"
+__version__ = "0.0.46"

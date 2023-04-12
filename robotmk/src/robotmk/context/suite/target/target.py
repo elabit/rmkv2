@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from dotmap import DotMap
 from pathlib import Path
 from uuid import uuid4
 from ..strategies import RunStrategy, RunStrategyFactory
@@ -16,7 +15,7 @@ class Target(ABC):
     - an API call to an external platform ("target: remote") like Robocorp or Kubernetes
     """
 
-    def __init__(self, suiteuname: str, config: DotMap, logger: RobotmkLogger):
+    def __init__(self, suiteuname: str, config, logger: RobotmkLogger):
         self.suiteuname = suiteuname
         self.config = config
 

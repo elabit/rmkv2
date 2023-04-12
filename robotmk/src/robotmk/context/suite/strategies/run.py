@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from dotmap import DotMap
 import platform
 from robotmk.logger import RobotmkLogger
 import subprocess

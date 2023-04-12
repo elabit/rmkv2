@@ -10,11 +10,13 @@ dynamic = ["version", "description"]
 keywords = ["robotmk", "checkmk", "robotframework", "automation", "monitoring"]
 readme = "README.md"
 dependencies = [
-    "psutil",
     "click", 
+    "psutil",
+    "apscheduler<=4",
+    "pyyaml",
+    "mergedeep,"
     "robotframework",
-    "loguru",
-    "mergedeep"
+    "loguru"
 ]
 
 [project.scripts]
