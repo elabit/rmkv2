@@ -22,7 +22,21 @@ class RCCTarget(LocalTarget):
 
         In RCC target, the commandline gets buuilt to execute a RCC task (=Robotmk inside of RCC)
         """
-        pass
+        arglist = [
+            "rcc",
+            "task",
+            "run",
+            "--controller",
+            "robotmk",
+            "--space",
+            self.suiteuname,
+            "-t",
+            "robotmk",
+            "-r",
+            str(self.path.joinpath("robot.yaml")),
+        ]
+
+        return arglist
 
     def run(self):
         # Before we blow up the whole thing, we should check if the suite is RCC compatible and allowed to run
@@ -41,6 +55,8 @@ class RCCTarget(LocalTarget):
             self.config.set("suitecfg.uuid", self.uuid)
             self.config.to_environment()
             self.rc = self.run_strategy.run()
+
+            b'"/home/simonmeggle/Documents/01_dev/rmkv2/agent/robots/suiteA/robot.yaml" as robot.yaml is:\n# For more details on the format and content:\n# https://github.com/robocorp/rcc/blob/master/docs/recipes.md#what-is-in-robotyaml\n\ntasks:\n  # Task names here are used when executing the bots, so renaming these is recommended.\n  robotmk:\n    shell: robotmk\n\ncondaConfigFile: conda.yaml\n\nenvironmentConfigs:\n  - environment_windows_amd64_freeze.yaml\n  - environment_linux_amd64_freeze.yaml\n  - environment_darwin_amd64_freeze.yaml\n  - conda.yaml\n\nartifactsDir: output  \n\nPATH:\n  - .\nPYTHONPATH:\n  - .\n\nignoreFiles:\n  - .gitignore\n\n####  Progress: 01/13  v11.30.0     0.002s  Fresh [private mode] holotree environment 1fd704a1-107a-6a6d-5077-637f69e4e792.\n####  Progress: 02/13  v11.30.0     0.007s  Holotree blueprint is "bf7f8a568809a6ca" [linux_amd64].\n####  Progress: 12/13  v11.30.0     0.141s  Restore space from library [with 7 workers].\nInstallation plan is: /home/simonmeggle/robocorp/holotree/d7e2678_716b162_694a8d27/rcc_plan.log\nEnvironment configuration descriptor is: /home/simonmeggle/robocorp/holotree/d7e2678_716b162_694a8d27/identity.yaml\n####  Progress: 13/13  v11.30.0     0.702s  Fresh holotree done [with 7 workers].\nWanted  Version  Origin  |  No.  |  Available         Version    Origin       |  Status\n------  -------  ------  +  ---  +  ---------         -------    ------       +  ------\n-       -        -       |    1  |  _libgcc_mutex     0.1        conda-forge  |  N/A\n-       -        -       |    2  |  _openmp_mutex     4.5        conda-forge  |  N/A\n-       -        -       |    3  |  bzip2             1.0.8      conda-forge  |  N/A\n-       -        -       |    4  |  ca-certificates   2022.12.7  conda-forge  |  N/A\n-       -        -       |    5  |  ld_impl_linux-64  2.40       conda-forge  |  N/A\n-       -        -       |    6  |  libffi            3.4.2      conda-forge  |  N/A\n-       -        -       |    7  |  libgcc-ng         12.2.0     conda-forge  |  N/A\n-       -        -       |    8  |  libgomp           12.2.0     conda-forge  |  N/A\n-       -        -       |    9  |  libnsl            2.0.0      conda-forge  |  N/A\n-       -        -       |   10  |  libsqlite         3.40.0     conda-forge  |  N/A\n-       -        -       |   11  |  libuuid           2.38.1     conda-forge  |  N/A\n-       -        -       |   12  |  libzlib           1.2.13     conda-forge  |  N/A\n-       -        -       |   13  |  ncurses           6.3        conda-forge  |  N/A\n-       -        -       |   14  |  openssl           3.1.0      conda-forge  |  N/A\n-       -        -       |   15  |  pip               22.1.2     conda-forge  |  N/A\n-       -        -       |   16  |  psutil            5.9.4      pypi         |  N/A\n-       -        -       |   17  |  python            3.9.13     conda-forge  |  N/A\n-       -        -       |   18  |  readline          8.2        conda-forge  |  N/A\n-       -        -       |   19  |  robotmk           0.0.44     pypi         |  N/A\n-       -        -       |   20  |  setuptools        67.6.1     conda-forge  |  N/A\n-       -        -       |   21  |  sqlite            3.40.0     conda-forge  |  N/A\n-       -        -       |   22  |  tk                8.6.12     conda-forge  |  N/A\n-       -        -       |   23  |  tzdata            2023c      conda-forge  |  N/A\n-       -        -       |   24  |  wheel             0.40.0     conda-forge  |  N/A\n-       -        -       |   25  |  xz                5.2.6      conda-forge  |  N/A\n------  -------  ------  +  ---  +  ---------         -------    ------       +  ------\nWanted  Version  Origin  |  No.  |  Available         Version    Origin       |  Status\n\n--\nTraceback (most recent call last):\n  File "/home/simonmeggle/robocorp/holotree/d7e2678_716b162_694a8d27/bin/robotmk", line 5, in <module>\n    from robotmk.cli.cli import main\n  File "/home/simonmeggle/robocorp/holotree/d7e2678_716b162_694a8d27/lib/python3.9/site-packages/robotmk/cli/cli.py", line 5, in <module>\n    import click\nModuleNotFoundError: No module named \'click\'\nError: exit status 1\n'
 
     @property
     def is_rcc_compatible(self):

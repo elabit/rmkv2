@@ -40,6 +40,16 @@ from .yml import RobotmkConfigSchema
 # ["%s:%s" % (v, os.environ[v]) for v in os.environ if v.startswith("ROBO")]
 
 
+# def default_dict_constructor(loader, node):
+#     return defaultdict(loader.construct_mapping(node))
+
+
+# yaml.add_constructor(
+#     "tag:yaml.org,2002:python/object/apply:collections.defaultdict",
+#     default_dict_constructor,
+# )
+
+
 class Config:
     def __init__(self, envvar_prefix: str = "ROBOTMK", initdict: dict = None):
         self.envvar_prefix = envvar_prefix
@@ -180,11 +190,11 @@ class Config:
         # a dict with still flat var names
         vars = merge(filevars, envvars)
         # convert flat vars to nested dicts
-        vardict = defaultdict(dict)
+        vdict = defaultdict(dict)
         for k, v in vars.items():
-            vardict = self._var2cfg(k, v, vardict)
-            # vardict = merge(vardict, d, strategy=Strategy.TYPESAFE_ADDITIVE)
-        self.env_config = merge(self.env_config, vardict)
+            # iterate over each variable and convert it to a nested data structure
+            vdict = self._var2cfg(k, v, vdict)
+        self.env_config = merge(self.env_config, vdict)
 
     def _envvar2dict(self) -> dict:
         """Returns all environment variables starting with the ROBOTMK prefix.
@@ -206,7 +216,7 @@ class Config:
         {"ROBOTMK_foo_bar": "baz",
          "ROBOTMK_foo_baz": "bar"}
         """
-        vardict = {}
+        r = {}
         if file:
             try:
                 with open(file, "r") as f:
@@ -219,41 +229,10 @@ class Config:
                             # Split each line into a key-value pair
                             key, value = line.strip().split("=")
                             if key.startswith(self.envvar_prefix):
-                                cur_dict[key] = value
+                                r[key] = value
             except Exception as e:
                 raise FileNotFoundError(f"Could not read environment file: {file}")
-        return vardict
-
-    def __split_varstring(self, s):
-        """Helper function to split a string into a list of substrings, separated by "_".
-        A double underscore protects the string from splitting."""
-        keys = []
-        starti = 0
-        i = 0
-        while i < len(s):
-            poschar = s[i]
-            if poschar == "_" or i == len(s) - 1:
-                if len(s) > i + 1 and s[i + 1] == "_":
-                    # not at and and double underscore in front of us!
-                    # skip next underscore and continue until next SINGLE underscore
-                    i += 2
-                    continue
-                else:
-                    # Single underscore in front or last piece; add current piece to list (replace __ by _) and start a new one
-                    if len(s) > i + 1:
-                        # last piece
-                        last_single_usc_index = i
-                    else:
-                        # not last piece
-                        last_single_usc_index = i + 1
-                    piece = s[starti:last_single_usc_index].replace("__", "_")
-                    keys.append(piece)
-                    starti = i + 1
-            else:
-                # Add the current character to the current piece
-                pass
-            i += 1
-        return keys
+        return r
 
     def validate(self, schema: RobotmkConfigSchema):
         """Validates the whole config according to the given context schema."""
@@ -262,85 +241,114 @@ class Config:
         if not schema.validate():
             raise ValueError(f"Config is invalid: {schema.error}")
 
-    def _var2cfg(self, o_varname, value, vardict) -> dict:
+    def _var2cfg(self, o_varname, value, vdict) -> dict:
         """Helper function to convert a variable to a dict/list/value entry and assigns the value.
 
-        Value assignments are done in-place, so the vardict is modified."""
+        Example:
+            - ROBOTMK_foo_bar_0_baz = "bar"
+                will be converted to:
+                {"foo": {"bar": [{"baz": "bar"}]}}
+            - ROBOTMK_foo__bar_0_baz = "bar
+                will be converted to:
+                {"foo_bar": [{"baz": "bar"}]}
+        """
 
-        def partition_at_digit(s):
-            m = re.search("\d+", s)
+        def _partition_at_digit(s):
+            """Divides the string at the first digit and returns a list of the
+            left part, the digit and the right part.
+
+            The digit indicates the index in the list."""
+            m = re.search("_\d+", s)
             if m:
-                return s[: m.start() - 1], int(s[m.start() : m.end()]), s[m.end() + 1 :]
+                return s[: m.start()], int(s[m.start() + 1 : m.end()]), s[m.end() + 1 :]
             else:
                 return [s, None, None]
 
-        def _str2dict(string, value, vardict=None):
-            # vardict = {}
-            cur_dict = vardict
+        def _split_varstring(s):
+            """Helper function to reconstruct the nested key path of a dict from
+            a varname. The keys are separated by "_", a double underscore protects the string from splitting.
+            """
+            keys = []
+            starti = 0
+            i = 0
+            while i < len(s):
+                poschar = s[i]
+                if poschar == "_" or i == len(s) - 1:
+                    if len(s) > i + 1 and s[i + 1] == "_":
+                        # not at and and double underscore in front of us!
+                        # skip next underscore and continue until next SINGLE underscore
+                        i += 2
+                        continue
+                    else:
+                        # Single underscore in front or last piece; add current piece to list
+                        # (replace __ by _) and start a new one
+                        if len(s) > i + 1:
+                            # last piece
+                            last_single_usc_index = i
+                        else:
+                            # not last piece
+                            last_single_usc_index = i + 1
+                        piece = s[starti:last_single_usc_index].replace("__", "_")
+                        keys.append(piece)
+                        starti = i + 1
+                else:
+                    # Add the current character to the current piece
+                    pass
+                i += 1
+            return keys
 
-            (s_left, s_list_index, s_right) = partition_at_digit(string)
+        def _str2dict(string, value, vdict=None):
+            # curdict is a moving reference to the current dict
+            cur_dict = vdict
 
-            left_keys = self.__split_varstring(s_left)
+            (s_left, s_list_index, s_right) = _partition_at_digit(string)
+            # list of keys "left" of the list index (if any)
+            left_keys = _split_varstring(s_left)
             for ki, key in enumerate(left_keys):
+                # descend now key by key until we reach the leaf key. cur_dict gets always
+                # moved forward to have a reference on the key we want to change.
                 if ki < len(left_keys) - 1:
                     if not key in cur_dict:
                         cur_dict[key] = defaultdict(dict)
                     cur_dict = cur_dict[key]
-                    # if vardict.get(key, None):
-                    #     vardict = cur_dict[key]
                 else:
-                    # we have reached the leaf key of left side
-                    if not s_list_index is None:
-                        if not key in cur_dict:
-                            # list index: prepare the list position
-                            cur_dict[key] = [None] * (s_list_index + 1)
+                    # we have reached the leaf key of left side, just before the index.
+                    if not s_list_index is None:  # list index
+                        if (
+                            not key in cur_dict
+                        ):  # key not present, create all (empty) list items
+                            cur_dict[key] = [defaultdict(dict)] * (s_list_index + 1)
                         else:
-                            # list index: extend the list if necessary
-                            if len(cur_dict[key]) < s_list_index + 1:
-                                cur_dict[key] = cur_dict[key] + [None] * (
+                            if (
+                                len(cur_dict[key]) < s_list_index + 1
+                            ):  # key present, but not enough list items
+                                cur_dict[key] = cur_dict[key] + [defaultdict(dict)] * (
                                     s_list_index + 1 - len(cur_dict[key])
                                 )
-
-                        if not s_right:
-                            # no subdict inside the list, just add the value
+                        if not s_right:  # list entry without subkeys
                             cur_dict[key][s_list_index] = value
                         else:
-                            # dict inside the list, merge in case of existing dict
-                            subdict = _str2dict(s_right, value, vardict)
-                            if cur_dict[key][s_list_index]:
-                                cur_dict[key][s_list_index] = merge(
-                                    cur_dict[key][s_list_index],
-                                    subdict,
-                                    strategy=Strategy.TYPESAFE_ADDITIVE,
-                                )
+                            # dict inside the list!
+                            # call the function recursively to descend into the dict. We also
+                            # pass the current list item as cur_dict, so that the function can
+                            # modify it.
+                            subdict = _str2dict(
+                                s_right, value, cur_dict[key][s_list_index]
+                            )
+                            # assign the modified subdict to the list item
+                            cur_dict[key][s_list_index] = subdict
                     else:
-                        # simple value assignment
+                        # simple value assignment. Make sure that values of numbers are not stored as strings.
+                        if isinstance(value, str) and value.isdigit():
+                            value = int(value)
                         cur_dict[key] = value
 
-                    # cur_dict[key] = [_str2dict(dictparts[di + 1], value)]
-                    # cur_dict = cur_dict[key]
-
-            return vardict
+            return vdict
 
         # Remove the ROBOTMK_ prefix
         varname = o_varname.replace(self.envvar_prefix + "_", "")
-        # varname = "a_A_1_bar"
-        # # varname = "a_A_10"
-        # # varname = "a_A"
-
-        # value = "lulu"
-        # vardict = {
-        #     "a": {
-        #         "A": [
-        #             None,
-        #             {"foo": "la"},
-        #         ]
-        #     }
-        # }
-        # vardict = defaultdict(dict)
-        # value = "lulu"
-        _str2dict(varname, value, vardict)
-        return vardict
+        _str2dict(varname, value, vdict)
+        return vdict
 
     def to_environment(self, d=None, prefix=""):
         """Converts a given dict/value or self.configdict to environment variables.
@@ -373,7 +381,7 @@ class Config:
                 self.to_environment(item, prefix=new_prefix)
         else:
             varname = f"{self.envvar_prefix}{prefix}"
-            print(f"{varname} = {d}")
+            # print(f"{varname} = {d}")
             os.environ[varname] = str(d)
 
     def to_yml(self, file=None) -> Union[str, None]:

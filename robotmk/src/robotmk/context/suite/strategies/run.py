@@ -56,6 +56,7 @@ class Runner(RunStrategy):
         return 0
 
     def execute(self) -> int:
+        # DEBUG: " ".join(self.target.command)
         result = subprocess.run(self.target.command, capture_output=True)
         stdout_str = result.stdout.decode("utf-8").splitlines()
         stderr_str = result.stderr.decode("utf-8").splitlines()

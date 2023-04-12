@@ -7,36 +7,6 @@ robotmk_yml = os.path.join(cwd, "robotmk.yml")
 robotmk_env = os.path.join(cwd, "robotmk.env")
 
 
-def test_var2dict():
-    cfg = Config()
-    varname = "ROBOTMK_one__single__key_key1_key2_key3_another__big__subkey"
-    value = "1"
-    vardict = cfg._var2dict(varname, value)
-    assert vardict == {
-        "one_single_key": {"key1": {"key2": {"key3": {"another_big_subkey": "1"}}}}
-    }
-    # single key at end
-    varname = "ROBOTMK_one__single__key_key1_key2_key3_another__big__subkey_foo"
-    value = "1"
-    vardict = cfg._var2dict(varname, value)
-    assert vardict == {
-        "one_single_key": {
-            "key1": {"key2": {"key3": {"another_big_subkey": {"foo": "1"}}}}
-        }
-    }
-    # single key at front
-    varname = "ROBOTMK_bar_one__single__key_key1_key2_key3_another__big__subkey_foo"
-    value = "1"
-    vardict = cfg._var2dict(varname, value)
-    assert vardict == {
-        "bar": {
-            "one_single_key": {
-                "key1": {"key2": {"key3": {"another_big_subkey": {"foo": "1"}}}}
-            }
-        }
-    }
-
-
 def test_suitecfg_shorthand():
     """Tests the 'suitecfg' shorthand which allows to set/get the config of the current
     suite by using the 'suitecfg' key."""
@@ -88,20 +58,56 @@ def test_cfg2env():
     assert os.environ["ROBOTMK_suites_foo__suite_my__list__of__dict_2_baz"] == "three"
 
 
-def test_env2cfg():
+def test_env2cfg_values():
     """Tests the conversion of environment variables to a config dictionary."""
     # simple values
-    # os.environ["ROBOTMK_common_log__level"] = "INFO"
-    # os.environ["ROBOTMK_common_suiteuname"] = "foo_suite"
-    # os.environ["ROBOTMK_suites_foo__suite_my__value"] = "qux"
-    # # # lists
-    # os.environ["ROBOTMK_suites_foo__suite_my__list_0"] = "one"
-    # os.environ["ROBOTMK_suites_foo__suite_my__list_1"] = "two"
-    # os.environ["ROBOTMK_suites_foo__suite_my__list_2"] = "three"
+    os.environ["ROBOTMK_suites_foo1"] = "qux"
+    os.environ["ROBOTMK_common_log__level"] = "INFO"
+    os.environ["ROBOTMK_common_suiteuname"] = "foo_suite"
+    os.environ["ROBOTMK_suites_foo__suite_my__value"] = "qux"
+    cfg = Config()
+    # now read the variables from environment
+    cfg.read_cfg_vars(path=None)
+    assert str(cfg.configdict["common"]["log_level"]) == "INFO"
+    assert str(cfg.configdict["common"]["suiteuname"]) == "foo_suite"
+    assert str(cfg.configdict["suites"]["foo_suite"]["my_value"]) == "qux"
+
+
+def test_env2cfg_dicts():
+    """Tests the conversion of environment variables to a config dictionary."""
     # # dicts
-    # os.environ["ROBOTMK_suites_foo__suite_my__dict_foo"] = "one"
-    # os.environ["ROBOTMK_suites_foo__suite_my__dict_bar"] = "two"
-    # os.environ["ROBOTMK_suites_foo__suite_my__dict_baz"] = "three"
+    os.environ["ROBOTMK_suites_foo__suite_my__dict_foo"] = "one"
+    os.environ["ROBOTMK_suites_foo__suite_my__dict_bar"] = "two"
+    os.environ["ROBOTMK_suites_foo__suite_my__dict_baz"] = "three"
+    cfg = Config()
+    # now read the variables from environment
+    cfg.read_cfg_vars(path=None)
+
+    assert cfg.configdict["suites"]["foo_suite"]["my_dict"] == {
+        "foo": "one",
+        "bar": "two",
+        "baz": "three",
+    }
+
+
+def test_env2cfg_lists():
+    """Tests the conversion of environment variables to a config dictionary."""
+    # # # lists
+    os.environ["ROBOTMK_suites_foo__suite_my__list_0"] = "one"
+    os.environ["ROBOTMK_suites_foo__suite_my__list_1"] = "two"
+    os.environ["ROBOTMK_suites_foo__suite_my__list_2"] = "three"
+    cfg = Config()
+    # now read the variables from environment
+    cfg.read_cfg_vars(path=None)
+    assert cfg.configdict["suites"]["foo_suite"]["my_list"] == [
+        "one",
+        "two",
+        "three",
+    ]
+
+
+def test_env2cfg_listofdicts():
+    """Tests the conversion of environment variables to a config dictionary."""
     # list of dicts
     os.environ["ROBOTMK_suites_foo__suite_my__list__of__dict_0_foo"] = "one"
     os.environ["ROBOTMK_suites_foo__suite_my__list__of__dict_0_bar"] = "two"
@@ -115,25 +121,11 @@ def test_env2cfg():
     cfg = Config()
     # now read the variables from environment
     cfg.read_cfg_vars(path=None)
-    # assert str(cfg.configdict["common"]["log_level"]) == "INFO"
-    # assert str(cfg.configdict["common"]["suiteuname"]) == "foo_suite"
-    # assert str(cfg.configdict["suites"]["foo_suite"]["my_value"]) == "qux"
-    # assert cfg.configdict["suites"]["foo_suite"]["my_list"] == [
-    #     "one",
-    #     "two",
-    #     "three",
-    # ]
-
-    assert cfg.configdict["suites"]["foo_suite"]["my_dict"] == {
-        "foo": "one",
-        "bar": "two",
-        "baz": "three",
-    }
-    # assert cfg.configdict["suites"]["foo_suite"]["my_list_of_dict"] == [
-    #     {"foo": "one", "bar": "two", "baz": "three"},
-    #     {"foo": "one", "bar": "two", "baz": "three"},
-    #     {"foo": "one", "bar": "two", "baz": "three"},
-    # ]
+    assert cfg.configdict["suites"]["foo_suite"]["my_list_of_dict"] == [
+        {"foo": "one", "bar": "two", "baz": "three"},
+        {"foo": "one", "bar": "two", "baz": "three"},
+        {"foo": "one", "bar": "two", "baz": "three"},
+    ]
 
 
 def test_defaults():
@@ -242,7 +234,7 @@ def test_config_to_yml():
     # changed
     assert str(cfg.configdict["common"]["c"]) == "4"
     yml_str = cfg.to_yml()
-    yml = yaml.safe_load(yml_str)
+    yml = yaml.load(yml_str, Loader=yaml.Loader)
     assert str(yml["foo"]["bar"]["x"]) == "44"
 
 
