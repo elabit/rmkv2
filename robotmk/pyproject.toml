@@ -14,7 +14,7 @@ dependencies = [
     "psutil",
     "apscheduler<=4",
     "pyyaml",
-    "mergedeep,"
+    "mergedeep",
     "robotframework",
     "loguru"
 ]
