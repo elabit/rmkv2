@@ -13,7 +13,8 @@ dependencies = [
     "psutil",
     "click", 
     "robotframework",
-    "loguru"
+    "loguru",
+    "mergedeep"
 ]
 
 [project.scripts]
