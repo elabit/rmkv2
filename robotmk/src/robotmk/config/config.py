@@ -350,10 +350,13 @@ class Config:
         _str2dict(varname, value, vdict)
         return vdict
 
-    def to_environment(self, d=None, prefix=""):
+    def to_environment(self, d=None, prefix="", environ=None):
         """Converts a given dict/value or self.configdict to environment variables.
 
-        The rules are:
+        If environ is given, the environment variables are added to the given dict.
+        Otherwise the environment variables are added to the current environment.
+
+        The conversion rules are:
         - there is no case conversion
         - underscores within key names are replaced by double underscores
         - the prefix is added to the environment variable name
@@ -361,28 +364,22 @@ class Config:
         - lists get a number appended to their key name"""
         if d is None:
             d = self.configdict
-        if isinstance(d, dict):
+        if isinstance(d, dict):  # DICT conversion
             for key, value in d.items():
                 safe_key = key.replace("_", "__")
                 new_prefix = f"{prefix}_{safe_key}"
-                self.to_environment(value, prefix=new_prefix)
-
-                # elif isinstance(value, list):
-                #     for i, item in enumerate(value):
-                #         new_prefix = f"{prefix}_{safe_key}_{i}"
-                #         self.to_environment(item, prefix=new_prefix)
-                # else:
-                #     varname = f"{self.envvar_prefix}{prefix}_{safe_key}"
-                #     print(f"{varname} = {value}")
-                #     os.environ[varname] = str(value)
-        elif isinstance(d, list):
+                self.to_environment(value, prefix=new_prefix, environ=environ)
+        elif isinstance(d, list):  # LIST conversion
             for i, item in enumerate(d):
                 new_prefix = f"{prefix}_{i}"
-                self.to_environment(item, prefix=new_prefix)
-        else:
+                self.to_environment(item, prefix=new_prefix, environ=environ)
+        else:  # VALUE conversion
             varname = f"{self.envvar_prefix}{prefix}"
-            # print(f"{varname} = {d}")
-            os.environ[varname] = str(d)
+            print(f"{varname} = {d}")
+            if environ is None:
+                os.environ[varname] = str(d)
+            else:
+                environ[varname] = str(d)
 
     def to_yml(self, file=None) -> Union[str, None]:
         """Dumps the config to a file returns it."""

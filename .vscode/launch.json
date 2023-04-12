@@ -107,6 +107,17 @@
             "justMyCode": false
         },
         {
+            "name": "l robotmk w/o args (env:suite)",
+            "type": "python",
+            "request": "launch",
+            "program": "robotmk/src/robotmk/cli/cli.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "env": {
+                "ROBOTMK_common_context": "suite"
+            }
+        },
+        {
             "name": "l robotmk w/o args (env:local)",
             "type": "python",
             "request": "launch",
