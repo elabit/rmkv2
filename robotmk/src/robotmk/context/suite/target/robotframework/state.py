@@ -17,7 +17,7 @@ class RFState:
             "start_time": self._start_time.isoformat(),
             "end_time": self._end_time.isoformat(),
             "runtime": self._runtime.total_seconds(),
-            "piggybackhost": self.target.suitecfg.get("piggybackhost", None),
+            "piggybackhost": self.target.config.get("suiteconfig.piggybackhost", None),
             "output": {
                 "html": {
                     "path": self.target.log_html_fullpath,

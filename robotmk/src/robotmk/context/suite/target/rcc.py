@@ -36,10 +36,10 @@ class RCCTarget(LocalTarget):
         else:
             # When running Robotmk inside of a RCC, it must be told not
             # to use RCC again. (Otherwise, it would run RCC inside of RCC.)
-            self.config.to_environment()
-            self.suitecfg.set("run.rcc", False)
+            self.config.set("suitecfg.run.rcc", False)
             # The wrapping RCC process gives his uuid to the inner Robotmk process
-            self.suitecfg.set("uuid", self.uuid)
+            self.config.set("suitecfg.uuid", self.uuid)
+            self.config.to_environment()
             self.rc = self.run_strategy.run()
 
     @property

@@ -14,7 +14,7 @@ class RetryStrategyFactory:
 
     def create(self):
         """Create the execution strategy"""
-        strategy = self.target.suitecfg.get("retry_failed.strategy", "complete")
+        strategy = self.target.config.get("suitecfg.retry_failed.strategy", "complete")
         if strategy == "complete":
             return CompleteRetry(self.target)
         elif strategy == "incremental":
@@ -33,7 +33,7 @@ class RetryStrategy(ABC):
     @property
     def max_attempts(self):
         """Maximum number of attempts to execute a suite (1st + retries)"""
-        return 1 + self.target.suitecfg.get("retry_failed.retry_attempts", 0)
+        return 1 + self.target.config.get("suitecfg.retry_failed.retry_attempts", 0)
 
     def run(self):
         """Run the suite and retry failed tests if necessary."""
@@ -148,7 +148,7 @@ class IncrementalRetry(RetryStrategy):
         # Chance for next try. Attempt gets increased, output files get bumped
         failed_xml = Path(self.target.logdir).joinpath(self.target.output_xml)
         self.target.robotmk_params.update({"rerunfailed": str(failed_xml)})
-        rerun_selection = self.target.suitecfg.get(
-            "retry_failed.rerun_selection", {}
+        rerun_selection = self.target.config.get(
+            "suitecfg.retry_failed.rerun_selection", {}
         ).asdict()
         self.target.robotmk_params.update(rerun_selection)

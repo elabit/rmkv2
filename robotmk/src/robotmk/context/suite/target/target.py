@@ -19,7 +19,7 @@ class Target(ABC):
     def __init__(self, suiteuname: str, config: DotMap, logger: RobotmkLogger):
         self.suiteuname = suiteuname
         self.config = config
-        self.suitecfg = self.config.get("suites.%s" % suiteuname)
+
         self.commoncfg = self.config.get("common")
 
         self._logger = logger
@@ -42,7 +42,7 @@ class Target(ABC):
 
 
 class LocalTarget(Target):
-    """A local target is a single Robot Fremework suite or a RCC task for this suite.
+    """A local target is a single Robot Framework suite or a RCC task for this suite.
 
     It also encapsulates the implementation details of the RUN strategy, which is
     either a headless or a headed execution (RDP, XVFB, Scheduled Task)."""
@@ -61,7 +61,7 @@ class LocalTarget(Target):
         )
 
         self.path = Path(self.config.get("common.robotdir")).joinpath(
-            self.suitecfg.get("path")
+            self.config.get("suitecfg.path")
         )
         self.run_strategy = RunStrategyFactory(self).create()
         # list of subprocess' results and console output
@@ -69,7 +69,7 @@ class LocalTarget(Target):
 
     @property
     def uuid(self):
-        return self.suitecfg.get("uuid", uuid4().hex)
+        return self.config.get("suitecfg.uuid", uuid4().hex)
 
     @property
     def logdir(self):
@@ -89,65 +89,3 @@ class LocalTarget(Target):
         # None of the run strategies used for "run" are needed to get the output,
         # so we can just read the result artifacts from the filesystem.
         pass
-
-
-# ---
-
-
-# class LocalSuite(Target):
-#     """A single Robot Framework suite on Linux and Windows.
-
-#     Also encapsulates the implementation details of
-#     whether to run the suite with the OS Python or within
-#     a RCC environment."""
-
-#     # self.suitecfg = getattr(self.config.suites, self.suitename)
-
-#     def __init__(self, name: str, config: dict):
-#         super().__init__(name, config)
-#         self._set_python_strategy()
-#         self._set_head_strategy()
-#         pass
-
-#     @property
-#     def abspath(self):
-#         return Path(self.config.path).resolve()
-
-#     def run(self):
-#         pass
-
-#     def _set_python_strategy(self):
-#         """Sets the python execution strategy.
-
-#         Execution with `RCC` is possible when
-#         # 1. the suite is RCC compatible (conda.yml)
-#         # 2. feature is available (binary check)
-#         # 3. RCC is not disallowed in robotmk.yml
-#         # 4. `share-python` is not set on cli (would enforce the same Python)"""
-
-#     def _set_head_strategy(self):
-#         """Sets the strategy for this suite:
-#         - HeadedWinExecStrategy
-#         - HeadedLinExecutionStrategy
-#         - HeadlessExecutionStrategy"""
-#         self._strategy = strategy
-#         self.prepare = self._strategy.prepare
-#         self.execute = self._strategy.execute
-#         self.cleanup = self._strategy.cleanup
-
-
-# class RemoteSuite(Target):
-#     """A single Robot Framework suite on a remote platform.
-
-#     Its execution is triggered via an API call."""
-
-#     def __init__(self, name: str, config: dict):
-#         super().__init__(name)
-#         self.config = config
-
-#     def get_jobs_running(self):
-#         """Returns the number of running jobs currently."""
-#         pass
-
-#     def kill_job(self):
-#         pass

@@ -60,7 +60,7 @@ class RobotFrameworkTarget(LocalTarget):
         )
 
         suite_params = mergedeep.merge(
-            self.suitecfg.get("params").asdict(), self.robotmk_params
+            self.config.get("suitecfg.params").asdict(), self.robotmk_params
         )
         arglist = ["robot"]
         for k, v in suite_params.items():
