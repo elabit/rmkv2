@@ -17,47 +17,6 @@ def test_suitecfg_shorthand():
     assert cfg.get("suitecfg.foo.bar") == "baz"
 
 
-def test_cfg2env():
-    """Tests the conversion of a config dictionary to environment variables."""
-    cfg = Config()
-    cfg.set("common.log_level", "INFO")
-    cfg.set("common.suiteuname", "foo_suite")
-    cfg.set("suitecfg.my_value", "qux")
-    cfg.set("suitecfg.my_list", ["one", "two", "three"])
-    cfg.set("suitecfg.my_dict", {"foo": "one", "bar": "two", "baz": "three"})
-    cfg.set(
-        "suitecfg.my_list_of_dict",
-        [
-            {"foo": "one", "bar": "two", "baz": "three"},
-            {"foo": "one", "bar": "two", "baz": "three"},
-            {"foo": "one", "bar": "two", "baz": "three"},
-        ],
-    )
-    cfg.to_environment()
-    # simple values
-    assert os.environ["ROBOTMK_common_log__level"] == "INFO"
-    assert os.environ["ROBOTMK_common_suiteuname"] == "foo_suite"
-    assert os.environ["ROBOTMK_suites_foo__suite_my__value"] == "qux"
-    # lists
-    assert os.environ["ROBOTMK_suites_foo__suite_my__list_0"] == "one"
-    assert os.environ["ROBOTMK_suites_foo__suite_my__list_1"] == "two"
-    assert os.environ["ROBOTMK_suites_foo__suite_my__list_2"] == "three"
-    # dicts
-    assert os.environ["ROBOTMK_suites_foo__suite_my__dict_foo"] == "one"
-    assert os.environ["ROBOTMK_suites_foo__suite_my__dict_bar"] == "two"
-    assert os.environ["ROBOTMK_suites_foo__suite_my__dict_baz"] == "three"
-    # list of dicts
-    assert os.environ["ROBOTMK_suites_foo__suite_my__list__of__dict_0_foo"] == "one"
-    assert os.environ["ROBOTMK_suites_foo__suite_my__list__of__dict_0_bar"] == "two"
-    assert os.environ["ROBOTMK_suites_foo__suite_my__list__of__dict_0_baz"] == "three"
-    assert os.environ["ROBOTMK_suites_foo__suite_my__list__of__dict_1_foo"] == "one"
-    assert os.environ["ROBOTMK_suites_foo__suite_my__list__of__dict_1_bar"] == "two"
-    assert os.environ["ROBOTMK_suites_foo__suite_my__list__of__dict_1_baz"] == "three"
-    assert os.environ["ROBOTMK_suites_foo__suite_my__list__of__dict_2_foo"] == "one"
-    assert os.environ["ROBOTMK_suites_foo__suite_my__list__of__dict_2_bar"] == "two"
-    assert os.environ["ROBOTMK_suites_foo__suite_my__list__of__dict_2_baz"] == "three"
-
-
 def test_env2cfg_values():
     """Tests the conversion of environment variables to a config dictionary."""
     # simple values
@@ -251,6 +210,64 @@ def test_envvar2dict():
     assert str(cfg.configdict["foo"]["bar3"]) == "3"
     # assert not
     assert not "bar4" in cfg.configdict["foo"]
+
+
+def test_dotcfg2env():
+    """Tests if the setenv() function works"""
+    environ = {}
+    dotstrings = {
+        "common.logdir": "/another/path",
+        "suitecfg.uuid": "1234",
+        "suitecfg.run.rcc": False,
+    }
+    cfg = Config()
+    cfg.set("common.suiteuname", "foo_suite")
+    cfg.dotcfg_to_env(dotstrings, environ=environ)
+    assert environ["ROBOTMK_common_logdir"] == "/another/path"
+    assert environ["ROBOTMK_suites_foo__suite_uuid"] == "1234"
+    assert environ["ROBOTMK_suites_foo__suite_run_rcc"] == "False"
+
+
+def test_cfg2env():
+    """Tests the conversion of a config dictionary to environment variables."""
+    environ = {}
+    cfg = Config()
+    cfg.set("common.log_level", "INFO")
+    cfg.set("common.suiteuname", "foo_suite")
+    cfg.set("suitecfg.my_value", "qux")
+    cfg.set("suitecfg.my_list", ["one", "two", "three"])
+    cfg.set("suitecfg.my_dict", {"foo": "one", "bar": "two", "baz": "three"})
+    cfg.set(
+        "suitecfg.my_list_of_dict",
+        [
+            {"foo": "one", "bar": "two", "baz": "three"},
+            {"foo": "one", "bar": "two", "baz": "three"},
+            {"foo": "one", "bar": "two", "baz": "three"},
+        ],
+    )
+    cfg.cfg_to_environment(cfg.configdict, environ=environ)
+    # simple values
+    assert environ["ROBOTMK_common_log__level"] == "INFO"
+    assert environ["ROBOTMK_common_suiteuname"] == "foo_suite"
+    assert environ["ROBOTMK_suites_foo__suite_my__value"] == "qux"
+    # lists
+    assert environ["ROBOTMK_suites_foo__suite_my__list_0"] == "one"
+    assert environ["ROBOTMK_suites_foo__suite_my__list_1"] == "two"
+    assert environ["ROBOTMK_suites_foo__suite_my__list_2"] == "three"
+    # dicts
+    assert environ["ROBOTMK_suites_foo__suite_my__dict_foo"] == "one"
+    assert environ["ROBOTMK_suites_foo__suite_my__dict_bar"] == "two"
+    assert environ["ROBOTMK_suites_foo__suite_my__dict_baz"] == "three"
+    # list of dicts
+    assert environ["ROBOTMK_suites_foo__suite_my__list__of__dict_0_foo"] == "one"
+    assert environ["ROBOTMK_suites_foo__suite_my__list__of__dict_0_bar"] == "two"
+    assert environ["ROBOTMK_suites_foo__suite_my__list__of__dict_0_baz"] == "three"
+    assert environ["ROBOTMK_suites_foo__suite_my__list__of__dict_1_foo"] == "one"
+    assert environ["ROBOTMK_suites_foo__suite_my__list__of__dict_1_bar"] == "two"
+    assert environ["ROBOTMK_suites_foo__suite_my__list__of__dict_1_baz"] == "three"
+    assert environ["ROBOTMK_suites_foo__suite_my__list__of__dict_2_foo"] == "one"
+    assert environ["ROBOTMK_suites_foo__suite_my__list__of__dict_2_bar"] == "two"
+    assert environ["ROBOTMK_suites_foo__suite_my__list__of__dict_2_baz"] == "three"
 
 
 # TODO: split_varstring

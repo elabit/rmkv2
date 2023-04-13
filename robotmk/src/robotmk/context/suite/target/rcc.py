@@ -40,18 +40,23 @@ class RCCTarget(LocalTarget):
         return arglist
 
     def prepare_environment(self) -> dict:
+        """Sets up the environment for a subsequent run.
+
+        If Robotmk calls itself in a RCC task, the inner call of Robotmk needs
+        some special settings, e.g. NOT to use RCC again, to log into the default
+        logdir, etc.
+        This function first exports the current config to the environment and
+        then adds the special settings on top.
+        """
         env = os.environ.copy()
-        # When running Robotmk inside of a RCC, it must be told not
-        # to use RCC again. (Otherwise, it would run RCC inside of RCC.)
-        self.config.set("suitecfg.run.rcc", False)
-        # The wrapping RCC process gives his uuid to the inner Robotmk process
-        self.config.set("suitecfg.uuid", self.uuid)
-        # TODO: rethink the idea to separate the logs of rcc and robotframework
-        # self.config.set(
-        #     "common.logdir",
-        #     "%s/%s" % (self.config.get("common.logdir"), "robotframework"),
-        # )
-        self.config.to_environment(environ=env)
+        rf_settings = {
+            "suitecfg.run.rcc": False,
+            "suitecfg.uuid": self.uuid,
+            "common.logdir": "%s/%s"
+            % (self.config.basic_cfg["common"]["logdir"], "robotframework"),
+        }
+        self.config.cfg_to_environment(self.config.configdict, environ=env)
+        self.config.dotcfg_to_env(rf_settings, environ=env)
         return env
 
     def run(self):

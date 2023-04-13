@@ -137,10 +137,36 @@ class Config:
 
     @property
     def configdict(self):
-        """This property merges the three config sources in the right order."""
+        """This property represents all config dicts merged.
 
+        It consist of the following dicts:
+        - basic_cfg = predefiend from start
+            - default_cfg
+            - yml_config
+            - env_config
+        - added_config = added at runtime
+
+        """
+
+        # https://mergedeep.readthedocs.io/en/latest/#merge-strategies
+        # Collection values are merged additively. Others get replaced.
+        # The last/rightmost dictionary has the highest priority.
         return merge(
-            self.default_cfg, self.yml_config, self.env_config, self.added_config
+            {},
+            self.basic_cfg,  # Config set by OS default values, YML file, environment variables and/or variables file
+            self.added_config,  # Config changed/added at runtime (config.set() method)
+            strategy=Strategy.ADDITIVE,
+        )
+
+    @property
+    def basic_cfg(self):
+        """Returns the basic config dict."""
+        return merge(
+            {},
+            self.default_cfg,  # Config set by OS default values
+            self.yml_config,  # Config loaded from YML file
+            self.env_config,  # Config loaded from environment variables and/or variables file
+            strategy=Strategy.ADDITIVE,
         )
 
     # 1. Defaults (common/OS specific)
@@ -241,6 +267,103 @@ class Config:
         if not schema.validate():
             raise ValueError(f"Config is invalid: {schema.error}")
 
+    @staticmethod
+    def partition_at_digit(s):
+        """Divides the string at the first digit and returns a list of the
+        left part, the digit and the right part.
+
+        The digit indicates the index in the list."""
+        m = re.search("_\d+", s)
+        if m:
+            return s[: m.start()], int(s[m.start() + 1 : m.end()]), s[m.end() + 1 :]
+        else:
+            return [s, None, None]
+
+    @staticmethod
+    def split_varstring(s):
+        """Helper function to reconstruct the nested key path of a dict from
+        a varname. The keys are separated by "_", a double underscore protects the string from splitting.
+        """
+        keys = []
+        starti = 0
+        i = 0
+        while i < len(s):
+            poschar = s[i]
+            if poschar == "_" or i == len(s) - 1:
+                if len(s) > i + 1 and s[i + 1] == "_":
+                    # not at and and double underscore in front of us!
+                    # skip next underscore and continue until next SINGLE underscore
+                    i += 2
+                    continue
+                else:
+                    # Single underscore in front or last piece; add current piece to list
+                    # (replace __ by _) and start a new one
+                    if len(s) > i + 1:
+                        # last piece
+                        last_single_usc_index = i
+                    else:
+                        # not last piece
+                        last_single_usc_index = i + 1
+                    piece = s[starti:last_single_usc_index].replace("__", "_")
+                    keys.append(piece)
+                    starti = i + 1
+            else:
+                # Add the current character to the current piece
+                pass
+            i += 1
+        return keys
+
+    def uscore_str2dict(string, value, vdict=None):
+        """Converts a variable string to a nested dict.
+
+        Digit inside the string indicate the index in the list."""
+        # curdict is a moving reference to the current dict
+        cur_dict = vdict
+
+        (s_left, s_list_index, s_right) = Config.partition_at_digit(string)
+        # list of keys "left" of the list index (if any)
+        left_keys = Config.split_varstring(s_left)
+        for ki, key in enumerate(left_keys):
+            # descend now key by key until we reach the leaf key. cur_dict gets always
+            # moved forward to have a reference on the key we want to change.
+            if ki < len(left_keys) - 1:
+                if not key in cur_dict:
+                    cur_dict[key] = defaultdict(dict)
+                cur_dict = cur_dict[key]
+            else:
+                # we have reached the leaf key of left side, just before the index.
+                if not s_list_index is None:  # list index
+                    if (
+                        not key in cur_dict
+                    ):  # key not present, create all (empty) list items
+                        cur_dict[key] = [defaultdict(dict)] * (s_list_index + 1)
+                    else:
+                        if (
+                            len(cur_dict[key]) < s_list_index + 1
+                        ):  # key present, but not enough list items
+                            cur_dict[key] = cur_dict[key] + [defaultdict(dict)] * (
+                                s_list_index + 1 - len(cur_dict[key])
+                            )
+                    if not s_right:  # list entry without subkeys
+                        cur_dict[key][s_list_index] = value
+                    else:
+                        # dict inside the list!
+                        # call the function recursively to descend into the dict. We also
+                        # pass the current list item as cur_dict, so that the function can
+                        # modify it.
+                        subdict = Config.uscore_str2dict(
+                            s_right, value, cur_dict[key][s_list_index]
+                        )
+                        # assign the modified subdict to the list item
+                        cur_dict[key][s_list_index] = subdict
+                else:
+                    # simple value assignment. Make sure that values of numbers are not stored as strings.
+                    if isinstance(value, str) and value.isdigit():
+                        value = int(value)
+                    cur_dict[key] = value
+
+        return vdict
+
     def _var2cfg(self, o_varname, value, vdict) -> dict:
         """Helper function to convert a variable to a dict/list/value entry and assigns the value.
 
@@ -253,105 +376,30 @@ class Config:
                 {"foo_bar": [{"baz": "bar"}]}
         """
 
-        def _partition_at_digit(s):
-            """Divides the string at the first digit and returns a list of the
-            left part, the digit and the right part.
-
-            The digit indicates the index in the list."""
-            m = re.search("_\d+", s)
-            if m:
-                return s[: m.start()], int(s[m.start() + 1 : m.end()]), s[m.end() + 1 :]
-            else:
-                return [s, None, None]
-
-        def _split_varstring(s):
-            """Helper function to reconstruct the nested key path of a dict from
-            a varname. The keys are separated by "_", a double underscore protects the string from splitting.
-            """
-            keys = []
-            starti = 0
-            i = 0
-            while i < len(s):
-                poschar = s[i]
-                if poschar == "_" or i == len(s) - 1:
-                    if len(s) > i + 1 and s[i + 1] == "_":
-                        # not at and and double underscore in front of us!
-                        # skip next underscore and continue until next SINGLE underscore
-                        i += 2
-                        continue
-                    else:
-                        # Single underscore in front or last piece; add current piece to list
-                        # (replace __ by _) and start a new one
-                        if len(s) > i + 1:
-                            # last piece
-                            last_single_usc_index = i
-                        else:
-                            # not last piece
-                            last_single_usc_index = i + 1
-                        piece = s[starti:last_single_usc_index].replace("__", "_")
-                        keys.append(piece)
-                        starti = i + 1
-                else:
-                    # Add the current character to the current piece
-                    pass
-                i += 1
-            return keys
-
-        def _str2dict(string, value, vdict=None):
-            # curdict is a moving reference to the current dict
-            cur_dict = vdict
-
-            (s_left, s_list_index, s_right) = _partition_at_digit(string)
-            # list of keys "left" of the list index (if any)
-            left_keys = _split_varstring(s_left)
-            for ki, key in enumerate(left_keys):
-                # descend now key by key until we reach the leaf key. cur_dict gets always
-                # moved forward to have a reference on the key we want to change.
-                if ki < len(left_keys) - 1:
-                    if not key in cur_dict:
-                        cur_dict[key] = defaultdict(dict)
-                    cur_dict = cur_dict[key]
-                else:
-                    # we have reached the leaf key of left side, just before the index.
-                    if not s_list_index is None:  # list index
-                        if (
-                            not key in cur_dict
-                        ):  # key not present, create all (empty) list items
-                            cur_dict[key] = [defaultdict(dict)] * (s_list_index + 1)
-                        else:
-                            if (
-                                len(cur_dict[key]) < s_list_index + 1
-                            ):  # key present, but not enough list items
-                                cur_dict[key] = cur_dict[key] + [defaultdict(dict)] * (
-                                    s_list_index + 1 - len(cur_dict[key])
-                                )
-                        if not s_right:  # list entry without subkeys
-                            cur_dict[key][s_list_index] = value
-                        else:
-                            # dict inside the list!
-                            # call the function recursively to descend into the dict. We also
-                            # pass the current list item as cur_dict, so that the function can
-                            # modify it.
-                            subdict = _str2dict(
-                                s_right, value, cur_dict[key][s_list_index]
-                            )
-                            # assign the modified subdict to the list item
-                            cur_dict[key][s_list_index] = subdict
-                    else:
-                        # simple value assignment. Make sure that values of numbers are not stored as strings.
-                        if isinstance(value, str) and value.isdigit():
-                            value = int(value)
-                        cur_dict[key] = value
-
-            return vdict
-
         # Remove the ROBOTMK_ prefix
         varname = o_varname.replace(self.envvar_prefix + "_", "")
-        _str2dict(varname, value, vdict)
+        Config.uscore_str2dict(varname, value, vdict)
         return vdict
 
-    def to_environment(self, d=None, prefix="", environ=None):
-        """Converts a given dict/value or self.configdict to environment variables.
+    def dotcfg_to_env(self, dotstrings: dict, environ: dict):
+        """Converts a dict of dotconfigs to an environment variable and assign it to environ.
+
+        This does not affect the current config at all; it just uses a temporary config object.
+        Example:
+            {"common.logdir": "foo",
+             "common.loglevel": "debug"}
+        """
+
+        tmp_cfg = Config()
+        # As we are using a temp config object, the suiteuname must be set manually to access the
+        # correct section with the shorthand "suitecfg"
+        tmp_cfg.set("common.suiteuname", self.get("common.suiteuname"))
+        for k, v in dotstrings.items():
+            tmp_cfg.set(k, v)
+        self.cfg_to_environment(tmp_cfg.configdict, environ=environ)
+
+    def cfg_to_environment(self, d, prefix="", environ=None):
+        """Converts a given dict to environment variables.
 
         If environ is given, the environment variables are added to the given dict.
         Otherwise the environment variables are added to the current environment.
@@ -362,17 +410,16 @@ class Config:
         - the prefix is added to the environment variable name
         - dicts are converted to nested environment variables
         - lists get a number appended to their key name"""
-        if d is None:
-            d = self.configdict
+
         if isinstance(d, dict):  # DICT conversion
             for key, value in d.items():
                 safe_key = key.replace("_", "__")
                 new_prefix = f"{prefix}_{safe_key}"
-                self.to_environment(value, prefix=new_prefix, environ=environ)
+                self.cfg_to_environment(value, prefix=new_prefix, environ=environ)
         elif isinstance(d, list):  # LIST conversion
             for i, item in enumerate(d):
                 new_prefix = f"{prefix}_{i}"
-                self.to_environment(item, prefix=new_prefix, environ=environ)
+                self.cfg_to_environment(item, prefix=new_prefix, environ=environ)
         else:  # VALUE conversion
             varname = f"{self.envvar_prefix}{prefix}"
             print(f"{varname} = {d}")
