@@ -49,25 +49,29 @@ DEFAULTS = {
 
 class Robotmk:
     """This is the main class of the robotmk package. It is used to create a
-    Robotmk instance with a specific context."""
+    Robotmk instance with a specific context.
+
+    Configuration loading (yml, var, env) depends on the context and is only
+    done when not config object is passed to the init method."""
 
     def __init__(
         self,
         log_level=None,
         contextname=None,
-        yml: str = None,
-        vars: str = None,
+        ymlfile: str = None,
+        varfile: str = None,
+        default_cfg: dict = None,
     ) -> None:
         """context is the strategy to use and in fact a set of factory methods.
         If called from the CLI without context argument, the default context
         will be read from environment variable ROBOTMK_common_context."""
 
         self.__set_context(contextname, log_level)
-        # self.load_config = self._context.load_config
-        self._context.load_config(DEFAULTS, yml, vars)
+        self._context.load_config(
+            DEFAULTS, ymlfile=ymlfile, varfile=varfile, default_cfg=default_cfg
+        )
+        self.config.set("common.context", contextname)
 
-        # TODO: needed?
-        # self.config = self._context.config
         self.run_default = self._context.run_default
         # execute and output are the two main functions of each context:
         self.execute = self._context.execute

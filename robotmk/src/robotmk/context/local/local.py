@@ -1,8 +1,8 @@
 from pathlib import Path
-
 from ..abstract import AbstractContext
 
-from robotmk.config.yml import RobotmkConfigSchema
+from robotmk.config import Config, RobotmkConfigSchema
+
 from robotmk.executor.scheduler import Scheduler
 
 
@@ -20,7 +20,7 @@ class LocalContext(AbstractContext):
             )
         return self._logger
 
-    def load_config(self, defaults, ymlfile: str, varfile: str) -> None:
+    def load_config(self, defaults, **kwargs) -> None:
         """Load the config for local context.
 
         Local context can merge the config from
@@ -28,8 +28,9 @@ class LocalContext(AbstractContext):
         - + YML file (default/custom = --yml)
         - + environment variables
         """
+        # self.config = Config()
         self.config.set_defaults(defaults)
-        self.config.read_yml_cfg(must_exist=True, path=ymlfile)
+        self.config.read_yml_cfg(path=kwargs["ymlfile"], must_exist=True)
         self.config.read_cfg_vars(path=None)
         # TODO: validate later so that config can be dumped
         # self.config.validate(self.ymlschema)
@@ -49,8 +50,7 @@ class LocalContext(AbstractContext):
         pass
 
     def execute(self, *args, **kwargs):
-        """Implements the run action for local context ()."""
-        print("Local context run action")
+        """Starts the scheduler."""
         self.executor = Scheduler(self.config)
         self.executor.run()
         pass

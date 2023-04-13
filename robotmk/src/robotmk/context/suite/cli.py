@@ -5,6 +5,15 @@ import click
 from robotmk.cli.defaultgroup import DefaultGroup
 from robotmk.main import Robotmk, DEFAULTS
 
+# TODO: Refine the defaultgroup usage
+
+#             _ _
+#            (_) |
+#   ___ _   _ _| |_ ___
+#  / __| | | | | __/ _ \
+#  \__ \ |_| | | ||  __/
+#  |___/\__,_|_|\__\___|
+
 
 # use module docstring as help text
 @click.group(
@@ -16,10 +25,10 @@ from robotmk.main import Robotmk, DEFAULTS
 def suite(ctx, yml, vars):
     if vars and yml:
         raise click.BadParameter("Cannot use --yml and --vars at the same time")
-    # click.echo("suite")
     ctx_loglevel = ctx.parent.params.get("loglevel", DEFAULTS["common"]["log_level"])
-    ctx.obj = Robotmk(contextname="suite", log_level=ctx_loglevel, yml=yml, vars=vars)
-    ctx.obj.config.set("common.context", "suite")
+    ctx.obj = Robotmk(
+        contextname="suite", log_level=ctx_loglevel, ymlfile=yml, varfile=vars
+    )
 
 
 @suite.command(default=True)
@@ -31,7 +40,6 @@ def run(ctx, suite):
     SUITE must be a configuration subkey of the "suites" section.
     (can also be set by env:ROBOTMK_common_suiteuname.)
     """
-    # click.secho("run suite %s" % suite, fg="green")
     if suite:
         ctx.obj.config.set("common.suiteuname", suite)
     if ctx.obj.config.get("common.suiteuname", None):
@@ -51,6 +59,7 @@ def output(ctx, suite):
     (can also be set by env:ROBOTMK_common_suiteuname.)
     """
     click.secho("output of suite %s" % suite, fg="green")
+    # TODO: to be implemented
     ctx.obj.output()
     pass
 

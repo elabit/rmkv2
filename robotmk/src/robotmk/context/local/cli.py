@@ -1,9 +1,17 @@
 """CLI commands for the local context. 
 
-Executes Robotmk in local context (Windows & Linux)"""
+Executes the Robotmk scheduler on Windows & Linux"""
 import sys
 import click
 from robotmk.main import Robotmk, DEFAULTS
+
+
+#   _                 _
+#  | |               | |
+#  | | ___   ___ __ _| |
+#  | |/ _ \ / __/ _` | |
+#  | | (_) | (_| (_| | |
+#  |_|\___/ \___\__,_|_|
 
 
 # use module docstring as help text
@@ -13,8 +21,8 @@ from robotmk.main import Robotmk, DEFAULTS
 
 # @click.option("--vars", "-v", help="Read vars from .env file (ignores environment)")
 def local(ctx, yml):
-    ctx.obj = Robotmk("local", yml=yml)
-    ctx.obj.config.set("common.context", "local")
+    ctx_loglevel = ctx.parent.params.get("loglevel", DEFAULTS["common"]["log_level"])
+    ctx.obj = Robotmk(contextname="local", log_level=ctx_loglevel, ymlfile=yml)
     if ctx.invoked_subcommand is None:
         click.secho("No subcommand given. Use --help for help.", fg="red")
         sys.exit(1)
@@ -23,6 +31,8 @@ def local(ctx, yml):
 @local.command()
 @click.pass_context
 def scheduler(ctx):
+    """Start the local scheduler to run RF suites."""
+
     click.secho("scheduler", fg="green")
     ctx.obj.execute()
     pass

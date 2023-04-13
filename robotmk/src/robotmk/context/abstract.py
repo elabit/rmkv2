@@ -13,6 +13,7 @@ class AbstractContext(ABC):
         # self._config_factory = Config()
         self._logger = None
         self.init_logger()
+        self.config = Config()
 
     @property
     def logger(self):
@@ -33,7 +34,7 @@ class AbstractContext(ABC):
             self.critical = self._logger.critical
 
     @abstractmethod
-    def load_config(self, defaults, ymlfile: str, varfile: str) -> None:
+    def load_config(self, defaults, **kwargs) -> None:
         """Depening on the context strategy, the config object loads cfg from different sources."""
         raise NotImplementedError("Subclass must implement abstract method")
 

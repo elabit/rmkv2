@@ -31,6 +31,8 @@ import yaml
 from mergedeep import merge, Strategy
 from typing import Union
 from collections import defaultdict
+import json
+import hashlib
 
 # from collections import namedtuple
 from pathlib import Path
@@ -136,6 +138,13 @@ class Config:
         return self.configdict
 
     @property
+    def hash(self):
+        """Returns a hash of the config to identify a possible change.
+
+        The config hash is used in the scheduler and sequencer."""
+        return hashlib.sha256(json.dumps(self.configdict).encode("utf-8")).hexdigest()
+
+    @property
     def configdict(self):
         """This property represents all config dicts merged.
 
@@ -157,6 +166,12 @@ class Config:
             self.added_config,  # Config changed/added at runtime (config.set() method)
             strategy=Strategy.ADDITIVE,
         )
+
+    @configdict.setter
+    def configdict(self, cfg: dict):
+        """This setter allows to write a whole new config dict. It is used e.g. when the scheduler creates
+        job object for each suite."""
+        self.default_cfg = cfg
 
     @property
     def basic_cfg(self):
@@ -180,7 +195,7 @@ class Config:
 
     # 2. YML
     def read_yml_cfg(self, path=None, must_exist=True):
-        """Reads a YML config"""
+        """Reads a YML config, either default or custom."""
         if path is None:
             # Linux default: /etc/check_mk/robotmk.yml
             # Windows default: C:\Program Data\check_mk\agent\config\robotmk.yml
@@ -220,7 +235,7 @@ class Config:
         for k, v in vars.items():
             # iterate over each variable and convert it to a nested data structure
             vdict = self._var2cfg(k, v, vdict)
-        self.env_config = merge(self.env_config, vdict)
+        self.env_config = merge({}, self.env_config, vdict, strategy=Strategy.ADDITIVE)
 
     def _envvar2dict(self) -> dict:
         """Returns all environment variables starting with the ROBOTMK prefix.

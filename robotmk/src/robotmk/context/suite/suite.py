@@ -7,6 +7,7 @@ from ..abstract import AbstractContext
 from robotmk.config import Config, RobotmkConfigSchema
 
 from .target import Target, RobotFrameworkTarget, RCCTarget, RemoteTarget
+import time
 
 
 class SuiteContext(AbstractContext):
@@ -68,7 +69,7 @@ class SuiteContext(AbstractContext):
     def target(self) -> Target:
         return self._target
 
-    def load_config(self, defaults, ymlfile: str, varfile: str) -> None:
+    def load_config(self, defaults, **kwargs) -> None:
         """Load the config for suite context.
 
         Suite context can merge the config from
@@ -77,14 +78,15 @@ class SuiteContext(AbstractContext):
         - + var file (= --vars)
         - + environment variables
         """
-        self.config = Config()
-        self.config.set_defaults(defaults)
-        self.config.read_yml_cfg(path=ymlfile, must_exist=False)
-        self.config.read_cfg_vars(path=varfile)
-        # self._config_factory.set_defaults(defaults)
-        # self._config_factory.read_yml_cfg(path=ymlfile, must_exist=False)
-        # self._config_factory.read_cfg_vars(path=varfile)
-        # self.config = self._config_factory.create_config()
+        if "default_cfg" in kwargs:
+            # Suite was started by scheduler, config was passed
+            self.config.configdict = kwargs["default_cfg"]
+
+        else:
+            # Suite was started by CLI, load config from individual sources
+            self.config.set_defaults(defaults)
+            self.config.read_yml_cfg(path=kwargs["ymlfile"], must_exist=False)
+            self.config.read_cfg_vars(path=kwargs["varfile"])
         # TODO: validate later so that config can be dumped
         # self.config.validate(self._ymlschema)
 
@@ -101,7 +103,11 @@ class SuiteContext(AbstractContext):
 
     def execute(self):
         """Runs a single suite, either locally or remotely (via API call)."""
-        self.get_target().run()
+        # TODO: is it better to pass the suitename to get_target()?
+
+        print("Suite context execute")
+        time.sleep(5)
+        # self.get_target().run()
 
     def output(self):
         # TODO: make this possible in CLI
