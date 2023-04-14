@@ -151,6 +151,6 @@ class IncrementalRetry(RetryStrategy):
         failed_xml = Path(self.target.logdir).joinpath(self.target.output_xml)
         self.target.robot_params.update({"rerunfailed": str(failed_xml)})
         rerun_selection = self.target.config.get(
-            "suitecfg.retry_failed.rerun_selection", {}
-        ).asdict()
+            "suitecfg.retry_failed.rerun_selection", asdict=True, default={}
+        )
         self.target.robot_params.update(rerun_selection)

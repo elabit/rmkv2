@@ -78,7 +78,7 @@ class Config:
             keys[:1] = ["suites", suitename]
         return keys
 
-    def get(self, name: str, default=None) -> str:
+    def get(self, name: str, default=None, asdict=False) -> str:
         """Get a value from the object with dot notation.
 
         Shorthands:
@@ -102,13 +102,17 @@ class Config:
                 # prev = m
                 # prev_k = key
                 m = m.get(key, {})
-            if type(m) is dict:
-                if m:
-                    return Config(initdict=m)
+            if m:  # non-empty value
+                if type(m) is dict:
+                    if asdict:  # TODO: usefule somewhere else??
+                        return m
+                    else:
+                        return Config(initdict=m)
                 else:
-                    return default
-            else:
-                return m
+                    return m
+            else:  # empty dict
+                return default
+
         except:
             return default
 

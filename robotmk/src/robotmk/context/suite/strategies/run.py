@@ -78,6 +78,9 @@ class Runner(RunStrategy):
             "stderr": stderr_str,
         }
         # TODO: log console output? Save it anyway because a a fatal RF error must be tracable.
+        # RCC does not re.execute...
+        if getattr(self.target, "attempt", None) is None:
+            self.target.attempt = 1
         self.target.console_results[self.target.attempt] = result_dict
         return result.returncode
 
