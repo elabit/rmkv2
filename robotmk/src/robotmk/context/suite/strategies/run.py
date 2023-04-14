@@ -61,6 +61,7 @@ class Runner(RunStrategy):
 
     def execute(self, *args, **kwargs) -> int:
         # DEBUG: " ".join(self.target.command)
+        # DEBUG: [f"{k}={v}" for (k,v) in environment.items()  if k.startswith("RO")]
         if kwargs.get("env"):
             environment = kwargs["env"]
         else:

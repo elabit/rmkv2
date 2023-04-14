@@ -77,7 +77,6 @@ class Scheduler(AbstractExecutor):
 
     def run(self):
         """Start the scheduler and update the jobs every 5 seconds"""
-        # self.scheduler.add_listener(log)
 
         self.schedule_jobs()
         # self.scheduler.add_listener(self.log)
@@ -85,4 +84,4 @@ class Scheduler(AbstractExecutor):
         while True:
             # update the jobs every 5 seconds
             time.sleep(5)
-            print("Running tasks: " + str(self.scheduler.print_jobs()))
+            # print("Running tasks: " + str(self.scheduler.print_jobs()))

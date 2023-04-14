@@ -56,9 +56,10 @@ class LocalTarget(Target):
 
         # Store RCC and RF logs in separate folders
         # TODO: relly needed?
-        self.config.set(
-            "common.logdir", "%s/%s" % (self.config.get("common.logdir"), str(self))
-        )
+        # self.config.set(
+        #     "common.logdir",
+        #     "%s/%s" % (self.config.get("basic_cfg.common.logdir"), str(self)),
+        # )
 
         self.path = Path(self.config.get("common.robotdir")).joinpath(
             self.config.get("suitecfg.path")

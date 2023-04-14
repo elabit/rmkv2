@@ -39,8 +39,8 @@ class RobotFrameworkTarget(LocalTarget):
         self._timestamp = self.get_now_as_epoch()
         self._state = RFState(self)
         # params for RF: global ones & re-execution
-        # self.robotmk_params = {"console": "NONE", "report": "NONE"}
-        self.robotmk_params = {"report": "NONE"}
+        # self.robot_params = {"console": "NONE", "report": "NONE"}
+        self.robot_params = {"report": "NONE"}
 
     def __str__(self) -> str:
         return "robotframework"
@@ -52,7 +52,7 @@ class RobotFrameworkTarget(LocalTarget):
         In RF target, the complete commandline must be built to execute the RF suite.
         (See https://robot-framework.readthedocs.io/en/latest/autodoc/robot.html#robot.run.run_cli)
         TODO: Logging"""
-        self.robotmk_params.update(
+        self.robot_params.update(
             {
                 "log": self.log_html,
                 "output": self.output_xml,
@@ -60,7 +60,7 @@ class RobotFrameworkTarget(LocalTarget):
         )
 
         suite_params = mergedeep.merge(
-            self.config.get("suitecfg.params").asdict(), self.robotmk_params
+            {}, self.config.get("suitecfg.params").asdict(), self.robot_params
         )
         arglist = ["robot"]
         for k, v in suite_params.items():
@@ -103,7 +103,9 @@ class RobotFrameworkTarget(LocalTarget):
         else:
             # Tell Robot Framework to write its "output" files into the log dir.
             # The "outputdir" is where RMK produces files later for the agent.
-            self.robotmk_params.update({"outputdir": self.logdir})
+            self.robot_params.update(
+                {"outputdir": str(Path(self.logdir).joinpath("robotframework"))}
+            )
             self._state.timer_start()
             self.rc = self.retry_strategy.run()
             self._state.timer_stop()
@@ -166,25 +168,23 @@ class RobotFrameworkTarget(LocalTarget):
     def statefile_fullpath(self):
         return str(Path(self.outdir).joinpath(self.suiteuname + ".json"))
 
-    @property
-    def output_xml_fullpath(self):
-        return self.logdir.joinpath(self.output_xml)
-
+    # XML ---
     @property
     def output_xml(self):
         return self.output_filename + ".xml"
 
     @property
     def output_xml_fullpath(self):
-        return str(Path(self.logdir).joinpath(self.output_xml))
+        return str(Path(self.robot_params["outputdir"]).joinpath(self.output_xml))
 
+    # HTML ---
     @property
     def log_html(self):
         return self.output_filename + ".html"
 
     @property
     def log_html_fullpath(self):
-        return str(Path(self.logdir).joinpath(self.log_html))
+        return str(Path(self.robot_params["outputdir"]).joinpath(self.log_html))
 
     # Suite timestamp for filenames
     @property

@@ -49,7 +49,8 @@ class RFState:
             # HEREIWAS:
             data = json.dumps(result, indent=4)
             filename = (
-                Path(self.target.logdir) / f"{self.target.output_filename}-{int(k)}.txt"
+                Path(self.target.robot_params["outputdir"])
+                / f"{self.target.output_filename}-{int(k)}.txt"
             )
             self.write_data2file(data, filename)
             pass
@@ -58,6 +59,9 @@ class RFState:
         """ """
 
         try:
+            Path(self.target.statefile_fullpath).parent.mkdir(
+                parents=True, exist_ok=True
+            )
             with open(self.target.statefile_fullpath, "w", encoding="utf-8") as outfile:
                 json.dump(self.statedata, outfile, indent=2, sort_keys=False)
         except IOError as e:

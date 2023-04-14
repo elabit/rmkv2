@@ -81,14 +81,21 @@ class Config:
     def get(self, name: str, default=None) -> str:
         """Get a value from the object with dot notation.
 
-        Shorthand 'suitecfg' can be used for 'suites.<suiteuname>'.
+        Shorthands:
+        - 'suitecfg' can be used for 'suites.<suiteuname>'.
+        - 'basic_cfg' can be used for the basic config dict.
 
         Examples:
             cfg.get("common.cfgdir")
             cfg.get("suitecfg.run.rcc")
+            cfg.get("basic_cfg.common.cfgdir") -> returns cfgdir value from the configuration
         """
         keys = self.__translate_keys(name)
-        m = self.configdict
+        if keys[0] == "basic_cfg":
+            m = self.basic_cfg
+            keys = keys[1:]
+        else:
+            m = self.configdict
         # prev = self.configdict
         try:
             for key in keys:
