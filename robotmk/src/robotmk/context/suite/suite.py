@@ -104,10 +104,6 @@ class SuiteContext(AbstractContext):
     def execute(self):
         """Runs a single suite, either locally or remotely (via API call)."""
         # TODO: is it better to pass the suitename to get_target()?
-        # pid = os.getpid()
-        # print(f"Suite start (PID: {pid})")
-        # time.sleep(1)
-        # print(f"Suite end (PID: {pid})")
         self.get_target().run()
 
     def output(self):
