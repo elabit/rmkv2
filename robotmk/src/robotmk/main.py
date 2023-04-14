@@ -60,7 +60,7 @@ class Robotmk:
         contextname=None,
         ymlfile: str = None,
         varfile: str = None,
-        default_cfg: dict = None,
+        default_cfg: dict = {},
     ) -> None:
         """context is the strategy to use and in fact a set of factory methods.
         If called from the CLI without context argument, the default context

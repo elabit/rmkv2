@@ -23,7 +23,7 @@ class RCCTarget(LocalTarget):
 
         In RCC target, the commandline gets buuilt to execute a RCC task (=Robotmk inside of RCC)
         """
-        arglist = [
+        return [
             "rcc",
             "task",
             "run",
@@ -37,8 +37,6 @@ class RCCTarget(LocalTarget):
             str(self.path.joinpath("robot.yaml")),
         ]
 
-        return arglist
-
     def prepare_environment(self) -> dict:
         """Sets up the environment for a subsequent run.
 
@@ -49,14 +47,14 @@ class RCCTarget(LocalTarget):
         then adds the special settings on top.
         """
         env = os.environ.copy()
-        rf_settings = {
+        added_settings = {
             "suitecfg.run.rcc": False,
             "suitecfg.uuid": self.uuid,
             "common.logdir": "%s/%s"
             % (self.config.basic_cfg["common"]["logdir"], "robotframework"),
         }
         self.config.cfg_to_environment(self.config.configdict, environ=env)
-        self.config.dotcfg_to_env(rf_settings, environ=env)
+        self.config.dotcfg_to_env(added_settings, environ=env)
         return env
 
     def run(self):

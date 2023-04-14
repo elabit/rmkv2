@@ -6,6 +6,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.executors.pool import ProcessPoolExecutor
 from .abstract import AbstractExecutor
 from robotmk.main import Robotmk
+import subprocess
 
 
 class Scheduler(AbstractExecutor):
@@ -15,57 +16,73 @@ class Scheduler(AbstractExecutor):
         self.scheduler = BackgroundScheduler(
             executors={"mydefault": ProcessPoolExecutor(6)}
         )
+        self.suitecfg_hashes = {}
         # self.scheduler = BlockingScheduler(
         #     executors={"mydefault": ProcessPoolExecutor(6)}
         # )
 
-    def foo(self, *args, **kwargs):
-        print("foo", args, kwargs)
-        sys.stdout.flush()
+    def start_robotmk_process(self, run_env):
+        cmd = "robotmk suite run".split(" ")
+        result = subprocess.run(cmd, capture_output=True, env=run_env)
+        # result = subprocess.run(["echo", "foo"], capture_output=True, env=run_env)
+        stdout_str = result.stdout.decode("utf-8").splitlines()
+        stderr_str = result.stderr.decode("utf-8").splitlines()
+        result_dict = {
+            "args": result.args,
+            "returncode": result.returncode,
+            "stdout": stdout_str,
+            "stderr": stderr_str,
+        }
+        pass
 
-    def log(self, msg):
-        timestamp = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-        # with open(logfile, "a") as f:
-        #     f.write(f"{timestamp} [{os.getpid()}] {msg}\n")
-        print(f"{timestamp} [{os.getpid()}] {msg}\n")
+    def prepare_environment(self, suiteuname) -> dict:
+        run_env = os.environ.copy()
+        added_settings = {
+            "common.context": "suite",
+            "common.suiteuname": suiteuname,
+        }
+        # run_env = basic config + added settings
+        self.config.cfg_to_environment(self.config.configdict, environ=run_env)
+        self.config.dotcfg_to_env(added_settings, environ=run_env)
+        return run_env
 
     def schedule_jobs(self):
         """Updates the scheduler with new jobs and removes old ones"""
-        # current_jobs = set(self.scheduler.get_jobs())
-        # new_jobs = set(self.config.get("suites", {}))
+        suites = self.config.get("suites")
+        current_jobs = set(self.scheduler.get_jobs())
+        # remove jobs that are no longer in the config
+        for job in current_jobs - set(suites.asdict().keys()):
+            self.scheduler.remove_job(job.id)
+        # schedule new/changed jobs
+        for suiteuname, suitecfg in suites:
+            hash = self.config.suite_cfghash(suiteuname)
+            if hash == self.suitecfg_hashes.get(suiteuname, {}):
+                # The suite config has not changed, so we can skip it
+                continue
+            else:
+                run_env = self.prepare_environment(suiteuname)
+                interval = suitecfg.get("scheduling.interval")
 
-        # # Remove jobs that are no longer in the config
-        # for job in current_jobs - new_jobs:
-        #     self.scheduler.remove_job(job.id)
-        suites = self.config.get("suites").asdict().keys()
-        for suite in suites:
-            rmk = Robotmk(
-                log_level=self.config.get("common.log_level"),
-                contextname="suite",
-                default_cfg=self.config.asdict(),
-            )
-            rmk.config.set("common.suiteuname", suite)
-            interval = rmk.config.get("suitecfg.scheduling.interval", None)
-            # TODO: skip and log if no interval set
-            self.scheduler.add_job(
-                # rmk.execute,
-                self.foo,
-                "interval",
-                id=rmk.config.hash,
-                seconds=interval,
-                replace_existing=True,
-                # args=[v],
-                # max_instances=1,
-            )
+                self.scheduler.add_job(
+                    self.start_robotmk_process,
+                    args=[run_env],
+                    trigger="interval",
+                    id=suiteuname,
+                    seconds=interval,
+                    replace_existing=True,
+                    # args=[v],
+                    max_instances=1,
+                )
+                self.suitecfg_hashes[suiteuname] = hash
 
     def run(self):
         """Start the scheduler and update the jobs every 5 seconds"""
         # self.scheduler.add_listener(log)
 
         self.schedule_jobs()
-        self.scheduler.add_listener(self.log)
+        # self.scheduler.add_listener(self.log)
         self.scheduler.start()
         while True:
             # update the jobs every 5 seconds
             time.sleep(5)
-        # print("Running tasks: " + str(scheduler.print_jobs()))
+            print("Running tasks: " + str(self.scheduler.print_jobs()))

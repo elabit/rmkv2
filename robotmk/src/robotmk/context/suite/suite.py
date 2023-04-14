@@ -7,7 +7,7 @@ from ..abstract import AbstractContext
 from robotmk.config import Config, RobotmkConfigSchema
 
 from .target import Target, RobotFrameworkTarget, RCCTarget, RemoteTarget
-import time
+import time, os
 
 
 class SuiteContext(AbstractContext):
@@ -78,7 +78,7 @@ class SuiteContext(AbstractContext):
         - + var file (= --vars)
         - + environment variables
         """
-        if "default_cfg" in kwargs:
+        if kwargs.get("default_cfg", {}):
             # Suite was started by scheduler, config was passed
             self.config.configdict = kwargs["default_cfg"]
 
@@ -104,10 +104,11 @@ class SuiteContext(AbstractContext):
     def execute(self):
         """Runs a single suite, either locally or remotely (via API call)."""
         # TODO: is it better to pass the suitename to get_target()?
-
-        print("Suite context execute")
-        time.sleep(5)
-        # self.get_target().run()
+        # pid = os.getpid()
+        # print(f"Suite start (PID: {pid})")
+        # time.sleep(1)
+        # print(f"Suite end (PID: {pid})")
+        self.get_target().run()
 
     def output(self):
         # TODO: make this possible in CLI

@@ -48,5 +48,9 @@ flit publish
 
 conda.yaml anpassen auf neue Version 
 
+Es dauert einige Zeit, bis das neue Release publish ist!
+- sofort aktuell: https://pypi.org/project/robotmk/
+- ca. 2 Minuten: https://libraries.io/pypi/robotmk/versions
+
 robotmk-ctrl.ps1 => neues RCC env bauen
 

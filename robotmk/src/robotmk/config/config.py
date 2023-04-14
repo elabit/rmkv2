@@ -53,7 +53,7 @@ from .yml import RobotmkConfigSchema
 
 
 class Config:
-    def __init__(self, envvar_prefix: str = "ROBOTMK", initdict: dict = None):
+    def __init__(self, envvar_prefix: str = "ROBOTMK", initdict: dict = {}):
         self.envvar_prefix = envvar_prefix
         if initdict:
             self.default_cfg = initdict
@@ -64,6 +64,11 @@ class Config:
         # this is a dict of all config values that were added by the user.
         # they are applied last and can overwrite any other config values.
         self.added_config = {}
+
+    def __iter__(self):
+        # TODO: iterator added afterwards - where is it useful?
+        for key in self.configdict:
+            yield key, self.get(key)
 
     def __translate_keys(self, name: str) -> list:
         """Translate a key name to a list of keys and respect shorthand 'suitecfg'."""
@@ -137,12 +142,14 @@ class Config:
         """Returns the config as a dict."""
         return self.configdict
 
-    @property
-    def hash(self):
-        """Returns a hash of the config to identify a possible change.
+    def suite_cfghash(self, suiteuname) -> str:
+        """Returns a hash of the common + suite config (passed as arg) to identify a possible change.
 
-        The config hash is used in the scheduler and sequencer."""
-        return hashlib.sha256(json.dumps(self.configdict).encode("utf-8")).hexdigest()
+        Used in the scheduler and sequencer."""
+        common_cfg = {"common": self.get("common").asdict()}
+        suite_cfg = {"suites": self.get("suites.%s" % suiteuname).asdict()}
+        cfg = merge({}, common_cfg, suite_cfg)
+        return hashlib.sha256(json.dumps(cfg).encode("utf-8")).hexdigest()
 
     @property
     def configdict(self):
