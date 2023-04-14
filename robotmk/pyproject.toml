@@ -17,7 +17,8 @@ dependencies = [
     "mergedeep",
     "robotframework",
     "loguru",
-    "schema"
+    "schema",
+    "tabulate"
 ]
 
 [project.scripts]

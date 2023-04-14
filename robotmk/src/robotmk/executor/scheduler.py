@@ -7,6 +7,7 @@ from apscheduler.executors.pool import ProcessPoolExecutor
 from .abstract import AbstractExecutor
 from robotmk.main import Robotmk
 import subprocess
+from tabulate import tabulate
 
 
 class Scheduler(AbstractExecutor):
@@ -84,4 +85,34 @@ class Scheduler(AbstractExecutor):
         while True:
             # update the jobs every 5 seconds
             time.sleep(5)
-            # print("Running tasks: " + str(self.scheduler.print_jobs()))
+
+            jobs = self.scheduler.get_jobs(jobstore=None)
+            table = []
+            for job in jobs:
+                table.append(
+                    [
+                        job.id,
+                        job.name,
+                        # job.args,
+                        job.trigger,
+                        job.pending,
+                        job.next_run_time,
+                        job.trigger.interval.total_seconds(),
+                    ]
+                )
+            # print current time
+            print(time.strftime("%H:%M:%S", time.localtime()))
+            print(
+                tabulate(
+                    table,
+                    headers=[
+                        "id",
+                        "name",
+                        "trigger",
+                        "pending",
+                        "next_run at",
+                        "interval",
+                    ],
+                )
+            )
+            print("\n")

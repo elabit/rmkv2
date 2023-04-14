@@ -13,6 +13,7 @@ mergedeep = "*"
 dotmap = "*"
 loguru = "*"
 robotframework = "*"
+tabulate = "*"
 
 [dev-packages]
 black = "*"
