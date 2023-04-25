@@ -1,8 +1,10 @@
 import os
+import math
 from .target import LocalTarget
 from ..strategies import RunStrategy
 from robotmk.logger import RobotmkLogger
 from robotmk.config import Config
+
 
 # TODO: make RCC binary path configurabe
 
@@ -16,11 +18,33 @@ class RCCTarget(LocalTarget):
     ):
         super().__init__(suiteuname, config, logger)
 
+    @staticmethod
+    def worker_count():
+        """Determines the number of RCC worker processes by the total CPU cores available"""
+        return max(min(math.floor(os.cpu_count() / 2), 2), 6)
+
     def __str__(self) -> str:
         return "rcc"
 
     @property
-    def command(self):
+    def pre_command(self) -> list:
+        """Runs just before the command, executed by the Run strategy"""
+        return [
+            "rcc",
+            "holotree",
+            "vars",
+            "--controller",
+            "robotmk",
+            "--space",
+            self.suiteuname,
+            "--workers",
+            str(self.worker_count()),
+            "-r",
+            str(self.path.joinpath("robot.yaml")),
+        ]
+
+    @property
+    def main_command(self) -> list:
         """The command will be used by the Run strategy (self.target.command).
 
         In RCC target, the commandline gets buuilt to execute a RCC task (=Robotmk inside of RCC)

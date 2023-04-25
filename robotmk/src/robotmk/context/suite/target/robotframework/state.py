@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 import base64
 import zlib
+from robotmk import __version__
 
 
 class RFState:
@@ -30,6 +31,7 @@ class RFState:
                 },
                 "console": self.target.console_results,
             },
+            "robotmk_version": __version__,
         }
 
     def write(self) -> None:
@@ -49,7 +51,7 @@ class RFState:
             # HEREIWAS:
             data = json.dumps(result, indent=4)
             filename = (
-                Path(self.target.robot_params["outputdir"])
+                Path(self.target.outputdir)
                 / f"{self.target.output_filename}-{int(k)}.txt"
             )
             self.write_data2file(data, filename)

@@ -3,9 +3,21 @@ import platform
 from robotmk.logger import RobotmkLogger
 import subprocess
 import os
+from dataclasses import dataclass, field, asdict
+from typing import List
 
 # TODO: split this into modules
 # TODO:
+
+
+@dataclass
+class Result:
+    """Result of a subprocess execution."""
+
+    args: List[str] = field(default_factory=list)
+    returncode: int = 0
+    stdout: List[str] = field(default_factory=list)
+    stderr: List[str] = field(default_factory=list)
 
 
 class RunStrategy(ABC):
@@ -26,24 +38,24 @@ class RunStrategy(ABC):
 
         The concrete strategy selectivly overrides the methods to implement."""
         rc = max(
-            self.prepare(*args, **kwargs),
-            self.execute(*args, **kwargs),
-            self.cleanup(*args, **kwargs),
+            self.exec_pre(*args, **kwargs),
+            self.exec_main(*args, **kwargs),
+            self.exec_post(*args, **kwargs),
         )
         return rc
 
     @abstractmethod
-    def prepare(self, *args, **kwargs) -> int:
+    def exec_pre(self, *args, **kwargs) -> int:
         """Prepares the given suite."""
         pass
 
     @abstractmethod
-    def execute(self, *args, **kwargs) -> int:
+    def exec_main(self, *args, **kwargs) -> int:
         """Execute the the given suite."""
         pass
 
     @abstractmethod
-    def cleanup(self, *args, **kwargs) -> int:
+    def exec_post(self, *args, **kwargs) -> int:
         """Cleans up the given suite."""
         pass
 
@@ -58,41 +70,40 @@ class Runner(RunStrategy):
     def __init__(self, target) -> None:
         super().__init__(target)
 
-    def prepare(self, *args, **kwargs) -> int:
-        # TODO: try a git pull before? Make this configurable?
-        # nothing to do
-        return 0
+    def run_subprocess(self, command, environ) -> Result:
+        """If command was given, run the subprocess and return the result object."""
+        if command:
+            res = subprocess.run(command, capture_output=True, env=environ)
+            return Result(
+                args=res.args,
+                returncode=res.returncode,
+                stdout=res.stdout.decode("utf-8").splitlines(),
+                stderr=res.stderr.decode("utf-8").splitlines(),
+            )
+        else:
+            return Result()
 
-    def execute(self, *args, **kwargs) -> int:
+    def exec_pre(self, *args, **kwargs) -> int:
+        result = self.run_subprocess(self.target.pre_command, os.environ)
+        return result.returncode
+
+    def exec_main(self, *args, **kwargs) -> int:
         # DEBUG: " ".join(self.target.command)
         # DEBUG: [f"{k}={v}" for (k,v) in environment.items()  if k.startswith("RO")]
-        if kwargs.get("env"):
-            environment = kwargs["env"]
-        else:
-            environment = os.environ
-        result = subprocess.run(
-            self.target.command, capture_output=True, env=environment
+        result = self.run_subprocess(
+            self.target.main_command, kwargs.get("env", os.environ)
         )
-        stdout_str = result.stdout.decode("utf-8").splitlines()
-        stderr_str = result.stderr.decode("utf-8").splitlines()
-        result_dict = {
-            "args": result.args,
-            "returncode": result.returncode,
-            "stdout": stdout_str,
-            "stderr": stderr_str,
-        }
+
         # TODO: log console output? Save it anyway because a a fatal RF error must be tracable.
         # RCC does not re.execute...
         if getattr(self.target, "attempt", None) is None:
             self.target.attempt = 1
-        self.target.console_results[self.target.attempt] = result_dict
+        self.target.console_results[self.target.attempt] = asdict(result)
         return result.returncode
 
-    def cleanup(self, *args, **kwargs) -> int:
-        # nothing to do
-        return 0
-
-    # def _write_console_output(self, result):
+    def exec_post(self, *args, **kwargs) -> int:
+        result = self.run_subprocess(self.target.post_command, os.environ)
+        return result.returncode
 
 
 class WindowsTask(RunStrategy):
@@ -104,15 +115,15 @@ class WindowsTask(RunStrategy):
         super().__init__(target)
 
     @abstractmethod
-    def prepare(self, *args, **kwargs) -> int:
+    def exec_pre(self, *args, **kwargs) -> int:
         pass
 
     @abstractmethod
-    def execute(self, *args, **kwargs) -> int:
+    def exec_main(self, *args, **kwargs) -> int:
         pass
 
     @abstractmethod
-    def cleanup(self, *args, **kwargs) -> int:
+    def exec_post(self, *args, **kwargs) -> int:
         pass
 
 
@@ -125,15 +136,15 @@ class WindowsSingleDesktop(WindowsTask):
     def __init__(self, target) -> None:
         super().__init__(target)
 
-    def prepare(self, *args, **kwargs) -> int:
+    def exec_pre(self, *args, **kwargs) -> int:
         # create the scheduled task for the given user
         pass
 
-    def execute(self, *args, **kwargs) -> int:
+    def exec_main(self, *args, **kwargs) -> int:
         # run schtask.exe to run the task
         pass
 
-    def cleanup(self, *args, **kwargs) -> int:
+    def exec_post(self, *args, **kwargs) -> int:
         pass
 
 
@@ -148,7 +159,7 @@ class WindowsMultiDesktop(WindowsTask):
     def __init__(self, target) -> None:
         super().__init__(target)
 
-    def prepare(self, *args, **kwargs) -> int:
+    def exec_pre(self, *args, **kwargs) -> int:
         # create RDP file:
         # rdp_file = "loopback.rdp"
         # with open(rdp_file, "w") as f:
@@ -159,14 +170,14 @@ class WindowsMultiDesktop(WindowsTask):
         # """)
         pass
 
-    def execute(self, *args, **kwargs) -> int:
+    def exec_main(self, *args, **kwargs) -> int:
         # Launch the RDP session with the specified command
         # os.system(f"mstsc /v:127.0.0.2 /f /w:800 /h:600 /v:127.0.0.2 /u:{username} /p:{password} /v:{rdp_file} /start:{command}")
         # os.system(f'mstsc /v:127.0.0.1 /f /w:800 /h:600 /u:{username} /p:{password} /v:127.0.0.1 /w:800 /h:600 /v:127.0.0.1 /w:800 /h:600 /admin /restrictedAdmin cmd /c "{command}"')
 
         pass
 
-    def cleanup(self, *args, **kwargs) -> int:
+    def exec_post(self, *args, **kwargs) -> int:
         # Close the RDP session
         # os.system(f'tscon /dest:console')
         pass
@@ -178,13 +189,13 @@ class LinuxMultiDesktop(RunStrategy):
     def __init__(self, target) -> None:
         super().__init__(target)
 
-    def prepare(self, *args, **kwargs) -> int:
+    def exec_pre(self, *args, **kwargs) -> int:
         pass
 
-    def execute(self, *args, **kwargs) -> int:
+    def exec_main(self, *args, **kwargs) -> int:
         pass
 
-    def cleanup(self, *args, **kwargs) -> int:
+    def exec_post(self, *args, **kwargs) -> int:
         pass
 
 

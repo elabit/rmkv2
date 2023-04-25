@@ -68,6 +68,18 @@ class LocalTarget(Target):
         self.console_results = {}
 
     @property
+    def pre_command(self):
+        return None
+
+    @property
+    def main_command(self):
+        return None
+
+    @property
+    def post_command(self):
+        return None
+
+    @property
     def uuid(self):
         return self.config.get("suitecfg.uuid", uuid4().hex)
 

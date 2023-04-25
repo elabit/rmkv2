@@ -20,7 +20,7 @@ class SpecialAgentContext(AbstractContext):
             )
         return self._logger
 
-    def load_config(self, defaults, ymlfile: str, varfile: str) -> None:
+    def load_config(self, defaults, **kwargs) -> None:
         """Load the config for specialagent context.
 
         This context can merge the config from
@@ -31,7 +31,7 @@ class SpecialAgentContext(AbstractContext):
         (There is no YML file for specialagent context!)
         """
         self.config.set_defaults(defaults)
-        self.config.read_cfg_vars(path=varfile)
+        self.config.read_cfg_vars(path=kwargs.get("path"))
         # TODO: validate later so that config can be dumped
         # self.config.validate(self.ymlschema)
 

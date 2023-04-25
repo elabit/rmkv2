@@ -101,7 +101,7 @@ class RetryStrategy(ABC):
         devnull = open(os.devnull, "w")
         rebot(
             *outputfiles,
-            outputdir=self.target.robot_params["outputdir"],
+            outputdir=self.target.outputdir,
             output=self.target.output_xml,
             log=self.target.log_html,
             report=None,
@@ -116,9 +116,7 @@ class RetryStrategy(ABC):
         """Returns the list of XML output files of the target execution attempts 1..n"""
         glob_pattern = "%s-*.xml" % self.target.output_filename.rsplit("-", 1)[0]
         outputfiles = sorted(
-            glob.glob(
-                str(Path(self.target.robot_params["outputdir"]).joinpath(glob_pattern))
-            )
+            glob.glob(str(Path(self.target.outputdir).joinpath(glob_pattern)))
         )
         return outputfiles
 
@@ -148,7 +146,7 @@ class IncrementalRetry(RetryStrategy):
         The next attempt needs the XML file of the last attempt as input.
         From there it will read failed tests and re-execute them only."""
         # Chance for next try. Attempt gets increased, output files get bumped
-        failed_xml = Path(self.target.logdir).joinpath(self.target.output_xml)
+        failed_xml = Path(self.target.outputdir).joinpath(self.target.output_xml)
         self.target.robot_params.update({"rerunfailed": str(failed_xml)})
         rerun_selection = self.target.config.get(
             "suitecfg.retry_failed.rerun_selection", asdict=True, default={}

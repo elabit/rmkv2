@@ -32,8 +32,7 @@ DEFAULTS = {
     "nt": {
         "robotdir": "C:/ProgramData/checkmk/agent/robot",
         "cfgdir": "C:/ProgramData/checkmk/agent/config",
-        "logdir": "C:/ProgramData/checkmk/agent/log/robotmk",
-        "outdir": "C:/ProgramData/checkmk/agent/log/robotmk/results",
+        "logdir": "C:/ProgramData/checkmk/agent/log/robotmk/",
         "tmpdir": "C:/ProgramData/checkmk/agent/tmp/robotmk",
     },
     # Default values for the "common" config section (Linux)
@@ -41,7 +40,6 @@ DEFAULTS = {
         "robotdir": "/usr/lib/check_mk_agent/robot",
         "cfgdir": "/etc/check_mk",
         "logdir": "/var/log/robotmk",
-        "outdir": "/var/log/robotmk/results",
         "tmpdir": "/tmp/robotmk",
     },
 }
@@ -52,7 +50,7 @@ class Robotmk:
     Robotmk instance with a specific context.
 
     Configuration loading (yml, var, env) depends on the context and is only
-    done when not config object is passed to the init method."""
+    done when no config object is passed to the init method."""
 
     def __init__(
         self,
@@ -66,11 +64,10 @@ class Robotmk:
         If called from the CLI without context argument, the default context
         will be read from environment variable ROBOTMK_common_context."""
 
-        self.__set_context(contextname, log_level)
+        self._set_context(contextname, log_level)
         self._context.load_config(
             DEFAULTS, ymlfile=ymlfile, varfile=varfile, default_cfg=default_cfg
         )
-        self.config.set("common.context", contextname)
 
         self.run_default = self._context.run_default
         # execute and output are the two main functions of each context:
@@ -81,16 +78,16 @@ class Robotmk:
     def config(self):
         return self._context.config
 
-    def __set_context(self, contextname: str, log_level: str = None) -> None:
+    def _set_context(self, contextname: str, log_level: str = None) -> None:
         """Sets the context of the Robotmk instance (=strategy)."""
         if contextname is None:
-            contextname = os.environ.get("ROBOTMK_common_context", "not set")
-        if contextname == "not set":
+            contextname = os.environ.get("ROBOTMK_common_context", None)
+        if contextname is None:
             raise ValueError(
                 "No context given on CLI or set by environment variable ROBOTMK_common_context."
             )
-
         self._context = ContextFactory(contextname, log_level).get_context()
+        self.config.set("common.context", contextname)
 
         # TODO: Setup Logging here
 

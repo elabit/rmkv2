@@ -19,7 +19,3 @@ Set-SystemPreferredUILanguage de-DE
 # }
 # (New-Object System.Net.WebClient).DownloadFile('https://raw.githubusercontent.com/mitchellh/vagrant/master/keys/vagrant.pub', 'C:\Users\vagrant\.ssh\id_rsa.pub')
 # (New-Object System.Net.WebClient).DownloadFile('https://raw.githubusercontent.com/mitchellh/vagrant/master/keys/vagrant', 'C:\Users\vagrant\.ssh\id_rsa')
-
-# TODO: 
-# language keymap 
-# extensions

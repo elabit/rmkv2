@@ -46,7 +46,7 @@ class RobotFrameworkTarget(LocalTarget):
         return "robotframework"
 
     @property
-    def command(self):
+    def main_command(self) -> list:
         """The command will be used by the Run strategy (self.target.command).
 
         In RF target, the complete commandline must be built to execute the RF suite.
@@ -54,8 +54,8 @@ class RobotFrameworkTarget(LocalTarget):
         TODO: Logging"""
         self.robot_params.update(
             {
-                "log": self.log_html,
-                "output": self.output_xml,
+                "log": self.log_html,  #'rf_suite_default_1682429039_10559086-1.html'
+                "output": self.output_xml,  #'rf_suite_default_1682429039_10559086-1.xml'
             }
         )
 
@@ -101,11 +101,8 @@ class RobotFrameworkTarget(LocalTarget):
             # reason = self.get_disabled_reason()
             return
         else:
-            # Tell Robot Framework to write its "output" files into the log dir.
-            # The "outputdir" is where RMK produces files later for the agent.
-            self.robot_params.update(
-                {"outputdir": str(Path(self.logdir).joinpath("robotframework"))}
-            )
+            # RF "outputdir" = logdir + robotframework (store HTML, XML and console logs)
+            self.robot_params.update({"outputdir": self.outputdir})
             self._state.timer_start()
             self.rc = self.retry_strategy.run()
             self._state.timer_stop()
@@ -117,10 +114,6 @@ class RobotFrameworkTarget(LocalTarget):
 
     def get_now_as_epoch(self):
         return int(self.get_now_as_dt().timestamp())
-
-    @property
-    def outdir(self):
-        return self.config.get("common.outdir")
 
     @property
     def timestamp(self):
@@ -141,6 +134,20 @@ class RobotFrameworkTarget(LocalTarget):
                         return ""
             except:
                 return ""
+
+    @property
+    def resultdir(self):
+        return Path(self.logdir).joinpath("results")
+
+    @property
+    def statefile_fullpath(self):
+        return str(Path(self.resultdir).joinpath(self.suiteuname + ".json"))
+
+    # OUTPUT
+
+    @property
+    def outputdir(self):
+        return str(Path(self.logdir).joinpath("robotframework"))
 
     @property
     def output_filename(self):
@@ -164,27 +171,23 @@ class RobotFrameworkTarget(LocalTarget):
             )
         return suite_filename
 
-    @property
-    def statefile_fullpath(self):
-        return str(Path(self.outdir).joinpath(self.suiteuname + ".json"))
-
-    # XML ---
+    # XML Output---
     @property
     def output_xml(self):
         return self.output_filename + ".xml"
 
     @property
     def output_xml_fullpath(self):
-        return str(Path(self.robot_params["outputdir"]).joinpath(self.output_xml))
+        return str(Path(self.outputdir).joinpath(self.output_xml))
 
-    # HTML ---
+    # HTML Output ---
     @property
     def log_html(self):
         return self.output_filename + ".html"
 
     @property
     def log_html_fullpath(self):
-        return str(Path(self.robot_params["outputdir"]).joinpath(self.log_html))
+        return str(Path(self.outputdir).joinpath(self.log_html))
 
     # Suite timestamp for filenames
     @property

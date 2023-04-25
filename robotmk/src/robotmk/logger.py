@@ -3,6 +3,10 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 
 
+# TODO: concurrent writes to the log file
+# e.g. RCC -> RF
+
+
 class AbstractLogger(ABC):
     def __init__(self, log_level):
         self.log_level = log_level

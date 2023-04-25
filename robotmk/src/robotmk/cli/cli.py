@@ -19,7 +19,7 @@ import warnings
 # robotmk     local    --yml /etc/checkmk/another_robotmk.yml    output          # print output with yml
 # robotmk     local    --vars /var/robotmk_local.env             output          # print output, load env from file (instead of env)
 
-# robotmk     local    scheduler                                                 # start scheduler
+# robotmk     local                                              scheduler       # start scheduler
 # robotmk     local    --yml /etc/checkmk/another_robotmk.yml    scheduler       # start scheduler with yml
 # robotmk     local    --vars /var/robotmk_local.env             scheduler       # start scheduler, load env from file  (instead of env)
 # ---------------------------------------------------------------------------------------------
@@ -87,11 +87,13 @@ def main(ctx, loglevel):
     if ctx.invoked_subcommand is None:
         # robotmk was called without argument. Try to detect the context from the default
         # config and/or environment variables.
-        # After that run the default command of the context:
-        # - output() for local context
-        # - specialagent() for specialagent context (output + sequencer)
-        # - run() for suite context
-        ctx.robotmk = Robotmk(contextname=None, log_level=loglevel, yml=None, vars=None)
+        # After that run the default subcommand of the context:
+        # - local: produce output
+        # - specialagent: produce output + call sequencer
+        # - suite: run a single suite
+        ctx.robotmk = Robotmk(
+            contextname=None, log_level=loglevel, ymlfile=None, varfile=None
+        )
         ctx.robotmk.run_default()
     else:
         # Robotmk was executed with a context subcommand, whose logic is defined within the context.
