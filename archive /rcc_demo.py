@@ -175,7 +175,7 @@ def wait_for_rcc(export=False):
         else:
             sleep(0.5)
             print(".", end="")
-    # TODO: Why does
+
     rcc_ht_vars(str(ROBOTMK_RCCLIBDIR / "robot.yaml"))
     tac = default_timer()
     elapsed = timedelta(seconds=tac - tic)

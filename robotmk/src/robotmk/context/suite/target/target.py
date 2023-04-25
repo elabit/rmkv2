@@ -3,7 +3,6 @@ from pathlib import Path
 from uuid import uuid4
 from ..strategies import RunStrategy, RunStrategyFactory
 
-
 from robotmk.logger import RobotmkLogger
 
 

@@ -4,6 +4,8 @@ from ..strategies import RunStrategy
 from robotmk.logger import RobotmkLogger
 from robotmk.config import Config
 
+# TODO: make RCC binary path configurabe
+
 
 class RCCTarget(LocalTarget):
     def __init__(

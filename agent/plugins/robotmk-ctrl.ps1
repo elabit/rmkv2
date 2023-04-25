@@ -95,7 +95,7 @@ function main() {
   Ensure-Directory $RMKTmpDir
   Ensure-Directory $ROBOCORP_HOME
   Ensure-Directory $RMKAgentInstallDir
-  # TODO: Enable 
+  # TODO: Test if LogConfiguration can be enabled
   # LogConfiguration
 	
   if ($scriptname -match ".*robotmk.ps1$") {
@@ -157,11 +157,11 @@ function RMKOutputProducer {
     }
     else {
       LogInfo "RCC environment is NOT ready to use. Waiting for Controller to build the environment. Exiting."	
-      #TODO: As long as the RCC env is not ready, we should output something interesting
+      #TODO: Produce some interesting output as long as the RCC env is not ready?
     }
   }
   else {
-    # TODO: finalize native python execution
+    # TODO: If no RCC, use native python execution
     Write-Host "TODO: finalize native python execution"
   }
 }
@@ -229,7 +229,7 @@ function CLIController {
   if ($Restart) {
     Write-Host "Restarting service $RMKAgentServiceName"
     RMKAgentRestart
-    # TODO: Retry Function
+    # TODO: Replace sleep by some retry function?
     LogInfo "Waiting for Processes to start..."
     Start-Sleep  5
     Write-ServiceStatus
@@ -327,7 +327,7 @@ function RMKAgentMonitor {
       if ((RMKAgentStatus) -ne "Stopped") {
         LogError "Fatal: Service $RMKAgentServiceName could not be forced to stop."
         LogInfo "Exiting now."
-        # TODO: Status must be returned to CMK Agent
+        # TODO: Return status to Checkmk Agent?
         $out += "Fatal: Service $RMKAgentServiceName could not be forced to stop."
         return ($out -join "`r`n" | Out-String)
       }
@@ -358,7 +358,7 @@ function RMKAgentMonitor {
 
   # Finally, check if the service is _really_ running. 
   # Give the processes some time to appear... 
-  # TODO: create Retry-Function
+  # TODO: Replace sleep by some retry function?
   LogInfo "Waiting for Processes to start..."
   Start-Sleep  5
   $status = RMKAgentStatus
@@ -427,7 +427,6 @@ function RMKAgentSetup {
   }
   # Register the service
   LogInfo "Registering service $RMKAgentServiceName (user: LocalSystem)"
-  # TODO: Dependency adden?
   $pss = New-Service $RMKAgentServiceName $RMKAgentExeFullName -DisplayName $RMKAgentServiceDisplayName -Description $RMKAgentServiceDescription -StartupType $RMKAgentServiceStartupType 
   #$pss = New-Service $RMKAgentServiceName $RMKAgentExeFullName -DisplayName $RMKAgentServiceDisplayName -Description $RMKAgentServiceDescription -StartupType $RMKAgentServiceStartupType -DependsOn $RMKAgentServiceDependsOn		
 
@@ -636,7 +635,7 @@ function RMKAgentService {
               # Ref 3399b1
               if ($message -eq "exit") {
                 # Terminate the background job and exit the loop
-                # TODO: Force?
+                # TODO: Force quit? 
                 $job | Stop-Job
                 break
               }
@@ -714,7 +713,7 @@ function RMKAgent {
     RunRobotmkTask "agent"
   }
   else {
-    # TODO: finalize native python execution
+    # TODO: If no RCC, use native python execution
     $Binary = $PythonExe
     $Arguments = "$PythonExe $RobotmkAgent"
   }
@@ -849,7 +848,7 @@ function StartRobotmkAgentService {
 
 
 function IsRobotmkPythonAgentRunning {
-  # TODO: can only see own processes! 
+  # TODO: command string must be updated, has changed meanwhile
   $processes = GetProcesses -Cmdline "%robotmk.exe agent bg"
   # if length of array is 0, no process is running
   if ($processes.Length -eq 0) {
@@ -1130,7 +1129,7 @@ function RCCIsAvailable {
     return $true
   }
   else {
-    # TODO: Should we allow this?
+    # TODO: Downloading RCC is only for convenience. It should be removed finally. 
     LogInfo "RCCExe $RCCExe not found, downloading it."
     $RCCExeUrl = "https://downloads.robocorp.com/rcc/releases/v11.30.0/windows64/rcc.exe"
     [Net.ServicePointManager]::SecurityProtocol = "tls12, tls11, tls"
@@ -1157,7 +1156,7 @@ function CreateRCCEnvironment {
   if (Test-Path ($RMKCfgDir + "\hololib.zip")) {
     LogInfo "hololib.zip found in $RMKCfgDir, importing it"
     RCCImportHololib "$RMKCfgDir\hololib.zip"
-    # TODO: create spaces for agent /output?
+    # TODO: after import, create spaces for agent /output
   }
   else {
     LogInfo "Catalog must be created from network (hololib.zip not found in $RMKCfgDir)"		
@@ -1324,7 +1323,6 @@ function IsProcessRunning {
     [Parameter(Mandatory = $true)]
     [string]$Cmdline
   )
-  # TODO: can only see own processes! 
   $processes = GetProcesses -Cmdline "$Cmdline"
   # if length of array is 0, no process is running
   if ($processes.Length -eq 0) {
@@ -1426,8 +1424,7 @@ Function Now {
 
 
 function SetScriptVars {
-  # TODO: Set RObocorp Home with robotmk.yaml
-
+  # TODO: if "robocorp_home" is set, use that as base dir
   $Global:CMKAgentSection = "<<<robotmk:sep(0)>>>"
   $Global:SubsecController = "[[[robotmk-ctrl]]]"
 
@@ -1491,7 +1488,6 @@ function SetScriptVars {
 
   # FILES ========================================
 
-  # TODO: Deploy with Bakery
   $Global:RCCExe = $PDataCMKAgent + "\bin\rcc.exe"
   # Ref 7e8b2c1 (agent.py)
   $Global:agent_pidfile = $RMKTmpDir + "\robotmk_agent.pid"

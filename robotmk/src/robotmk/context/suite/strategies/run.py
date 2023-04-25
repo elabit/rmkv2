@@ -4,6 +4,9 @@ from robotmk.logger import RobotmkLogger
 import subprocess
 import os
 
+# TODO: split this into modules
+# TODO:
+
 
 class RunStrategy(ABC):
     def __init__(self, target) -> None:
@@ -56,6 +59,7 @@ class Runner(RunStrategy):
         super().__init__(target)
 
     def prepare(self, *args, **kwargs) -> int:
+        # TODO: try a git pull before? Make this configurable?
         # nothing to do
         return 0
 
