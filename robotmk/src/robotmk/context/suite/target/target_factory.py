@@ -28,7 +28,7 @@ class TargetFactory:
             if path.exists():
                 # Watch the correct boolean interpretation especially for the
                 # case of "run.rcc" being set to "False" in the config file.
-                # Danger of starting RCC inside RCC inside RCC...
+                # Danger of starting RCC inside RCC inside RCC!
                 if suitecfg.get("run.rcc", False):
                     otarget = RCCTarget(self.suiteuname, self.config, self.logger)
                 else:
