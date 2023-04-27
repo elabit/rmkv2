@@ -7,8 +7,8 @@ pushd $PKG_ROOT
 git add .. &&
     git commit -m "$msg" &&
     bumpversion patch --tag --commit &&
-    git add . &&
-    git commit -m "Bumped version" &&
+    # git add . &&
+    # git commit -m "Bumped version" &&
     git push && git push --tags
 
 flit publish
