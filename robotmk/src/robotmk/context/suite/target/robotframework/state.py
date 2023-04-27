@@ -18,7 +18,7 @@ class RFState:
             "start_time": self._start_time.isoformat(),
             "end_time": self._end_time.isoformat(),
             "runtime": self._runtime.total_seconds(),
-            "piggybackhost": self.target.config.get("suiteconfig.piggybackhost", None),
+            "piggybackhost": self.target.config.get("suitecfg.piggybackhost", None),
             "output": {
                 "html": {
                     "path": self.target.log_html_fullpath,
@@ -40,10 +40,10 @@ class RFState:
         self.write_result_json()
 
     def timer_start(self) -> None:
-        self._start_time = self.target.get_now_as_dt()
+        self._start_time = self.target._get_now_as_dt()
 
     def timer_stop(self) -> None:
-        self._end_time = self.target.get_now_as_dt()
+        self._end_time = self.target._get_now_as_dt()
         self._runtime = self._end_time - self._start_time
 
     def write_console_log(self) -> None:

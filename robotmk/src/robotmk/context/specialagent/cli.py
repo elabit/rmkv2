@@ -1,7 +1,4 @@
-"""CLI commands for the specialagent context.
-
-Executes Robotmk in specialagent context. This CLI is rather used to debug the 
-specialagent than to run it in production."""
+"""CLI commands for the specialagent context."""
 import sys
 import click
 from robotmk.main import Robotmk, DEFAULTS
@@ -22,14 +19,14 @@ def specialagent(ctx, vars):
 @specialagent.command()
 @click.pass_context
 def sequencer(ctx):
-    click.secho("sequencer", fg="green")
+    """Start the sequencer to execute tests once, respecting their interval."""
     ctx.obj.execute()
 
 
 @specialagent.command()
 @click.pass_context
 def output(ctx):
-    click.secho("output", fg="green")
+    """Produces Checkmk Agent output for all suite results."""
     ctx.obj.output()
     pass
 

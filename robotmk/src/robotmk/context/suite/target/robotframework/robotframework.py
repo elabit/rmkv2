@@ -109,11 +109,11 @@ class RobotFrameworkTarget(LocalTarget):
             self._state.write()
             pass
 
-    def get_now_as_dt(self):
+    def _get_now_as_dt(self):
         return datetime.now(local_tz)
 
     def get_now_as_epoch(self):
-        return int(self.get_now_as_dt().timestamp())
+        return int(self._get_now_as_dt().timestamp())
 
     @property
     def timestamp(self):
