@@ -1,9 +1,9 @@
 import os
 import math
-from .target import LocalTarget
-from ..strategies import RunStrategy
+
 from robotmk.logger import RobotmkLogger
-from robotmk.config import Config
+from .abstract import LocalTarget
+from ...strategies import RunStrategy
 
 
 # TODO: make RCC binary path configurabe
@@ -20,7 +20,15 @@ class RCCTarget(LocalTarget):
 
     @staticmethod
     def worker_count():
-        """Determines the number of RCC worker processes by the total CPU cores available"""
+        """Determines the number of RCC worker processes by the total CPU cores available.
+
+        Example:
+        - 4 cores: 2 workers
+        - 5 cores: 2 workers
+        - 6 cores: 3 workers
+        - 7 cores: 3 workers
+        - 8 cores: 4 workers
+        """
         return max(min(math.floor(os.cpu_count() / 2), 2), 6)
 
     def __str__(self) -> str:
@@ -64,7 +72,7 @@ class RCCTarget(LocalTarget):
         ]
 
     def prepare_environment(self) -> dict:
-        """Sets up the environment for a subsequent run.
+        """Sets up the environment for a subsequent RCC robot run.
 
         If Robotmk calls itself in a RCC task, the inner call of Robotmk needs
         some special settings, e.g. NOT to use RCC again, to log into the default

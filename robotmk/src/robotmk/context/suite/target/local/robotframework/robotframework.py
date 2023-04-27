@@ -1,17 +1,11 @@
-from abc import ABC, abstractmethod
-import os
 from pathlib import Path
-import robot
 import mergedeep
 
-from .retry import RetryStrategyFactory, CompleteRetry, IncrementalRetry
-from .state import RFState
-from ..target import LocalTarget
-from ...strategies import RunStrategy
-
 from robotmk.logger import RobotmkLogger
-from robotmk.config import Config
 
+from .retry import RetryStrategyFactory
+from .state import RFState
+from ..abstract import LocalTarget
 
 
 from datetime import datetime
@@ -30,17 +24,6 @@ class RobotFrameworkTarget(LocalTarget):
         logger: RobotmkLogger,
     ):
         super().__init__(suiteuname, config, logger)
-
-        self.retry_strategy = RetryStrategyFactory(self).create()
-
-        self.shortuuid = self.uuid[:8]
-        # this timestamp is used to keep all result files in order; it is used
-        # for all target executions
-        self._timestamp = self.get_now_as_epoch()
-        self._state = RFState(self)
-        # params for RF: global ones & re-execution
-        # self.robot_params = {"console": "NONE", "report": "NONE"}
-        self.robot_params = {"report": "NONE"}
 
     def __str__(self) -> str:
         return "robotframework"
@@ -95,6 +78,17 @@ class RobotFrameworkTarget(LocalTarget):
         return arglist
 
     def run(self):
+        self.retry_strategy = RetryStrategyFactory(self).create()
+
+        self.shortuuid = self.uuid[:8]
+        # this timestamp is used to keep all result files in order; it is used
+        # for all target executions
+        self._timestamp = self.get_now_as_epoch()
+        self._state = RFState(self)
+        # params for RF: global ones & re-execution
+        # self.robot_params = {"console": "NONE", "report": "NONE"}
+        self.robot_params = {"report": "NONE"}
+
         # Do not run if the suite dir contains a DISABLED file
         if self.is_disabled_by_flagfile:
             # TODO: Log skipped
@@ -134,14 +128,6 @@ class RobotFrameworkTarget(LocalTarget):
                         return ""
             except:
                 return ""
-
-    @property
-    def resultdir(self):
-        return Path(self.logdir).joinpath("results")
-
-    @property
-    def statefile_fullpath(self):
-        return str(Path(self.resultdir).joinpath(self.suiteuname + ".json"))
 
     # OUTPUT
 

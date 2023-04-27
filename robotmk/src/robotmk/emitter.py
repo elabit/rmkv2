@@ -4,7 +4,8 @@ from copy import deepcopy
 from collections import defaultdict
 from robotmk.main import Robotmk
 from robotmk.context.suite.target.abstract import Target
-from robotmk.context.suite.target.factory import TargetFactory
+
+# from robotmk.context.suite.target.factory import TargetFactory
 
 # from tabulate import tabulate
 
