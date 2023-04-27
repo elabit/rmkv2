@@ -24,12 +24,14 @@ def test_env2cfg_values():
     os.environ["ROBOTMK_common_log__level"] = "INFO"
     os.environ["ROBOTMK_common_suiteuname"] = "foo_suite"
     os.environ["ROBOTMK_suites_foo__suite_my__value"] = "qux"
+    os.environ["ROBOTMK_suites_foo__suite_run_rcc"] = "false"
     cfg = Config()
     # now read the variables from environment
     cfg.read_cfg_vars(path=None)
     assert str(cfg.configdict["common"]["log_level"]) == "INFO"
     assert str(cfg.configdict["common"]["suiteuname"]) == "foo_suite"
     assert str(cfg.configdict["suites"]["foo_suite"]["my_value"]) == "qux"
+    assert cfg.configdict["suites"]["foo_suite"]["run"]["rcc"] == False
 
 
 def test_env2cfg_dicts():
@@ -235,6 +237,7 @@ def test_cfg2env():
     cfg.set("common.log_level", "INFO")
     cfg.set("common.suiteuname", "foo_suite")
     cfg.set("suitecfg.my_value", "qux")
+    cfg.set("suitecfg.run.rcc", False)
     cfg.set("suitecfg.my_list", ["one", "two", "three"])
     cfg.set("suitecfg.my_dict", {"foo": "one", "bar": "two", "baz": "three"})
     cfg.set(
@@ -250,6 +253,7 @@ def test_cfg2env():
     assert environ["ROBOTMK_common_log__level"] == "INFO"
     assert environ["ROBOTMK_common_suiteuname"] == "foo_suite"
     assert environ["ROBOTMK_suites_foo__suite_my__value"] == "qux"
+    assert environ["ROBOTMK_suites_foo__suite_run_rcc"] == "false"
     # lists
     assert environ["ROBOTMK_suites_foo__suite_my__list_0"] == "one"
     assert environ["ROBOTMK_suites_foo__suite_my__list_1"] == "two"

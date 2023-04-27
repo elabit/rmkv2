@@ -265,6 +265,9 @@ class Config:
         vardict = {}
         for k, v in os.environ.items():
             if k.startswith(self.envvar_prefix):
+                # check if the value is a boolean and convert it to a boolean
+                if v.lower() in ("true", "false"):
+                    v = v.lower() == "true"
                 vardict[k] = v
         return vardict
 
@@ -455,7 +458,10 @@ class Config:
                 self.cfg_to_environment(item, prefix=new_prefix, environ=environ)
         else:  # VALUE conversion
             varname = f"{self.envvar_prefix}{prefix}"
-            print(f"{varname} = {d}")
+            if isinstance(d, bool):
+                # convert bools to lower case strings
+                d = str(d).lower()
+            print(f"{varname}={d}")
             if environ is None:
                 os.environ[varname] = str(d)
             else:

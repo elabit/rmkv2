@@ -27,10 +27,10 @@ class TargetFactory:
             )
             if path.exists():
                 if suitecfg.get("run.rcc", False):
-                    print("I will choose RCC")
+                    # print("I will choose RCC")
                     otarget = RCCTarget(self.suiteuname, self.config, self.logger)
                 else:
-                    print("I will choose RF")
+                    # print("I will choose RF")
                     otarget = RobotFrameworkTarget(
                         self.suiteuname, self.config, self.logger
                     )
