@@ -3,6 +3,7 @@ from ..abstract import AbstractContext
 
 from robotmk.config import Config, RobotmkConfigSchema
 from robotmk.executor.scheduler import Scheduler
+from robotmk.emitter import Emitter
 
 
 class AgentContext(AbstractContext):

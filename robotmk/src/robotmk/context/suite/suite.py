@@ -1,19 +1,21 @@
 """This module encapsulates everyhting related so a single suite 
 execution, either against a local target (RCC/RF) or against a remote one (API)."""
 
+from uuid import uuid4
 from pathlib import Path
 from ..abstract import AbstractContext
 
 from robotmk.config import Config, RobotmkConfigSchema
+from .target import Target, TargetFactory
 
-from .target import Target, RobotFrameworkTarget, RCCTarget, RemoteTarget
 import time, os
 
 
 class SuiteContext(AbstractContext):
     def __init__(self):
         super().__init__()
-        self._target = None
+        # the target object
+        self._otarget = None
         self._ymlschema = RobotmkConfigSchema
 
     @property
@@ -26,48 +28,18 @@ class SuiteContext(AbstractContext):
             # TODO: What if suite is not found?
         return suiteuname
 
-    def get_target(self) -> Target:
-        """Returns a Target object using the Bridge pattern which combines
-        - Local Targets (Shared Python/RCC)   with
-        - Head Strategies (Headless/Headed, Win/linux)"""
-        # TODO: notify the logger initialization as soon as there is config loaded
-        # to prevent this call
-        if not self._target:
-            self.init_logger()
-            # get the dotmap config for the suite to run
-            # TODO: what if suite is not part of the config?
-            suitecfg = self.config.get("suites.%s" % self.suiteuname)
-            if suitecfg == None:
-                self.error("Suite '%s' is not part of the config!" % self.suiteuname)
-
-            # Depending on the target, create a local or a remote suite
-            target = suitecfg.get("run.target")
-            rcc = suitecfg.get("run.rcc")
-            if target == "local":
-                path = Path(self.config.get("common.robotdir")).joinpath(
-                    suitecfg.get("path")
-                )
-                if path.exists():
-                    if rcc is True:
-                        self._target = RCCTarget(
-                            self.suiteuname, self.config, self.logger
-                        )
-                    else:
-                        self._target = RobotFrameworkTarget(
-                            self.suiteuname, self.config, self.logger
-                        )
-                else:
-                    # TBD: check this if this gets logged...
-                    self.error("Suite path does not exist: " + str(path))
-            elif target == "remote":
-                self._target = RemoteTarget(self.suiteuname, self.config, self.logger)
-            else:
-                self.error("Unknown target type for suite %s!" % self.suiteuname)
-        return self._target
-
     @property
     def target(self) -> Target:
-        return self._target
+        # singleton
+        return self._otarget
+
+    def get_target(self) -> Target:
+        if not self._otarget:
+            self.init_logger()
+            self._otarget = TargetFactory(
+                self.suiteuname, self.config, self.logger
+            ).create()
+        return self._otarget
 
     def load_config(self, defaults, **kwargs) -> None:
         """Load the config for suite context.

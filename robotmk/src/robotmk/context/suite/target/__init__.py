@@ -1,4 +1,6 @@
-from .target import Target
-from .rcc import RCCTarget
-from .robotframework import RobotFrameworkTarget
-from .remote import RemoteTarget
+from .abstract import Target
+from .factory import TargetFactory
+
+# from .rcc import RCCTarget
+# from .robotframework import RobotFrameworkTarget
+# from .remote import RemoteTarget
