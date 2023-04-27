@@ -462,7 +462,7 @@ class Config:
                 environ[varname] = str(d)
 
     def to_yml(self, file=None) -> Union[str, None]:
-        """Dumps the config to a file returns it."""
+        """Dumps the config to a file or returns it."""
         if file:
             try:
                 with open(file, "w") as f:
@@ -471,4 +471,6 @@ class Config:
                 print(f"Could not write to file {file}: {e}")
                 return None
         else:
-            return yaml.dump(self.configdict)
+            return yaml.dump(
+                self.configdict, sort_keys=False, indent=4, default_flow_style=False
+            )
