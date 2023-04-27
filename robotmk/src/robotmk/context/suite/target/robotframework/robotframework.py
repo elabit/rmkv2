@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 import os
 from pathlib import Path
+import robot
+import mergedeep
 
 from .retry import RetryStrategyFactory, CompleteRetry, IncrementalRetry
 from .state import RFState
@@ -10,8 +12,6 @@ from ...strategies import RunStrategy
 from robotmk.logger import RobotmkLogger
 from robotmk.config import Config
 
-import robot
-import mergedeep
 
 
 from datetime import datetime
