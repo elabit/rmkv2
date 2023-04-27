@@ -9,8 +9,6 @@ from robotmk.config import RobotmkConfigSchema
 from .target.abstract import Target
 from .target.target_factory import TargetFactory
 
-import time, os
-
 
 class SuiteContext(AbstractContext):
     def __init__(self):
