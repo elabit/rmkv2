@@ -72,7 +72,7 @@
             "justMyCode": false
         },
         {
-            "name": "w robotmk local",
+            "name": "w robotmk agent",
             "type": "python",
             "request": "launch",
             "program": "src/robotmk/modes/agent/cli.py",
@@ -111,52 +111,60 @@
             }
         },
         {
-            "name": "l robotmk w/o args (env:local)",
+            "name": "l robotmk w/o args (env:agent)",
             "type": "python",
             "request": "launch",
             "program": "robotmk/src/robotmk/cli/cli.py",
             "console": "integratedTerminal",
             "justMyCode": false,
             "env": {
-                "ROBOTMK_common_context": "local"
+                "ROBOTMK_common_context": "agent"
             }
         },
         {
-            "name": "l robotmk local",
+            "name": "l robotmk agent",
             "type": "python",
             "request": "launch",
             "program": "robotmk/src/robotmk/cli/cli.py",
             "console": "integratedTerminal",
             "justMyCode": false,
             "args": [
-                "local"
+                "agent"
             ]
         },
         {
-            "name": "l robotmk local output",
+            "name": "l robotmk agent output",
             "type": "python",
             "request": "launch",
             "program": "robotmk/src/robotmk/cli/cli.py",
             "console": "integratedTerminal",
             "justMyCode": false,
             "args": [
-                "local",
-                "--yml",
-                "./robotmk/tests/context/local/robotmk.yml",
+                "agent",
+                // "--yml",
+                // "./robotmk/tests/context/local/robotmk.yml",
                 "output"
-            ]
+            ],
+            "env": {
+                "ROBOTMK_common_robotdir": "/home/simonmeggle/Documents/01_dev/rmkv2/agent/robots",
+                "ROBOTMK_common_logdir": "/home/simonmeggle/Documents/01_dev/rmkv2/agent/log/robotmk",
+            }
         },
         {
-            "name": "l robotmk local scheduler",
+            "name": "l robotmk agent scheduler",
             "type": "python",
             "request": "launch",
             "program": "robotmk/src/robotmk/cli/cli.py",
             "console": "integratedTerminal",
             "justMyCode": false,
             "args": [
-                "local",
+                "agent",
                 "scheduler"
-            ]
+            ],
+            "env": {
+                "ROBOTMK_common_robotdir": "/home/simonmeggle/Documents/01_dev/rmkv2/agent/robots",
+                "ROBOTMK_common_logdir": "/home/simonmeggle/Documents/01_dev/rmkv2/agent/log/robotmk",
+            }
         },
         {
             "name": "l robotmk specialagent",
@@ -209,14 +217,34 @@
             }
         },
         {
-            "name": "l robotmk local --yml scheduler",
+            "name": "l robotmk suite result suite_default",
             "type": "python",
             "request": "launch",
             "program": "robotmk/src/robotmk/cli/cli.py",
             "console": "integratedTerminal",
             "justMyCode": false,
             "args": [
-                "local",
+                "suite",
+                "result",
+                // "suite_default"
+                "suite_remote_dummy"
+            ],
+            "env": {
+                "ROBOTMK_common_robotdir": "/home/simonmeggle/Documents/01_dev/rmkv2/agent/robots",
+                "ROBOTMK_common_logdir": "/home/simonmeggle/Documents/01_dev/rmkv2/agent/log/robotmk",
+                // "ROBOTMK_common_suiteuname": "suite_default_rcc"
+                // "ROBOTMK_common_suiteuname": "suite_default"
+            }
+        },
+        {
+            "name": "l robotmk agent --yml scheduler",
+            "type": "python",
+            "request": "launch",
+            "program": "robotmk/src/robotmk/cli/cli.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "args": [
+                "agent",
                 "--yml",
                 "./robotmk/tests/context/local/robotmk.yml",
                 "scheduler"

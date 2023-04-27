@@ -5,7 +5,7 @@ from collections import defaultdict
 from robotmk.main import Robotmk
 from robotmk.context.suite.target.abstract import Target
 
-# from robotmk.context.suite.target.factory import TargetFactory
+from robotmk.context.suite.target.target_factory import TargetFactory
 
 # from tabulate import tabulate
 
@@ -47,9 +47,10 @@ class Emitter:
         for suiteuname, suitecfg in suites:
             # TODO: handle logging
             self.config.set("common.suiteuname", suiteuname)
-            results.add(TargetFactory(suiteuname, self.config, None).create())
-
-        print(results.all_results())
+            target_ = TargetFactory(suiteuname, self.config, None).create()
+            results.add(target_)
+        print(results.get_results())
+        # print(results.serialized_results())
 
 
 class RMKResults:
@@ -59,41 +60,78 @@ class RMKResults:
     def add(self, target: Target):
         self.result_dict[target.piggybackhost].append(target.output())
 
-    def all_results(self):
-        out = []
-        out += self.piggyback_results(include_logs=False)
-        out.append(f"<<<robotmk:sep(0)>>>")
-        for result in self.result_dict.get("localhost", []):
-            out.append(json.dumps(result, sort_keys=False, indent=2))
-        return "\n".join(out)
+    # def serialized_results(self):
+    #     out = []
+    #     out += self.piggyback_results(include_logs=True)
+    #     out.append(f"<<<robotmk:sep(0)>>>")
+    #     for result in self.result_dict.get("localhost", []):
+    #         out.append(json.dumps(result, sort_keys=False, indent=2))
+    #     return "\n".join(out)
 
-    def piggyback_results(self, include_logs=True):
-        # Piggyback results are all results which have another host than "localhost"
-        # assigned to them.
-        # For each host, print the header and after that all suite results.
-        # "include_logs = False" is used when all_results must be emitted for the checkmk
-        # host where the Robotmk service will be. Even if piggyback results are assigned
-        # to another host, it needs to know the runtime data of the suite. XML and console
-        # logs are not needed in this case.
+    def get_results(self):
         out = []
-        pbresults = [
-            (host, results)
-            for host, results in self.result_dict.items()
-            if host != "localhost"
-        ]
-        for host, results in pbresults:
-            # begin of piggyback data
-            out.append(f"<<<<{host}>>>>")
-            out.append(f"<<<robotmk:sep(0)>>>")
+        host_results_copies = []
+        robotmk_section_header = "<<<robotmk:sep(0)>>>"
+        for (
+            host,
+            results,
+        ) in self.result_dict.items():
+            host_boundary = {
+                True: [f"<<<<{host}>>>>", "<<<<>>>>"],
+                False: ["", ""],
+            }
+            is_piggyback = host != "localhost"
+            if is_piggyback:
+                host_boundary = [f"<<<<{host}>>>>", "<<<<>>>>"]
+            else:
+                host_boundary = ["", ""]
+            host_results = []
             for result in results:
-                if not include_logs:
+                host_results.append(json.dumps(result, sort_keys=False, indent=4))
+                if is_piggyback:
                     result_short = deepcopy(result)
                     del result_short["output"]
-                    result = result_short
-                out.append(json.dumps(result, sort_keys=False, indent=2))
-            # end of piggyback data
-            out.append(f"<<<<>>>>")
-        return out
+                    host_results_copies.append(result_short)
+
+            host_results[0:0] = [robotmk_section_header]
+            host_boundary[1:1] = host_results
+
+            out += host_boundary
+        if host_results_copies:  # if there are piggyback results
+            out.append(robotmk_section_header)
+            out += [
+                json.dumps(result, sort_keys=False, indent=4)
+                for result in host_results_copies
+            ]
+        return "\n".join(out)
+
+    # def piggyback_results(self, include_logs=True):
+    #     # Piggyback results are all results which have another host than "localhost"
+    #     # assigned to them.
+    #     # For each host, print the header and after that all suite results.
+    #     # "include_logs = False" is used when all_results must be emitted for the checkmk
+    #     # host where the Robotmk service will be. Even if piggyback results are assigned
+    #     # to another host, it needs to know the runtime data of the suite. XML and console
+    #     # logs are not needed in this case.
+    #     out = []
+    #     pbresults = [
+    #         (host, results)
+    #         for host, results in self.result_dict.items()
+    #         if host != "localhost"
+    #     ]
+    #     for host, results in pbresults:
+    #         # begin of piggyback data
+    #         out.append(f"<<<<{host}>>>>")
+    #         out.append(f"<<<robotmk:sep(0)>>>")
+    #         for result in results:
+    #             if not include_logs:
+    #                 result_short = deepcopy(result)
+    #                 del result_short["output"]
+    #                 result = result_short
+    #             out.append(json.dumps(result, sort_keys=False, indent=2))
+    #         # end of piggyback data
+    #         out.append(f"<<<<>>>>")
+    #     return out
 
 
 """
