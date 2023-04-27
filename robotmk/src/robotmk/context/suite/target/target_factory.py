@@ -26,11 +26,12 @@ class TargetFactory:
                 suitecfg.get("path")
             )
             if path.exists():
+                # Watch the correct boolean interpretation especially for the
+                # case of "run.rcc" being set to "False" in the config file.
+                # Danger of starting RCC inside RCC inside RCC...
                 if suitecfg.get("run.rcc", False):
-                    # print("I will choose RCC")
                     otarget = RCCTarget(self.suiteuname, self.config, self.logger)
                 else:
-                    # print("I will choose RF")
                     otarget = RobotFrameworkTarget(
                         self.suiteuname, self.config, self.logger
                     )
