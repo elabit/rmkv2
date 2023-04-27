@@ -57,6 +57,12 @@ class RCCTarget(LocalTarget):
 
         In RCC target, the commandline gets buuilt to execute a RCC task (=Robotmk inside of RCC)
         """
+        # DEBUG: "; ".join([f"export {k}={v}" for (k,v) in kwargs.get("env").items() if k.startswith("RO")])
+        # paste export strings into shell
+        # - which python3 -> shout point to RCC venv
+        # - env -> ROBOCORP and ROBOTMK vars should be set
+        # - which robotmk -> path to entrypoint
+        # python3 -m trace --trace <ENTRYPOINT> suite run suite_default
         return [
             "rcc",
             "task",

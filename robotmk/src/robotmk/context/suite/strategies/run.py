@@ -88,8 +88,10 @@ class Runner(RunStrategy):
         return result.returncode
 
     def exec_main(self, *args, **kwargs) -> int:
-        # DEBUG: " ".join(self.target.command)
+        # DEBUG: " ".join(self.target.main_command)
+
         # DEBUG: [f"{k}={v}" for (k,v) in environment.items()  if k.startswith("RO")]
+        # DEBUG: "; ".join([f"export {k}={v}" for (k,v) in kwargs.get("env").items() if k.startswith("RO")])
         result = self.run_subprocess(
             self.target.main_command, kwargs.get("env", os.environ)
         )
