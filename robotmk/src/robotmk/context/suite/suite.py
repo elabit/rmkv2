@@ -1,5 +1,5 @@
 """This module encapsulates everyhting related so a single suite 
-execution, either locally or remotely."""
+execution, either against a local target (RCC/RF) or against a remote one (API)."""
 
 from pathlib import Path
 from ..abstract import AbstractContext
@@ -102,13 +102,10 @@ class SuiteContext(AbstractContext):
         pass
 
     def execute(self):
-        """Runs a single suite, either locally or remotely (via API call)."""
+        """Runs a single suite, either fs/remote."""
         # TODO: is it better to pass the suitename to get_target()?
         self.get_target().run()
 
     def output(self):
-        # TODO: make this possible in CLI
-        """Implements the agent output for local context."""
-        print("Local context agent output")
-        self.outputter = SuiteOutput(self.config)
-        pass
+        """Gathers the result of the given suite (fs/remote) and returns it"""
+        return self.get_target().output()

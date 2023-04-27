@@ -2,6 +2,7 @@
 
 import sys
 import click
+import json
 from robotmk.cli.defaultgroup import DefaultGroup
 from robotmk.main import Robotmk, DEFAULTS
 
@@ -42,7 +43,7 @@ def run(ctx, suite):
     """
     if suite:
         ctx.obj.config.set("common.suiteuname", suite)
-    if ctx.obj.config.get("common.suiteuname", None):
+    if bool(ctx.obj.config.get("common.suiteuname", None)):
         ctx.obj.execute()
     else:
         click.secho("Suite '%s' not found in configuration" % suite, fg="red")
@@ -51,17 +52,22 @@ def run(ctx, suite):
 @suite.command()
 @click.argument("suite", required=False)
 @click.pass_context
-def output(ctx, suite):
-    """Print the CMK agent output of SUITE on STDOUT.
+def result(ctx, suite):
+    """Print the result JSON of a SUITE on STDOUT.
 
-    SUITEID is eiher equal to the suite dir or a combination of suite dir and its unique tag as set in the configuration.
-    Examples are: suite1, suite2_tagfoo, suite3_tagbaz
+    SUITE must be a configuration subkey of the "suites" section.
     (can also be set by env:ROBOTMK_common_suiteuname.)
+
+    To get the Checkmk Agent output, use "agent output" instead.
     """
-    click.secho("output of suite %s" % suite, fg="green")
-    # TODO: to be implemented
-    ctx.obj.output()
-    pass
+    if suite:
+        ctx.obj.config.set("common.suiteuname", suite)
+    if bool(ctx.obj.config.get("common.suiteuname", None)):
+        data = ctx.obj.output()
+        click.secho(json.dumps(data, indent=4), fg="bright_white")
+
+    else:
+        click.secho("Suite '%s' not found in configuration" % suite, fg="red")
 
 
 @suite.command()
