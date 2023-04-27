@@ -12,16 +12,16 @@ import warnings
 
 # CMD1        CMD2     OPTION                                    CMD3            # Description
 # ---------------------------------------------------------------------------------------------
-# # LOCAL CONTEXT
+# # FS CONTEXT
 # robotmk                                                                        # no arg = print output
 
-# robotmk     local                                              output          # print output
-# robotmk     local    --yml /etc/checkmk/another_robotmk.yml    output          # print output with yml
-# robotmk     local    --vars /var/robotmk_local.env             output          # print output, load env from file (instead of env)
+# robotmk     fs                                              output          # print output
+# robotmk     fs       --yml /etc/checkmk/another_robotmk.yml    output          # print output with yml
+# robotmk     fs       --vars /var/robotmk_local.env             output          # print output, load env from file (instead of env)
 
-# robotmk     local                                              scheduler       # start scheduler
-# robotmk     local    --yml /etc/checkmk/another_robotmk.yml    scheduler       # start scheduler with yml
-# robotmk     local    --vars /var/robotmk_local.env             scheduler       # start scheduler, load env from file  (instead of env)
+# robotmk     fs                                                 scheduler       # start scheduler
+# robotmk     fs       --yml /etc/checkmk/another_robotmk.yml    scheduler       # start scheduler with yml
+# robotmk     fs       --vars /var/robotmk_local.env             scheduler       # start scheduler, load env from file  (instead of env)
 # ---------------------------------------------------------------------------------------------
 # # SUITE CONTEXT
 # robotmk                                                                        # no arg = exec suite as configured in env
@@ -48,8 +48,8 @@ def get_commands_from_pkg(pkg) -> dict:
     entry point for the CLI.
 
     Example:
-    robotmk.context.local.cli.py contains a function called local(), decorated with @click.group()
-    and connected with subcomands "output()" and "scheduler()". The discovered subcommand is "local()".
+    robotmk.context.agent.cli.py contains a function called agent(), decorated with @click.group()
+    and connected with subcomands "output()" and "scheduler()". The discovered subcommand is "agent()".
     """
     pkg_obj = importlib.import_module(pkg)
     pkg_path = os.path.dirname(pkg_obj.__file__)
@@ -87,9 +87,9 @@ def main(ctx, loglevel):
     if ctx.invoked_subcommand is None:
         # robotmk was called without argument. Try to detect the context from the default
         # config and/or environment variables.
-        # After that run the default subcommand of the context:
-        # - local: produce output
-        # - specialagent: produce output + call sequencer
+        # After that run the default subcommand of the specific context:
+        # - agent: produce output
+        # - specialagent: run 1 sequence + produce output
         # - suite: run a single suite
         ctx.robotmk = Robotmk(
             contextname=None, log_level=loglevel, ymlfile=None, varfile=None

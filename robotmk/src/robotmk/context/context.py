@@ -4,10 +4,10 @@ class ContextFactory:
         self._log_level = log_level
 
     def get_context(self) -> None:
-        if self.contextname == "local":
-            from .local.local import LocalContext
+        if self.contextname == "agent":
+            from .agent.agent import AgentContext
 
-            return LocalContext()
+            return AgentContext()
         elif self.contextname == "specialagent":
             from .specialagent.specialagent import SpecialAgentContext
 

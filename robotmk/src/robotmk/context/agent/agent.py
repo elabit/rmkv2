@@ -2,11 +2,10 @@ from pathlib import Path
 from ..abstract import AbstractContext
 
 from robotmk.config import Config, RobotmkConfigSchema
-
 from robotmk.executor.scheduler import Scheduler
 
 
-class LocalContext(AbstractContext):
+class AgentContext(AbstractContext):
     def __init__(self):
         super().__init__()
         self.ymlschema = RobotmkConfigSchema
@@ -21,9 +20,9 @@ class LocalContext(AbstractContext):
         return self._logger
 
     def load_config(self, defaults, **kwargs) -> None:
-        """Load the config for local context.
+        """Load the config for agent context.
 
-        Local context can merge the config from
+        Agent context can merge the config from
         - OS defaults
         - + YML file (default/custom = --yml)
         - + environment variables
@@ -44,9 +43,9 @@ class LocalContext(AbstractContext):
         return config_changed
 
     def run_default(self):
-        """Implements the default action for local context."""
+        """Implements the default action for agent context."""
         # TODO: how do I call the coutputter here?
-        print("Local context default action = output")
+        print("Agent context default action = output")
         pass
 
     def execute(self, *args, **kwargs):
@@ -56,7 +55,6 @@ class LocalContext(AbstractContext):
         pass
 
     def output(self):
-        """Implements the agent output for local context."""
-        print("Local context agent output")
-        self.outputter = LocalOutput(self.config)
-        pass
+        """Gathers the results of all scheduled suites and returns CMK agent output from it."""
+        self.emitter = Emitter(self.config)
+        self.emitter.run()

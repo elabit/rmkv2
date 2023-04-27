@@ -1,17 +1,18 @@
-"""CLI commands for the local context. 
+"""CLI commands for the agent context. 
 
-Executes the Robotmk scheduler on Windows & Linux"""
+Executes the Robotmk scheduler on Windows & Linux, produces Checkmk Agent output"""
 import sys
 import click
 from robotmk.main import Robotmk, DEFAULTS
 
 
-#   _                 _
-#  | |               | |
-#  | | ___   ___ __ _| |
-#  | |/ _ \ / __/ _` | |
-#  | | (_) | (_| (_| | |
-#  |_|\___/ \___\__,_|_|
+#                         | |
+#    __ _  __ _  ___ _ __ | |_
+#   / _` |/ _` |/ _ \ '_ \| __|
+#  | (_| | (_| |  __/ | | | |_
+#   \__,_|\__, |\___|_| |_|\__|
+#          __/ |
+#         |___/
 
 
 # use module docstring as help text
@@ -20,33 +21,30 @@ from robotmk.main import Robotmk, DEFAULTS
 @click.option("--yml", "-y", help="Read config from custom YML file")
 
 # @click.option("--vars", "-v", help="Read vars from .env file (ignores environment)")
-def local(ctx, yml):
+def agent(ctx, yml):
     ctx_loglevel = ctx.parent.params.get("loglevel", DEFAULTS["common"]["log_level"])
-    ctx.obj = Robotmk(contextname="local", log_level=ctx_loglevel, ymlfile=yml)
+    ctx.obj = Robotmk(contextname="agent", log_level=ctx_loglevel, ymlfile=yml)
     if ctx.invoked_subcommand is None:
         click.secho("No subcommand given. Use --help for help.", fg="red")
         sys.exit(1)
 
 
-@local.command()
+@agent.command()
 @click.pass_context
 def scheduler(ctx):
-    """Start the local scheduler to run RF suites."""
-
-    click.secho("scheduler", fg="green")
+    """Starts the scheduler to execute tests repeatedly."""
     ctx.obj.execute()
-    pass
 
 
-@local.command()
+@agent.command()
 @click.pass_context
 def output(ctx):
-    click.secho("output", fg="green")
-    ctx.obj.output()
-    pass
+    """Emits Checkmk Agent output for all suite results."""
+    data = ctx.obj.output()
+    click.secho(data, fg="bright_white")
 
 
-@local.command(help="Dump the config as YML to STDOUT or FILE")
+@agent.command(help="Dumps the config as YML to STDOUT or FILE")
 # add file arg
 @click.argument("file", required=False, type=click.Path(exists=False))
 @click.pass_context
