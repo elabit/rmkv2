@@ -39,11 +39,11 @@ class SpecialAgentContext(AbstractContext):
         """Re-loads the config and returns True if it changed"""
         # TODO: implement this
 
-    def run_default(self):
-        """Implements the default action for specialagent context."""
-        # TODO: start the sequencer
-        print("Specialagent context default action = trigger APIs and output")
-        pass
+    # def run_default(self):
+    #     """Implements the default action for specialagent context."""
+    #     # TODO: start the sequencer
+    #     print("Specialagent context default action = trigger APIs and output")
+    #     pass
 
     def execute(self, *args, **kwargs):
         """Implements the run action for specialagent context."""

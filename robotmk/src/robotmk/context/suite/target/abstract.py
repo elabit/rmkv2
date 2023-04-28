@@ -22,8 +22,6 @@ class Target(ABC):
         self.commoncfg = self.config.get("common")
 
         self._logger = logger
-        # TODO: Boilerplate alarm
-        # TODO: This is a workaround for the fact that the logger is not initialized. But it should...
         if not self._logger is None:
             self.debug = self._logger.debug
             self.info = self._logger.info

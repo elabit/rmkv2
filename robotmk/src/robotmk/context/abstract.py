@@ -43,11 +43,11 @@ class AbstractContext(ABC):
         """Load the config again, e.g. after a change in the config file."""
         raise NotImplementedError("Subclass must implement abstract method")
 
-    @abstractmethod
-    def run_default(self):
-        """Encapsulates everything that needs to be done to
-        run robotmk when it is run only with context, but without subcommand."""
-        raise NotImplementedError("Subclass must implement abstract method")
+    # @abstractmethod
+    # def run_default(self):
+    #     """Encapsulates everything that needs to be done to
+    #     run robotmk when it is run only with context, but without subcommand."""
+    #     raise NotImplementedError("Subclass must implement abstract method")
 
     @abstractmethod
     def execute(self, *args, **kwargs):

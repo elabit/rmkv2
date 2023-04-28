@@ -34,7 +34,8 @@ class RobotFrameworkTarget(LocalTarget):
 
         In RF target, the complete commandline must be built to execute the RF suite.
         (See https://robot-framework.readthedocs.io/en/latest/autodoc/robot.html#robot.run.run_cli)
-        TODO: Logging"""
+        TODO: Logging
+        """
         self.robot_params.update(
             {
                 "log": self.log_html,  #'rf_suite_default_1682429039_10559086-1.html'
@@ -91,7 +92,7 @@ class RobotFrameworkTarget(LocalTarget):
 
         # Do not run if the suite dir contains a DISABLED file
         if self.is_disabled_by_flagfile:
-            # TODO: Log skipped
+            # TODO: Log if a suite was skipped
             # reason = self.get_disabled_reason()
             return
         else:

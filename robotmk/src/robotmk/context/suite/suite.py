@@ -66,11 +66,11 @@ class SuiteContext(AbstractContext):
         # TODO: implement this
         pass
 
-    def run_default(self):
-        """Implements the default action for suite context."""
-        # TODO: execute one single suite
-        print("Suite context default action = execute single suite ")
-        pass
+    # def run_default(self):
+    #     """Implements the default action for suite context."""
+    #     # TODO: execute one single suite
+    #     print("Suite context default action = execute single suite ")
+    #     pass
 
     def execute(self):
         """Runs a single suite, either fs/remote."""
