@@ -32,7 +32,7 @@ class AgentContext(AbstractContext):
         self.config.set_defaults(defaults)
         self.config.read_yml_cfg(path=kwargs["ymlfile"], must_exist=True)
         self.config.read_cfg_vars(path=None)
-        # TODO: validate later so that config can be dumped
+
         # self.config.validate(self.ymlschema)
 
     def refresh_config(self) -> bool:
@@ -42,12 +42,6 @@ class AgentContext(AbstractContext):
         super().__init__(envvar_prefix=self.envvar_prefix)
         config_changed = config_copy != self.configdict
         return config_changed
-
-    def run_default(self):
-        """Implements the default action for agent context."""
-        # TODO: how do I call the coutputter here?
-        print("Agent context default action = output")
-        pass
 
     def execute(self, *args, **kwargs):
         """Starts the scheduler."""

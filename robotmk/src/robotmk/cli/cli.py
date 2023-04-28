@@ -85,19 +85,7 @@ def get_commands_from_pkg(pkg) -> dict:
 @click.pass_context
 def main(ctx, loglevel):
     if ctx.invoked_subcommand is None:
-        # robotmk was called without argument. Try to detect the context from the default
-        # config and/or environment variables.
-        # After that run the default subcommand of the specific context:
-        # - agent: produce output
-        # - specialagent: run 1 sequence + produce output
-        # - suite: run a single suite
-        ctx.robotmk = Robotmk(
-            contextname=None, log_level=loglevel, ymlfile=None, varfile=None
-        )
-        ctx.robotmk.run_default()
-    else:
-        # Robotmk was executed with a context subcommand, whose logic is defined within the context.
-        pass
+        click.echo(ctx.get_help())
 
 
 @main.command()

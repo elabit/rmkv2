@@ -16,14 +16,14 @@ There is a special order in which the sources are read:
 
 | context       | yml    | vars |
 | ---           | ---    | ---  |
-| local         | X      |      |
-| suite         | X      | X    |
+| agent         | X      |      |
 | specialagent  |        | X    |
+| suite         | X      | X    |
 
 
 """
 
-# TODO: print environment
+# TODO: add a mode to dump environment
 
 import os
 import re
@@ -38,7 +38,7 @@ import hashlib
 from pathlib import Path
 from .yml import RobotmkConfigSchema
 
-# TODO: add config validation
+# TODO: add YML config validation
 # ["%s:%s" % (v, os.environ[v]) for v in os.environ if v.startswith("ROBO")]
 
 
@@ -104,7 +104,7 @@ class Config:
                 m = m.get(key, {})
             if m:  # non-empty value
                 if type(m) is dict:
-                    if asdict:  # TODO: usefule somewhere else??
+                    if asdict:
                         return m
                     else:
                         return Config(initdict=m)

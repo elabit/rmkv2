@@ -69,7 +69,7 @@ class Robotmk:
             DEFAULTS, ymlfile=ymlfile, varfile=varfile, default_cfg=default_cfg
         )
 
-        self.run_default = self._context.run_default
+        # self.run_default = self._context.run_default
         # execute and output are the two main functions of each context:
         self.execute = self._context.execute
         self.output = self._context.output
