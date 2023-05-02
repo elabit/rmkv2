@@ -50,7 +50,6 @@ class Emitter:
             target_ = TargetFactory(suiteuname, self.config, None).create()
             results.add(target_)
         print(results.get_results())
-        # print(results.serialized_results())
 
 
 class RMKResults:
@@ -59,14 +58,6 @@ class RMKResults:
 
     def add(self, target: Target):
         self.result_dict[target.piggybackhost].append(target.output())
-
-    # def serialized_results(self):
-    #     out = []
-    #     out += self.piggyback_results(include_logs=True)
-    #     out.append(f"<<<robotmk:sep(0)>>>")
-    #     for result in self.result_dict.get("localhost", []):
-    #         out.append(json.dumps(result, sort_keys=False, indent=2))
-    #     return "\n".join(out)
 
     def get_results(self):
         out = []

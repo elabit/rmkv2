@@ -127,11 +127,11 @@
             "args": [
                 "agent",
                 "--yml",
-                "./robotmk/tests/yml/robotmk.yml""output"
+                "./robotmk/tests/yml/robotmk.yml",
+                "output"
             ],
             "env": {
-                "ROBOTMK_common_robotdir": "/home/simonmeggle/Documents/01_dev/rmkv2/agent/robots",
-                "ROBOTMK_common_logdir": "/home/simonmeggle/Documents/01_dev/rmkv2/agent/log/robotmk",
+                "ROBOTMK_common_cfgdir": "robotmk/tests/yml/robotmk.yml"
             }
         },
         {
@@ -146,8 +146,7 @@
                 "scheduler"
             ],
             "env": {
-                "ROBOTMK_common_robotdir": "/home/simonmeggle/Documents/01_dev/rmkv2/agent/robots",
-                "ROBOTMK_common_logdir": "/home/simonmeggle/Documents/01_dev/rmkv2/agent/log/robotmk",
+                "ROBOTMK_common_cfgdir": "robotmk/tests/yml/robotmk.yml"
             }
         },
         {
@@ -162,6 +161,23 @@
             ]
         },
         {
+            "name": "l robotmk suite ymldump",
+            "type": "python",
+            "request": "launch",
+            "program": "robotmk/src/robotmk/cli/cli.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "args": [
+                "suite",
+                "ymldump"
+            ],
+            "env": {
+                "ROBOTMK_common_cfgdir": "robotmk/tests/yml",
+                "ROBOTMK_common_suiteuname": "suite_default"
+                // "ROBOTMK_common_suiteuname": "suite_default"
+            }
+        },
+        {
             "name": "l robotmk suite run",
             "type": "python",
             "request": "launch",
@@ -173,15 +189,13 @@
                 "run"
             ],
             "env": {
-                "ROBOTMK_common_robotdir": "/home/simonmeggle/Documents/01_dev/rmkv2/agent/robots",
-                "ROBOTMK_common_logdir": "/home/simonmeggle/Documents/01_dev/rmkv2/agent/log/robotmk",
-                // "ROBOTMK_suites_suite__default__rcc_run_rcc": "False"
+                "ROBOTMK_common_cfgdir": "robotmk/tests/yml",
                 "ROBOTMK_common_suiteuname": "suite_default_rcc"
                 // "ROBOTMK_common_suiteuname": "suite_default"
             }
         },
         {
-            "name": "l robotmk suite run suite_default",
+            "name": "l robotmk suite result",
             "type": "python",
             "request": "launch",
             "program": "robotmk/src/robotmk/cli/cli.py",
@@ -189,33 +203,11 @@
             "justMyCode": false,
             "args": [
                 "suite",
-                "run",
-                "suite_default"
+                "result"
             ],
             "env": {
-                "ROBOTMK_common_robotdir": "/home/simonmeggle/Documents/01_dev/rmkv2/agent/robots",
-                "ROBOTMK_common_logdir": "/home/simonmeggle/Documents/01_dev/rmkv2/agent/log/robotmk",
-                // "ROBOTMK_common_suiteuname": "suite_default_rcc"
-                // "ROBOTMK_common_suiteuname": "suite_default"
-            }
-        },
-        {
-            "name": "l robotmk suite result suite_default",
-            "type": "python",
-            "request": "launch",
-            "program": "robotmk/src/robotmk/cli/cli.py",
-            "console": "integratedTerminal",
-            "justMyCode": false,
-            "args": [
-                "suite",
-                "result",
-                // "suite_default"
-                "suite_remote_dummy"
-            ],
-            "env": {
-                "ROBOTMK_common_robotdir": "/home/simonmeggle/Documents/01_dev/rmkv2/agent/robots",
-                "ROBOTMK_common_logdir": "/home/simonmeggle/Documents/01_dev/rmkv2/agent/log/robotmk",
-                // "ROBOTMK_common_suiteuname": "suite_default_rcc"
+                "ROBOTMK_common_cfgdir": "robotmk/tests/yml",
+                "ROBOTMK_common_suiteuname": "suite_default_rcc"
                 // "ROBOTMK_common_suiteuname": "suite_default"
             }
         },
@@ -228,10 +220,13 @@
             "justMyCode": false,
             "args": [
                 "agent",
-                "--yml",
-                "./robotmk/tests/yml/robotmk.yml",
                 "scheduler"
-            ]
+            ],
+            "env": {
+                "ROBOTMK_common_cfgdir": "robotmk/tests/yml",
+                "ROBOTMK_common_suiteuname": "suite_default_rcc"
+                // "ROBOTMK_common_suiteuname": "suite_default"
+            }
         },
         //---------------------------------------------        
         {

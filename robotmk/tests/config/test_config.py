@@ -261,7 +261,7 @@ def test_dotcfg2env():
     cfg.dotcfg_to_env(dotstrings, environ=environ)
     assert environ["ROBOTMK_common_logdir"] == "/another/path"
     assert environ["ROBOTMK_suites_foo__suite_uuid"] == "1234"
-    assert environ["ROBOTMK_suites_foo__suite_run_rcc"] == "False"
+    assert environ["ROBOTMK_suites_foo__suite_run_rcc"] == "false"
 
 
 def test_cfg2env():

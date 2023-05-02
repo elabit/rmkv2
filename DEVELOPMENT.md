@@ -9,6 +9,10 @@ Keep that in mind when Debugging to choose the proper Debugging config.
 
 ## robotmk Python 
 
+```
+export ROBOTMK_common_path__prefix=$HOME/Documents/01_dev/rmkv2
+```
+
 ### FLit
 
 Start with a clean bash:

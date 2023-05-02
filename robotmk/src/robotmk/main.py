@@ -19,26 +19,21 @@ LOG_LEVELS = ["TRACE", "DEBUG", "INFO", "SUCCESS", "WARNING", "ERROR", "CRITICAL
 DEFAULTS = {
     # Default values for the "common" config section
     "common": {
-        # "execution_mode": "agent_serial",
-        # "agent_output_encoding": "zlib_codec",
-        "transmit_html": False,
         "robotmk_yml": "robotmk.yml",
         "log_level": "INFO",
-        "log_rotation": 14,
-        # "cache_time": 960,
-        # "execution_interval": 900,
+        "log_retention": 14,
     },
     # Default values for the "common" config section (Windows)
     "nt": {
+        "cfgdir": "C:/ProgramData/checkmk/agent/config",  # where to find robotmk.yml
         "robotdir": "C:/ProgramData/checkmk/agent/robot",
-        "cfgdir": "C:/ProgramData/checkmk/agent/config",
         "logdir": "C:/ProgramData/checkmk/agent/log/robotmk/",
         "tmpdir": "C:/ProgramData/checkmk/agent/tmp/robotmk",
     },
     # Default values for the "common" config section (Linux)
     "posix": {
+        "cfgdir": "/etc/check_mk",  # where to find robotmk.yml
         "robotdir": "/usr/lib/check_mk_agent/robot",
-        "cfgdir": "/etc/check_mk",
         "logdir": "/var/log/robotmk",
         "tmpdir": "/tmp/robotmk",
     },

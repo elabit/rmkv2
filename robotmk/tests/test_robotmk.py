@@ -13,10 +13,10 @@ def test_robotmk_no_context_in_env():
 
 
 def test_robotmk_local_context():
-    """Test that Robotmk has local context when set in environment."""
-    os.environ["ROBOTMK_common_context"] = "local"
+    """Test that Robotmk has agent context when set in environment."""
+    os.environ["ROBOTMK_common_context"] = "agent"
     robotmk = Robotmk()
-    assert robotmk.config.get("common.context") == "local"
+    assert robotmk.config.get("common.context") == "agent"
 
 
 def test_robotmk_suite_context():

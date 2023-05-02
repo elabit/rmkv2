@@ -45,19 +45,25 @@ class SuiteContext(AbstractContext):
 
         Suite context can merge the config from
         - OS defaults
+        - + environment variables
         - + YML file (default/custom = --yml)
         - + var file (= --vars)
         - + environment variables
+
+
         """
         if kwargs.get("default_cfg", {}):
             # Suite was started by scheduler, config was passed
             self.config.configdict = kwargs["default_cfg"]
-
         else:
-            # Suite was started by CLI, load config from individual sources
+            # After the defaults are read...
             self.config.set_defaults(defaults)
+            # ...lets first search for env vars which point to another location of the robotmk.yml!
+            self.config.read_cfg_vars(path=None)
             self.config.read_yml_cfg(path=kwargs["ymlfile"], must_exist=False)
+            # In the end, environment variables can override everything
             self.config.read_cfg_vars(path=kwargs["varfile"])
+
         # TODO: validate later so that config can be dumped
         # self.config.validate(self._ymlschema)
 

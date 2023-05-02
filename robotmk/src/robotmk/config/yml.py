@@ -17,7 +17,7 @@ class RobotmkConfigSchema:
                 "tmpdir": str,
                 "resultdir": str,
                 "log_level": Or("debug", "info", "warning", "error", "critical"),
-                "log_rotation": int,
+                "log_retention": int,
                 Optional("suite"): str,
                 Optional("k8s_auth"): {"user": str, "password": str, "url": str},
                 Optional("robocorp_auth"): {"user": str, "password": str, "url": str},

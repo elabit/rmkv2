@@ -57,18 +57,31 @@ def add_path_prefix(method):
     """Decorator function for the get() method.
 
     If the given key is one of (logdir, tmpdir, resultdir, robotdir),
-    then the returned value is added at the end of the prefix.
+    AND the value does not start with a slash,
+    THEN the returned value is added at the end of the prefix.
     A slash is added, if missing.
     """
 
     @wraps(method)
     def wrapper(self, *args, **kwargs):
         value = method(self, *args, **kwargs)
-        if args[0].split(".")[-1] in ["logdir", "tmpdir", "resultdir", "robotdir"]:
-            prefix = self.get("common.path_prefix")
-            if not value.startswith("/") and not prefix.endswith("/"):
-                value = "/" + value
-            value = prefix + value
+        if args[0].split(".")[-1] in [
+            "cfgdir",
+            "logdir",
+            "tmpdir",
+            "resultdir",
+            "robotdir",
+        ] and not value.startswith(
+            "/"
+        ):  # paths which start with a slash are absolute
+            prefix = self.get("common.path_prefix", None)
+            if prefix:
+                if not prefix.endswith("/"):
+                    value = "/" + value
+                value = prefix + value
+            else:
+                # no prefix given, so we use the value as is
+                pass
         return value
 
     return wrapper
@@ -109,9 +122,9 @@ class Config:
         - 'basic_cfg' can be used for the basic config dict.
 
         Examples:
-            cfg.get("common.cfgdir")
+            cfg.get("common.logdir")
             cfg.get("suitecfg.run.rcc")
-            cfg.get("basic_cfg.common.cfgdir") -> returns cfgdir value from the configuration
+            cfg.get("basic_cfg.common.logdir") -> returns logdir value from the configuration
         """
         keys = self.__translate_keys(name)
         if keys[0] == "basic_cfg":
@@ -145,7 +158,7 @@ class Config:
         Shorthand 'suitecfg' can be used for 'suites.<suiteuname>'.
 
         Example:
-            cfg.set("common.cfgdir", "/etc/check_mk")
+            cfg.set("common.logdir", "/foo/log")
             cfg.set("suitecfg.run.rcc", False)
         """
         keys = self.__translate_keys(name)
@@ -225,10 +238,7 @@ class Config:
         if path is None:
             # Linux default: /etc/check_mk/robotmk.yml
             # Windows default: C:\Program Data\check_mk\agent\config\robotmk.yml
-            ymlfile = (
-                Path(self.configdict["common"]["cfgdir"])
-                / self.configdict["common"]["robotmk_yml"]
-            )
+            ymlfile = Path(self.get("common.cfgdir")) / self.get("common.robotmk_yml")
         else:
             ymlfile = Path(path)
             # a custom file path should always exist

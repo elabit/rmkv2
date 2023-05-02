@@ -1,22 +1,12 @@
 common: 
   context: local
-  cfgdir: foo
-  path_prefix: /home/simonmeggle/Documents/01_dev/rmkv2
-  logdir: agent/log/robotmk/logs
+  logdir: agent/log/robotmk
   tmpdir: agent/tmp/robotmk
   resultdir: agent/log/robotmk/results
   robotdir: agent/robots
-  #robocorp_home: 
   log_level: INFO
-  log_retention: 14
-  k8s_auth:
-    user: foo
-    password: bar
-    url: https://foo/api/v2
-  robocorp_auth:
-    user: foo
-    password: bar
-    url: https://foo/api/v2
+  log_retention: 13
+  #robocorp_home: TODO
 suites: 
   suite_default: 
     path: suiteA

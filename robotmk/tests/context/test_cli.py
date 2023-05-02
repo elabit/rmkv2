@@ -10,7 +10,7 @@ def test_cli_help():
     result = runner.invoke(cli.main, ["--help"])
     assert result.exit_code == 0
     assert "Robotmk CLI Interface." in result.output
-    assert re.search(r"Commands:.*local.*specialagent.*suite", result.output, re.DOTALL)
+    assert re.search(r"Commands:.*agent.*specialagent.*suite", result.output, re.DOTALL)
 
 
 def test_cli_invalid_yml_option():

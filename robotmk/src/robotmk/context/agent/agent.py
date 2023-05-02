@@ -25,15 +25,19 @@ class AgentContext(AbstractContext):
 
         Agent context can merge the config from
         - OS defaults
+        - + environment variables
         - + YML file (default/custom = --yml)
         - + environment variables
         """
-        # self.config = Config()
+        # After the defaults are read...
         self.config.set_defaults(defaults)
+        # ...lets first search for env vars which point to another location of the robotmk.yml!
         self.config.read_yml_cfg(path=kwargs["ymlfile"], must_exist=True)
+        # In the end, environment variables can override everything
         self.config.read_cfg_vars(path=None)
 
-        # self.config.validate(self.ymlschema)
+        # TODO: validate later so that config can be dumped
+        # self.config.validate(self._ymlschema)
 
     def refresh_config(self) -> bool:
         """Re-loads the config and returns True if it changed"""
