@@ -87,12 +87,7 @@ class RCCTarget(LocalTarget):
         then adds the special settings on top.
         """
         env = os.environ.copy()
-        added_settings = {
-            "suitecfg.run.rcc": False,
-            "suitecfg.uuid": self.uuid,
-            # "common.logdir": "%s/%s"
-            # % (self.config.basic_cfg["common"]["logdir"], "robotframework"),
-        }
+        added_settings = {"suitecfg.run.rcc": False, "suitecfg.uuid": self.uuid}
         self.config.cfg_to_environment(self.config.configdict, environ=env)
         self.config.dotcfg_to_env(added_settings, environ=env)
         return env

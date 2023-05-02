@@ -33,6 +33,7 @@ from typing import Union
 from collections import defaultdict
 import json
 import hashlib
+from functools import wraps
 
 # from collections import namedtuple
 from pathlib import Path
@@ -50,6 +51,27 @@ from .yml import RobotmkConfigSchema
 #     "tag:yaml.org,2002:python/object/apply:collections.defaultdict",
 #     default_dict_constructor,
 # )
+
+
+def add_path_prefix(method):
+    """Decorator function for the get() method.
+
+    If the given key is one of (logdir, tmpdir, resultdir, robotdir),
+    then the returned value is added at the end of the prefix.
+    A slash is added, if missing.
+    """
+
+    @wraps(method)
+    def wrapper(self, *args, **kwargs):
+        value = method(self, *args, **kwargs)
+        if args[0].split(".")[-1] in ["logdir", "tmpdir", "resultdir", "robotdir"]:
+            prefix = self.get("common.path_prefix")
+            if not value.startswith("/") and not prefix.endswith("/"):
+                value = "/" + value
+            value = prefix + value
+        return value
+
+    return wrapper
 
 
 class Config:
@@ -78,6 +100,7 @@ class Config:
             keys[:1] = ["suites", suitename]
         return keys
 
+    @add_path_prefix
     def get(self, name: str, default=None, asdict=False) -> str:
         """Get a value from the object with dot notation.
 
@@ -133,21 +156,6 @@ class Config:
             cur_dict = cur_dict[key]
 
         cur_dict[keys[-1]] = value
-
-    # def set(self, name: str, value: any) -> None:
-    #     """Set a value in the object with dot notation.
-
-    #     Example:
-    #         cfg.set("common.cfgdir", "/etc/check_mk")
-    #     """
-    #     keys = name.split(".")
-    #     cur_dict = self.added_config
-    #     for key in keys[:-1]:
-    #         if not key in cur_dict:
-    #             cur_dict[key] = {}
-    #         cur_dict = cur_dict[key]
-
-    #     cur_dict[keys[-1]] = value
 
     def asdict(self):
         """Returns the config as a dict."""

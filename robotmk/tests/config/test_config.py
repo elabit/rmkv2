@@ -17,6 +17,40 @@ def test_suitecfg_shorthand():
     assert cfg.get("suitecfg.foo.bar") == "baz"
 
 
+def test_path_prefix():
+    """Tests if logdir, tmpdir, resultdir and robotdir are prefixed with the
+    path given in the path_prefix key.
+    This is not needed at all for Windows and not needed on Linux (as there is no common path).
+    But for development, it is nice to have a common path prefix for all paths.
+    """
+    os.environ[
+        "ROBOTMK_common_path__prefix"
+    ] = "/home/simonmeggle/Documents/01_dev/rmkv2"
+    os.environ["ROBOTMK_common_logdir"] = "agent/log/robotmk/logs"
+    os.environ["ROBOTMK_common_tmpdir"] = "agent/tmp/robotmk"
+    os.environ["ROBOTMK_common_resultdir"] = "agent/log/robotmk/results"
+    os.environ["ROBOTMK_common_robotdir"] = "agent/robots"
+    cfg = Config()
+    # read variables from environment
+    cfg.read_cfg_vars(path=None)
+    assert (
+        cfg.get("common.logdir")
+        == "/home/simonmeggle/Documents/01_dev/rmkv2/agent/log/robotmk/logs"
+    )
+    assert (
+        cfg.get("common.tmpdir")
+        == "/home/simonmeggle/Documents/01_dev/rmkv2/agent/tmp/robotmk"
+    )
+    assert (
+        cfg.get("common.resultdir")
+        == "/home/simonmeggle/Documents/01_dev/rmkv2/agent/log/robotmk/results"
+    )
+    assert (
+        cfg.get("common.robotdir")
+        == "/home/simonmeggle/Documents/01_dev/rmkv2/agent/robots"
+    )
+
+
 def test_env2cfg_values():
     """Tests the conversion of environment variables to a config dictionary."""
     # simple values
@@ -26,7 +60,7 @@ def test_env2cfg_values():
     os.environ["ROBOTMK_suites_foo__suite_my__value"] = "qux"
     os.environ["ROBOTMK_suites_foo__suite_run_rcc"] = "false"
     cfg = Config()
-    # now read the variables from environment
+    # read variables from environment
     cfg.read_cfg_vars(path=None)
     assert str(cfg.configdict["common"]["log_level"]) == "INFO"
     assert str(cfg.configdict["common"]["suiteuname"]) == "foo_suite"
@@ -41,7 +75,7 @@ def test_env2cfg_dicts():
     os.environ["ROBOTMK_suites_foo__suite_my__dict_bar"] = "two"
     os.environ["ROBOTMK_suites_foo__suite_my__dict_baz"] = "three"
     cfg = Config()
-    # now read the variables from environment
+    # read variables from environment
     cfg.read_cfg_vars(path=None)
 
     assert cfg.configdict["suites"]["foo_suite"]["my_dict"] == {
@@ -58,7 +92,7 @@ def test_env2cfg_lists():
     os.environ["ROBOTMK_suites_foo__suite_my__list_1"] = "two"
     os.environ["ROBOTMK_suites_foo__suite_my__list_2"] = "three"
     cfg = Config()
-    # now read the variables from environment
+    # read variables from environment
     cfg.read_cfg_vars(path=None)
     assert cfg.configdict["suites"]["foo_suite"]["my_list"] == [
         "one",
@@ -80,7 +114,7 @@ def test_env2cfg_listofdicts():
     os.environ["ROBOTMK_suites_foo__suite_my__list__of__dict_2_bar"] = "two"
     os.environ["ROBOTMK_suites_foo__suite_my__list__of__dict_2_baz"] = "three"
     cfg = Config()
-    # now read the variables from environment
+    # read variables from environment
     cfg.read_cfg_vars(path=None)
     assert cfg.configdict["suites"]["foo_suite"]["my_list_of_dict"] == [
         {"foo": "one", "bar": "two", "baz": "three"},
@@ -123,7 +157,7 @@ def test_read_var_env_cfg():
     os.environ["ROBOTMK_common_cc"] = "4"
     os.environ["ROBOTMK_common_cff"] = "4"
     os.environ["ROBOTMK_common_chhh"] = "4"
-    # now read the variables from environment
+    # read variables from environment
     cfg.read_cfg_vars(path=None)
     # unchanged
     assert str(cfg.configdict["common"]["a"]) == "1"
@@ -187,7 +221,7 @@ def test_config_to_yml():
     os.environ["ROBOTMK_common_c"] = "4"
     os.environ["ROBOTMK_foo_bar_x"] = "44"
     cfg.read_cfg_vars(path=None)
-    # Now read the variables from a file
+    # read variables from a file
     cfg.read_cfg_vars(path=robotmk_env)
     # unchanged
     assert str(cfg.configdict["common"]["a"]) == "1"
