@@ -13,18 +13,6 @@
             "justMyCode": false
         },
         {
-            "name": "Scheduler test",
-            "type": "python",
-            "request": "launch",
-            "program": "${file}",
-            "console": "integratedTerminal",
-            "justMyCode": true,
-            "args": [
-                "-s",
-            ]
-        },
-        //request = test is needed to F11 into foreign code
-        {
             "name": "Pytest Tests",
             "type": "python",
             "request": "test",
@@ -32,14 +20,12 @@
             "console": "integratedTerminal",
             "justMyCode": false
         },
-        {
-            "name": "-------------- Confitree -------------------",
-            "type": "python",
-            "request": "launch",
-            "program": "${file}",
-            "console": "integratedTerminal",
-            "justMyCode": true
-        },
+        //            _           _                           
+        //           (_)         | |                          
+        //  __      ___ _ __   __| | _____      _____         
+        //  \ \ /\ / / | '_ \ / _` |/ _ \ \ /\ / / __|        
+        //   \ V  V /| | | | | (_| | (_) \ V  V /\__ \        
+        //    \_/\_/ |_|_| |_|\__,_|\___/ \_/\_/ |___/        
         {
             "name": "-------------- AGENT (Windows) -------------------",
             "type": "python",
@@ -67,7 +53,12 @@
                 "output"
             ]
         },
-        //---------------------------------------------
+        //   _ _                          
+        //  | (_)                         
+        //  | |_ _ __  _   ___  __        
+        //  | | | '_ \| | | \ \/ /        
+        //  | | | | | | |_| |>  <         
+        //  |_|_|_| |_|\__,_/_/\_\        
         {
             "name": "-------------- AGENT (Linux) -------------------",
             "type": "python",
@@ -85,39 +76,6 @@
             "justMyCode": false
         },
         {
-            "name": "l robotmk w/o args (env:suite)",
-            "type": "python",
-            "request": "launch",
-            "program": "robotmk/src/robotmk/cli/cli.py",
-            "console": "integratedTerminal",
-            "justMyCode": false,
-            "env": {
-                "ROBOTMK_common_context": "suite"
-            }
-        },
-        {
-            "name": "l robotmk w/o args (env:agent)",
-            "type": "python",
-            "request": "launch",
-            "program": "robotmk/src/robotmk/cli/cli.py",
-            "console": "integratedTerminal",
-            "justMyCode": false,
-            "env": {
-                "ROBOTMK_common_context": "agent"
-            }
-        },
-        {
-            "name": "l robotmk agent",
-            "type": "python",
-            "request": "launch",
-            "program": "robotmk/src/robotmk/cli/cli.py",
-            "console": "integratedTerminal",
-            "justMyCode": false,
-            "args": [
-                "agent"
-            ]
-        },
-        {
             "name": "l robotmk agent output",
             "type": "python",
             "request": "launch",
@@ -131,7 +89,7 @@
                 "output"
             ],
             "env": {
-                "ROBOTMK_common_cfgdir": "robotmk/tests/yml/robotmk.yml"
+                "ROBOTMK_common_cfgdir": "robotmk/tests/yml"
             }
         },
         {
@@ -146,19 +104,8 @@
                 "scheduler"
             ],
             "env": {
-                "ROBOTMK_common_cfgdir": "robotmk/tests/yml/robotmk.yml"
+                "ROBOTMK_common_cfgdir": "robotmk/tests/yml"
             }
-        },
-        {
-            "name": "l robotmk specialagent",
-            "type": "python",
-            "request": "launch",
-            "program": "robotmk/src/robotmk/cli/cli.py",
-            "console": "integratedTerminal",
-            "justMyCode": false,
-            "args": [
-                "specialagent"
-            ]
         },
         {
             "name": "l robotmk suite ymldump",
@@ -190,8 +137,8 @@
             ],
             "env": {
                 "ROBOTMK_common_cfgdir": "robotmk/tests/yml",
-                "ROBOTMK_common_suiteuname": "suite_default_rcc"
-                // "ROBOTMK_common_suiteuname": "suite_default"
+                // "ROBOTMK_common_suiteuname": "suite_default_rcc"
+                "ROBOTMK_common_suiteuname": "suite_default"
             }
         },
         {
@@ -228,49 +175,16 @@
                 // "ROBOTMK_common_suiteuname": "suite_default"
             }
         },
-        //---------------------------------------------        
+        //---------------------------------------------
+        //---------------------------------------------
         {
-            "type": "bashdb",
+            "type": "PowerShell",
             "request": "launch",
-            "name": "------------- CTRL -------------------",
+            "name": "---------- robotmk-ctrl.ps1 --------------",
             "cwd": "${workspaceFolder}",
             "program": "${workspaceFolder}/agent/plugins/robotmk-ctrl.sh",
             "args": []
         },
-        {
-            "type": "bashdb",
-            "request": "launch",
-            "name": "Bash robotmk-ctrl.sh",
-            "cwd": "${workspaceFolder}",
-            "program": "${workspaceFolder}/agent/plugins/robotmk-ctrl.sh",
-            "args": [],
-            "env": {
-                "MK_LOGDIR": "/var/log/check_mk_agent",
-                "MK_CONFDIR": "/etc/check_mk",
-                "MK_LIBDIR": "/usr/lib/check_mk_agent",
-                "MK_VARDIR": "/var/lib/check_mk_agent",
-                "MK_BIN": "/usr/bin"
-            }
-        },
-        {
-            "type": "bashdb",
-            "request": "launch",
-            "name": "Bash robotmk-ctrl.sh start 9999",
-            "cwd": "${workspaceFolder}",
-            "program": "${workspaceFolder}/agent/plugins/robotmk-ctrl.sh",
-            "args": [
-                "start",
-                "9999"
-            ],
-            "env": {
-                "MK_LOGDIR": "/var/log/check_mk_agent",
-                "MK_CONFDIR": "/etc/check_mk",
-                "MK_LIBDIR": "/usr/lib/check_mk_agent",
-                "MK_VARDIR": "/var/lib/check_mk_agent",
-                "MK_BIN": "/usr/bin"
-            }
-        },
-        //---------------------------------------------
         {
             "name": "PS robotmk-ctrl.ps1",
             "type": "PowerShell",
@@ -288,15 +202,6 @@
                 "start",
                 "9999"
             ]
-        },
-        //---------------------------------------------
-        {
-            "type": "bashdb",
-            "request": "launch",
-            "name": "---------- robotmk-ctrl.ps1 --------------",
-            "cwd": "${workspaceFolder}",
-            "program": "${workspaceFolder}/agent/plugins/robotmk-ctrl.sh",
-            "args": []
         },
         {
             "name": "PS CMK robotmk-ctrl.ps1",
