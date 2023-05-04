@@ -14,10 +14,14 @@ Keep that in mind when Debugging to choose the proper Debugging config.
 
 ### Quickstart
 
+#### Step 0: optional
+
+Install Pyenv to use a separate Python shim than the default one from your OS.
+
 #### Step 1: Install requirements
 
 - pipenv
--
+
 
 #### Step 2: Create Python environment
 
@@ -29,7 +33,10 @@ After the venv has beend created and entered, install the Robotmk package as *ed
 
 ```
 cd robotmk
+# Linux
 flit install -s
+# Windows (see https://github.com/pypa/flit/issues/325)
+flit install --pth-file
 ```
 
 `robotmk -h` should now be executable.
