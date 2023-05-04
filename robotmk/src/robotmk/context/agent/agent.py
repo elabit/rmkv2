@@ -32,6 +32,7 @@ class AgentContext(AbstractContext):
         # After the defaults are read...
         self.config.set_defaults(defaults)
         # ...lets first search for env vars which point to another location of the robotmk.yml!
+        self.config.read_cfg_vars(path=None)
         self.config.read_yml_cfg(path=kwargs["ymlfile"], must_exist=True)
         # In the end, environment variables can override everything
         self.config.read_cfg_vars(path=None)

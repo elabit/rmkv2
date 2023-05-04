@@ -1,6 +1,8 @@
 """CLI commands for the agent context. 
 
-Executes the Robotmk scheduler on Windows & Linux, produces Checkmk Agent output"""
+Executes the Robotmk scheduler on Windows & Linux, produces Checkmk Agent output.
+A valid YML config file is required. If not given on CLI, the default config
+file location is used."""
 import sys
 import click
 from robotmk.main import Robotmk, DEFAULTS
@@ -18,7 +20,9 @@ from robotmk.main import Robotmk, DEFAULTS
 # use module docstring as help text
 @click.group(help=__doc__, invoke_without_command=True)
 @click.pass_context
-@click.option("--yml", "-y", help="Read config from custom YML file")
+@click.option(
+    "--yml", "-y", help="Read config from custom YML file instead of the default YML"
+)
 
 # @click.option("--vars", "-v", help="Read vars from .env file (ignores environment)")
 def agent(ctx, yml):
