@@ -1,4 +1,4 @@
-# Development notes
+# Development Notes
 
 ## Robotmk Controller (Powershell)
 
@@ -69,6 +69,21 @@ Hint: `agent` context of Robotmk requires a YML file to be loaded, where `suite`
 
 With the environment variables set in step 4, the YML configuration is always loaded from `./robotmk/tests/yml/robotmk.yml`.
 
+### Committing work
+
+[Pre-Commit](https://pre-commit.com) is used to execute hooks before commits can be done to the repo.
+
+The config file `.pre-commit-config.yaml` contains configure hooks for:
+
+- removing trailing whitespace
+- fixing EOF
+- linting YML
+- large file additions
+- black formatting
+
+The hooks are executed automatically before every commit, manual execution can be done with:
+
+    pre-commit run --all-files
 
 ### Release
 
