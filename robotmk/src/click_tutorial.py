@@ -9,7 +9,7 @@ a group is intended to be a set of related commands
 and referring to that argument in the function by the name we pass it
 @click.pass_context tells the group command that we're going to be using
 the context, the context is not visible to the command unless we pass this
- 
+
 In our example we'll name our group "cli"
 """
 

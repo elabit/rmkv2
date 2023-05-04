@@ -4,7 +4,7 @@
 tasks:
   # NOT FOR PRODUCTION
   robotmk-agent-fg:
-    shell: robotmk agent fg    
+    shell: robotmk agent fg
   # controlled by robotmk-ctrl state file
   robotmk-agent:
     shell: robotmk agent bg
@@ -21,7 +21,7 @@ environmentConfigs:
   - environment_darwin_amd64_freeze.yaml
   - conda.yaml
 
-artifactsDir: output  
+artifactsDir: output
 
 PATH:
   - .

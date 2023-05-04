@@ -1,4 +1,4 @@
-"""This module encapsulates everyhting related so a single suite 
+"""This module encapsulates everyhting related so a single suite
 execution, either against a local target (RCC/RF) or against a remote one (API)."""
 
 from uuid import uuid4

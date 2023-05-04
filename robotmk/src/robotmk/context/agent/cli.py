@@ -1,4 +1,4 @@
-"""CLI commands for the agent context. 
+"""CLI commands for the agent context.
 
 Executes the Robotmk scheduler on Windows & Linux, produces Checkmk Agent output.
 A valid YML config file is required. If not given on CLI, the default config

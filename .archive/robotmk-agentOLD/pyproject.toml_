@@ -26,4 +26,3 @@ Repository = "https://github.com/elabit/robotmk"
 
 [project.scripts]
 robotmk = "robotmk.cli:main"
-

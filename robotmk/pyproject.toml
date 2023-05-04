@@ -10,7 +10,7 @@ dynamic = ["version", "description"]
 keywords = ["robotmk", "checkmk", "robotframework", "automation", "monitoring"]
 readme = "README.md"
 dependencies = [
-    "click", 
+    "click",
     "psutil",
     "apscheduler<=4",
     "pyyaml",
@@ -27,5 +27,3 @@ robotmk = "robotmk.cli.cli:main"
 # robotmk-agent
 # robotmk-specialagent (calls internally agent & output!)
 # robotmk-output
-
-

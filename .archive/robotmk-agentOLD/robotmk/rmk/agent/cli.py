@@ -6,9 +6,9 @@ from robotmk.rmk.agent import agent
 @click.command(
     help="""
     Start the Robotmk Agent in background.
-    The agent continuously watches the controller's state file. As soon as the state file 
+    The agent continuously watches the controller's state file. As soon as the state file
     gets outdated, the agent will terminate.
-    
+
     """
 )
 def bg():

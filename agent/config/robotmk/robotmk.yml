@@ -1,8 +1,8 @@
-common: 
+common:
   context: local
   cfgdir: foo
   logdir: bar
-  tmpdir: baz 
+  tmpdir: baz
   resultdir: ban
   log_level: debug
   log_retention: 14
@@ -15,8 +15,8 @@ common:
     user: foo
     password: bar
     url: https://foo/api/v2
-suites: 
-  suiteA_footag: 
+suites:
+  suiteA_footag:
     target: local
     path: suiteA
     tag: footag
@@ -24,30 +24,26 @@ suites:
     shared_python: false
     headless: true
     params:
-      variables: 
+      variables:
         vara: a
         varb: b
     failed_handling:
       max_attempts: 2
-    scheduling: 
+    scheduling:
       interval: 1
       allow_overlap: false
   suite-B:
     target: local
     path: suiteB
     shared_python: false
-    scheduling: 
+    scheduling:
       interval: 2
       allow_overlap: false
   suite-C:
     target: remote
-    scheduling: 
+    scheduling:
       interval: 2
-  suite-D: 
-    target: remote    
-    scheduling: 
+  suite-D:
+    target: remote
+    scheduling:
       interval: 4
-
-
-
-

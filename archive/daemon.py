@@ -23,7 +23,6 @@ class ForkStrategy(ABC):
 
 class LinuxStrategy(ForkStrategy):
     def daemonize(self):
-
         try:
             # FORK I) the child process
             pid = os.fork()

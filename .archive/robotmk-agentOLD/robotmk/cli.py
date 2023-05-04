@@ -8,6 +8,7 @@ from robotmk.rmk.output import cli as output_cli
 
 import robotmk.rmk as rmk
 
+
 # TODO: options do not work here
 # @click.option('--version', is_flag=True, help="Print version and exit")
 # @click.option('--verbose', is_flag=True, help="Enable verbose mode")

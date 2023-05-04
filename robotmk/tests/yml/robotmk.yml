@@ -1,4 +1,4 @@
-common: 
+common:
   context: local
   logdir: agent/log/robotmk
   tmpdir: agent/tmp/robotmk
@@ -7,17 +7,17 @@ common:
   log_level: INFO
   log_retention: 13
   #robocorp_home: TODO
-suites: 
-  suite_default: 
+suites:
+  suite_default:
     path: suiteA
     tag: footag
-    piggybackhost: 
+    piggybackhost:
     run:
       target: local
       mode: default
       rcc: false
     params:
-      variable: 
+      variable:
         vara: a
         varb: b
     retry_failed:
@@ -32,11 +32,11 @@ suites:
         #        suite:
         #        - suite1
         #        test:
-        #        - sfdgsdf      
-    scheduling: 
+        #        - sfdgsdf
+    scheduling:
       interval: 10
       allow_overlap: false
-  suite_default_rcc: 
+  suite_default_rcc:
     path: suiteA
     tag: footag
     piggybackhost: fff
@@ -45,7 +45,7 @@ suites:
       mode: default
       rcc: true
     params:
-      variable: 
+      variable:
         vara: a
         varb: b
     retry_failed:
@@ -60,71 +60,70 @@ suites:
         #        - suite1
         #        test:
         #        - sfdgsdf
-    scheduling: 
+    scheduling:
       interval: 10
-      allow_overlap: false       
-  suite_remote_dummy1: 
+      allow_overlap: false
+  suite_remote_dummy1:
     path: suiteA
     tag: footag
     piggybackhost: pbhost_bremen
     run:
       target: remote
     params:
-      variable: 
+      variable:
         vara: a
         varb: b
     retry_failed:
       retry_attempts: 2
       strategy: incremental
-    scheduling: 
+    scheduling:
       interval: 10
-      allow_overlap: false       
-  suite_remote_dummy2: 
+      allow_overlap: false
+  suite_remote_dummy2:
     path: suiteA
     tag: footag
     piggybackhost: pbhost_muenchen
     run:
       target: remote
     params:
-      variable: 
+      variable:
         vara: a
         varb: b
     retry_failed:
       retry_attempts: 2
       strategy: incremental
-    scheduling: 
+    scheduling:
       interval: 10
-      allow_overlap: false       
-  suite_remote_dummy3: 
+      allow_overlap: false
+  suite_remote_dummy3:
     path: suiteA
     tag: footag
     piggybackhost: pbhost_augsburg
     run:
       target: remote
     params:
-      variable: 
+      variable:
         vara: a
         varb: b
     retry_failed:
       retry_attempts: 2
       strategy: incremental
-    scheduling: 
+    scheduling:
       interval: 10
-      allow_overlap: false       
-  suite_remote_dummy4: 
+      allow_overlap: false
+  suite_remote_dummy4:
     path: suiteA
     tag: footag
     piggybackhost: pbhost_bonn
     run:
       target: remote
     params:
-      variable: 
+      variable:
         vara: a
         varb: b
     retry_failed:
       retry_attempts: 2
       strategy: incremental
-    scheduling: 
+    scheduling:
       interval: 10
-      allow_overlap: false       
-
+      allow_overlap: false
