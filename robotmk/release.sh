@@ -17,6 +17,12 @@ else
     msg=$2
 fi
 
+# check if bumpversion is installed
+if ! command -v bumpversion &>/dev/null; then
+    echo "bumpversion could not be found. Please install before. Exiting..."
+    exit 1
+fi
+
 pushd "$PKG_ROOT" || exit
 
 # check if there are any uncommitted changes
@@ -36,8 +42,6 @@ else
         echo "Git is clean. Proceeding..."
     fi
 fi
-
-exit
 
 bumpversion $part --tag --commit &&
     git push &&
