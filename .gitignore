@@ -7,3 +7,5 @@ robotmk-agent/dist/*
 agent/tmp/*
 agent/log/*
 dist
+.stignore
+.stversions
