@@ -1,4 +1,4 @@
-"""This module provides a simple way to read configuration from different sources: 
+"""This module provides a simple way to read configuration from different sources:
 - YML file
 - variables file
 - environment variables
@@ -9,7 +9,7 @@ There is a special order in which the sources are read:
     - the default config file (robotmk.yml)
     OR
     - a custom config file (given as parameter --yml)
-- 3. variables from 
+- 3. variables from
     - variable file (given as parameter --vars)
     AND
     - environment variables (ROBOTMK_*)
@@ -37,9 +37,9 @@ from functools import wraps
 
 # from collections import namedtuple
 from pathlib import Path
-from .yml import RobotmkConfigSchema
 
 # TODO: add YML config validation
+# from .yml import RobotmkConfigSchema
 # ["%s:%s" % (v, os.environ[v]) for v in os.environ if v.startswith("ROBO")]
 
 
@@ -71,9 +71,7 @@ def add_path_prefix(method):
             "tmpdir",
             "resultdir",
             "robotdir",
-        ] and not value.startswith(
-            "/"
-        ):  # paths which start with a slash are absolute
+        ] and not os.path.isabs(value):
             prefix = self.get("common.path_prefix", None)
             if prefix:
                 if not prefix.endswith("/"):
@@ -314,12 +312,12 @@ class Config:
                 raise FileNotFoundError(f"Could not read environment file: {file}")
         return r
 
-    def validate(self, schema: RobotmkConfigSchema):
-        """Validates the whole config according to the given context schema."""
+    # def validate(self, schema: RobotmkConfigSchema):
+    #     """Validates the whole config according to the given context schema."""
 
-        schema = RobotmkConfigSchema(self.configdict)
-        if not schema.validate():
-            raise ValueError(f"Config is invalid: {schema.error}")
+    #     schema = RobotmkConfigSchema(self.configdict)
+    #     if not schema.validate():
+    #         raise ValueError(f"Config is invalid: {schema.error}")
 
     @staticmethod
     def partition_at_digit(s):
