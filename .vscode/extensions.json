@@ -1,0 +1,14 @@
+{
+    "recommendations": [
+        "shalimski.swapdiff",
+        "ms-vscode.powershell",
+        "almenon.arepl",
+        "canna.figlet",
+        "oderwat.indent-rainbow",
+        "yzhang.markdown-all-in-one",
+        "bierner.markdown-mermaid",
+        "mdickin.markdown-shortcuts",
+        "njqdev.vscode-python-typehint",
+        "gruntfuggly.todo-tree"
+    ]
+}
