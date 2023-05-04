@@ -4,19 +4,9 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-click = "*"
-bumpversion = "*"
-psutil = "*"
-apscheduler = "<4"
-pyyaml = "*"
-mergedeep = "*"
-dotmap = "*"
-loguru = "*"
-robotframework = "*"
-tabulate = "*"
-schema = "*"
 
 [dev-packages]
+bumpversion = "*"
 pre-commit = "*"
 black = "*"
 flit = "*"
