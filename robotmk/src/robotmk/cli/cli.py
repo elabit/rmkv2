@@ -1,8 +1,8 @@
-"""Robotmk CLI Interface. 
+"""Robotmk CLI Interface.
 
-Start Robotmk in different contexts.
-Context command can also be set via environment variable ROBOTMK_common_context."""
+Start Robotmk in different contexts. Context can also be set via environment variable ROBOTMK_common_context."""
 import click
+from robotmk import __version__
 from robotmk.main import Robotmk, DEFAULTS, LOG_LEVELS
 import importlib
 import pkgutil
@@ -86,6 +86,12 @@ def get_commands_from_pkg(pkg) -> dict:
 def main(ctx, loglevel):
     if ctx.invoked_subcommand is None:
         click.echo(ctx.get_help())
+
+
+@main.command()
+def version():
+    """Shows the version number."""
+    click.secho(__version__)
 
 
 @main.command()
