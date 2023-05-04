@@ -14,15 +14,16 @@ dotmap = "*"
 loguru = "*"
 robotframework = "*"
 tabulate = "*"
+schema = "*"
 
 [dev-packages]
+pre-commit = "*"
 black = "*"
 flit = "*"
 pip = "*"
 ipython = "*"
 ipdb = "*"
 pytest = "*"
-schema = "*"
 
 [requires]
 python_version = "3.10"
