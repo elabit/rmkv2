@@ -47,6 +47,7 @@ bumpversion $part --tag --commit &&
     git push &&
     git push --tags
 
-flit publish
+# TODO: enable again
+#flit publish
 
 popd || exit

@@ -81,6 +81,7 @@ The config file `.pre-commit-config.yaml` contains configure hooks for:
 - large file additions
 - black formatting
 
+
 The hooks are executed automatically before every commit, manual execution can be done with:
 
     pre-commit run --all-files
