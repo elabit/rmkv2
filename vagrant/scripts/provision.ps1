@@ -1,7 +1,7 @@
 iex ((new-object net.webclient).DownloadString('https://chocolatey.org/install.ps1'))
 
 choco install -y python --version 3.10.6
-choco install -y vscode git.install 7zip sysinternals firefox googlechrome sandboxie synctrayzor microsoft-windows-terminal
+choco install -y vscode git.install 7zip sysinternals firefox googlechrome sandboxie synctrayzor meld
 
 $o = new-object -com shell.application
 $o.Namespace('C:\ProgramData\chocolatey\lib\sysinternals\tools').Self.InvokeVerb("SysInternals")

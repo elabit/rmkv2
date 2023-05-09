@@ -1,17 +1,8 @@
-# For more details on the format and content:
-# https://github.com/robocorp/rcc/blob/master/docs/recipes.md#what-is-in-robotyaml
-
 tasks:
-  # NOT FOR PRODUCTION
-  robotmk-agent-fg:
-    shell: robotmk agent fg
-  # controlled by robotmk-ctrl state file
-  robotmk-agent:
-    shell: robotmk agent bg
-  robotmk-output:
-    shell: robotmk output
-  test:
-    shell: python -c "import sys;sys.exit(200)"
+  agent-scheduler:
+    shell: robotmk agent scheduler
+  agent-output:
+    shell: robotmk agent output
 
 condaConfigFile: conda.yaml
 

@@ -25,17 +25,17 @@ DEFAULTS = {
     },
     # Default values for the "common" config section (Windows)
     "nt": {
-        "cfgdir": "C:/ProgramData/checkmk/agent/config",  # where to find robotmk.yml
-        "robotdir": "C:/ProgramData/checkmk/agent/robot",
+        "cfgdir": "C:/ProgramData/checkmk/agent/config/robotmk",  # where to find robotmk.yml
         "logdir": "C:/ProgramData/checkmk/agent/log/robotmk/",
         "tmpdir": "C:/ProgramData/checkmk/agent/tmp/robotmk",
+        "robotdir": "C:/ProgramData/checkmk/agent/robot",
     },
     # Default values for the "common" config section (Linux)
     "posix": {
         "cfgdir": "/etc/check_mk",  # where to find robotmk.yml
-        "robotdir": "/usr/lib/check_mk_agent/robot",
         "logdir": "/var/log/robotmk",
         "tmpdir": "/tmp/robotmk",
+        "robotdir": "/usr/lib/check_mk_agent/robot",
     },
 }
 
