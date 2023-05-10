@@ -2,9 +2,48 @@
 
 ## Robotmk Controller (Powershell)
 
-VS Code
-The script has CLI options for `robotmk-ctrl.ps1` (CMK Agent Plugin & call by user) as well as options for `RobotmkAgent.ps1` when called by the Service Control Manager.
+Both scripts, `robotmk-ctrl.ps1` and `RobotmkAgent.ps1` should be debugged with Admin privileges, because the first one creates the service and the second one is a service. (-> Open Admin Powershell / Start VS Code with admin privileges)
+
+For development, the env variable `ROBOTMK_common_path__prefix` should be set; it sets the paths of `/config`, `log` and `tmp` below of the `/agent` dir within this project.
+
+`robotmk-ctrl.ps1` is the base script for two types of executions:
+- initially called by the CMK Agent as a Plugin (or called by the user). It copies itself to `RobotmkAgent.ps1` outside the Agent dir and installs the Robotmk Windows Service.
+- called by the Windows Service Control Manager (SCM) as `RobotmkAgent.ps1`, after it was copied outside of the Agent dir
+-
 Keep that in mind when Debugging to choose the proper Debugging config.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant agent as CMK Agent
+    participant ctrlps as robotmk-ctrl.ps1
+    participant deadmanfile
+    participant agentps as RobotmkAgent.ps1
+    participant cstub as RobotmkAgent.exe
+    participant service as RobotmkAgent service
+
+    agent->>ctrlps:-Start
+    Note over ctrlps: Instance 1
+    ctrlps->>+deadmanfile: touch
+    ctrlps->>+agentps: copy self to
+    ctrlps->>cstub: create stub
+    ctrlps->>service: start
+    service->>cstub: OnStart()
+    Note over cstub: 9833fa
+    cstub->>agentps: -SCMStart
+    Note over agentps: Inst. 2 / 825fb1
+    agentps->>agentps: -Service
+    Note over agentps: Inst. 3 / bba3224
+    agentps->>agentps: -Run
+    Note over agentps: Inst. 4 / 9177b1b<br/>Suite execution loop
+```
+
+```
+#(ADMIN)
+PS> robotmk-ctrl.ps1 -Status
+PS> robotmk-ctrl.ps1 -Remove
+PS> robotmk-ctrl.ps1 -Setup
+```
 
 
 ---
@@ -45,17 +84,27 @@ flit install --pth-file
 
 By default, Robotmk assumes the following default configuration:
 - Windows:
-  - `cfgdir`: `C:/ProgramData/checkmk/agent/config` (=> `robotmk.yml`)
-  - `robotdir`: `C:/ProgramData/checkmk/agent/robot`
+  - `cfgdir`: `C:/ProgramData/checkmk/agent/config/robotmk` (=> `robotmk.yml`)
   - `logdir`: `C:/ProgramData/checkmk/agent/log/robotmk`
-- Linux:
+  - `robotdir`: `C:/ProgramData/checkmk/agent/robot`
+  - `tmpdir`: `C:/ProgramData/checkmk/agent/tmp/robotmk`
+- Linux: (TBD)
   - `cfgdir`: `/etc/check_mk` (=> `robotmk.yml`)
-  - `robotdir`: `/usr/lib/check_mk_agent/robot`,
   - `logdir`: `/var/log/robotmk`
+  - `robotdir`: `/usr/lib/check_mk_agent/robot`,
 
 `robotmk.yml` is the central configuration file. It can be read from another location and/or certain keys can be overriden by environment variables.
 
-If `ROBOTMK_common_path__prefix` is set, it prefixes path configuration values (`cfgdir`,`logdir`,`tmpdir`,`resultdir` and `robotdir`), if they are set *relative*. (Absolute paths are always taken as they are).
+For development, the env variable `ROBOTMK_common_path__prefix` can be set. It defines a common path prefix for the following dirs:
+
+- Windows:
+  -  `cfgdir` => `config/robotmk`
+  -  `logdir` => `log/robotmk`
+  -  `robotdir` => `robot`
+  -  `tmpdir` => `tmp`
+- Linux:
+  -
+ `cfgdir`,`logdir`,`tmpdir` and `robotdir`), if they are set *relative*. (Absolute paths are always taken as they are).
 
 For local development you need to set these two environment variables:
 
@@ -63,7 +112,7 @@ For local development you need to set these two environment variables:
 # set path prefix
 export ROBOTMK_common_path__prefix="/home/simonmeggle/Documents/01_dev/rmkv2"
 # set relative path to robotmk.yml
-export ROBOTMK_common_cfgdir="robotmk/tests/yml"
+export ROBOTMK_common_cfgdir="agent/config/robotmk"
 ```
 
 See `robotmk/.cli.env` for an example.
@@ -108,3 +157,11 @@ The following files are updated automatically on each release:
 
 - `src/robotmk/__init__.py` => `__version__` variable
 - `../agent/robots/suiteA/conda.yaml` => Robotmk package version to install inside of RCC runs
+
+
+## Debugging helper
+
+Watch the last lines of the result JSON:
+```
+watch -n 1 -d "tail ../agent/log/robotmk/results/suite_default*"
+```
