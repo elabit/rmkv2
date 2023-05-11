@@ -999,7 +999,6 @@ function GetCondaBlueprint {
       exit 1
     }
   }
-
 }
 
 function CatalogContainsAgentBlueprint {
@@ -1086,7 +1085,6 @@ function RCCEnvironmentCreate {
   else {
     LogError "RCC environment creation for Robotmk agent FAILED for some reason."
   }
-
 }
 
 function RCCImportHololib {
@@ -1099,6 +1097,12 @@ function RCCImportHololib {
   $p = Start-Process -Wait -FilePath $RCCExe -ArgumentList $Arguments
   $p.StandardOutput
   $p.StandardError
+}
+
+function RCCDisableTelemetry {
+  LogDebug "Disabling RCC telemetry..."
+  $Arguments = "configure identity --do-not-track"
+  Start-Process -Wait -FilePath $RCCExe -ArgumentList $Arguments
 }
 
 function RCCEnvNeedsUpdate {
@@ -1134,6 +1138,7 @@ function RCCIsAvailable {
   # Check if the RCCExe binary is present. If not, download it.
   if (Test-Path $RCCExe) {
     LogDebug "RCC.exe found at $RCCExe."
+    RCCDisableTelemetry
     return $true
   }
   else {
@@ -1200,10 +1205,10 @@ function RunRobotmkTask {
   $Arguments = "task run --controller $rcc_ctrl_rmk --space $space -t $rcctask -r $robot_yml"
   LogDebug "!!  $RCCExe $Arguments"
   $ret = Invoke-Process -FilePath $RCCExe -ArgumentList $Arguments
-  # -------------------------------------
-  # --- ROBOTMK AGENT IS RUNNING HERE ---
-  # ------------- DAEMONIZED ------------
-  # -------------------------------------
+  # -----------------------------------------
+  # --- ROBOTMK SCHEDULER IS RUNNING HERE ---
+  # --------------- DAEMONIZED --------------
+  # -----------------------------------------
   # TODO: Use this generic function to start both scheduler and output (which returns!)
 
   # We reach this point when the RCC task has been terminated.
