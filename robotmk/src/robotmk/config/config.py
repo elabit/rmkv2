@@ -88,6 +88,7 @@ def add_path_prefix(method):
 class Config:
     def __init__(self, envvar_prefix: str = "ROBOTMK", initdict: dict = {}):
         self.envvar_prefix = envvar_prefix
+        self.envvar_prefix_lower = envvar_prefix.lower()
         if initdict:
             self.default_cfg = initdict
         else:
@@ -280,7 +281,7 @@ class Config:
         """
         vardict = {}
         for k, v in os.environ.items():
-            if k.startswith(self.envvar_prefix):
+            if k.lower().startswith(self.envvar_prefix_lower):
                 # check if the value is a boolean and convert it to a boolean
                 if v.lower() in ("true", "false"):
                     v = v.lower() == "true"
@@ -306,7 +307,7 @@ class Config:
                                 line = line.partition(" ")[2]
                             # Split each line into a key-value pair
                             key, value = line.strip().split("=")
-                            if key.startswith(self.envvar_prefix):
+                            if key.lower().startswith(self.envvar_prefix_lower):
                                 r[key] = value
             except Exception as e:
                 raise FileNotFoundError(f"Could not read environment file: {file}")
@@ -429,7 +430,7 @@ class Config:
         """
 
         # Remove the ROBOTMK_ prefix
-        varname = o_varname.replace(self.envvar_prefix + "_", "")
+        varname = o_varname.replace(self.envvar_prefix_lower + "_", "")
         Config.uscore_str2dict(varname, value, vdict)
         return vdict
 

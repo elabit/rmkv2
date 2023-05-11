@@ -84,12 +84,12 @@ By default, Robotmk assumes the following default configuration:
 - Windows:
   - `cfgdir`: `C:/ProgramData/checkmk/agent/config/robotmk` (=> `robotmk.yml`)
   - `logdir`: `C:/ProgramData/checkmk/agent/log/robotmk`
-  - `robotdir`: `C:/ProgramData/checkmk/agent/robot`
+  - `robotdir`: `C:/ProgramData/checkmk/agent/robots`
   - `tmpdir`: `C:/ProgramData/checkmk/agent/tmp/robotmk`
 - Linux: (TBD)
   - `cfgdir`: `/etc/check_mk` (=> `robotmk.yml`)
   - `logdir`: `/var/log/robotmk`
-  - `robotdir`: `/usr/lib/check_mk_agent/robot`,
+  - `robotdir`: `/usr/lib/check_mk_agent/robots`,
 
 `robotmk.yml` is the central configuration file. It can be read from another location and/or certain keys can be overriden by environment variables.
 
@@ -98,7 +98,7 @@ For development, the env variable `ROBOTMK_common_path__prefix` can be set. It d
 - Windows:
   -  `cfgdir` => `config/robotmk`
   -  `logdir` => `log/robotmk`
-  -  `robotdir` => `robot`
+  -  `robotdir` => `robots`
   -  `tmpdir` => `tmp`
 - Linux:
   -
@@ -107,10 +107,11 @@ For development, the env variable `ROBOTMK_common_path__prefix` can be set. It d
 For local development you need to set these two environment variables:
 
 ```
-# set path prefix
-export ROBOTMK_common_path__prefix="/home/simonmeggle/Documents/01_dev/rmkv2"
+# path prefix
+export ROBOTMK_common_path__prefix="/home/simonmeggle/Documents/01_dev/rmkv2/agent"
 # set relative path to robotmk.yml
-export ROBOTMK_common_cfgdir="agent/config/robotmk"
+export ROBOTMK_common_cfgdir="config/robotmk"
+
 ```
 
 See `robotmk/.cli.env` for an example.

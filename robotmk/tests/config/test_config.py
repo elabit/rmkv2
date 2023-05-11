@@ -25,11 +25,11 @@ def test_path_prefix():
     """
     os.environ[
         "ROBOTMK_common_path__prefix"
-    ] = "/home/simonmeggle/Documents/01_dev/rmkv2"
-    os.environ["ROBOTMK_common_logdir"] = "agent/log/robotmk/logs"
-    os.environ["ROBOTMK_common_tmpdir"] = "agent/tmp/robotmk"
-    os.environ["ROBOTMK_common_resultdir"] = "agent/log/robotmk/results"
-    os.environ["ROBOTMK_common_robotdir"] = "agent/robots"
+    ] = "/home/simonmeggle/Documents/01_dev/rmkv2/agent"
+    os.environ["ROBOTMK_common_logdir"] = "log/robotmk/logs"
+    os.environ["ROBOTMK_common_tmpdir"] = "tmp/robotmk"
+    os.environ["ROBOTMK_common_resultdir"] = "log/robotmk/results"
+    os.environ["ROBOTMK_common_robotdir"] = "robots"
     cfg = Config()
     # read variables from environment
     cfg.read_cfg_vars(path=None)
