@@ -18,32 +18,20 @@ def test_suitecfg_shorthand():
 
 
 def test_path_prefix():
-    """Tests if logdir, tmpdir, resultdir and robotdir are prefixed with the
-    path given in the path_prefix key.
-    This is not needed at all for Windows and not needed on Linux (as there is no common path).
-    But for development, it is nice to have a common path prefix for all paths.
-    """
     os.environ[
         "ROBOTMK_common_path__prefix"
     ] = "/home/simonmeggle/Documents/01_dev/rmkv2/agent"
-    os.environ["ROBOTMK_common_logdir"] = "log/robotmk/logs"
-    os.environ["ROBOTMK_common_tmpdir"] = "tmp/robotmk"
-    os.environ["ROBOTMK_common_resultdir"] = "log/robotmk/results"
-    os.environ["ROBOTMK_common_robotdir"] = "robots"
+
     cfg = Config()
     # read variables from environment
     cfg.read_cfg_vars(path=None)
     assert (
         cfg.get("common.logdir")
-        == "/home/simonmeggle/Documents/01_dev/rmkv2/agent/log/robotmk/logs"
+        == "/home/simonmeggle/Documents/01_dev/rmkv2/agent/log/robotmk"
     )
     assert (
         cfg.get("common.tmpdir")
         == "/home/simonmeggle/Documents/01_dev/rmkv2/agent/tmp/robotmk"
-    )
-    assert (
-        cfg.get("common.resultdir")
-        == "/home/simonmeggle/Documents/01_dev/rmkv2/agent/log/robotmk/results"
     )
     assert (
         cfg.get("common.robotdir")

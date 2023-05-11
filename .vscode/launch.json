@@ -85,10 +85,7 @@
             "args": [
                 "agent",
                 "output"
-            ],
-            "env": {
-                "ROBOTMK_common_cfgdir": "robotmk/tests/yml"
-            }
+            ]
         },
         {
             "name": "l robotmk agent scheduler",
@@ -100,10 +97,7 @@
             "args": [
                 "agent",
                 "scheduler"
-            ],
-            "env": {
-                "ROBOTMK_common_cfgdir": "robotmk/tests/yml"
-            }
+            ]
         },
         {
             "name": "l robotmk suite ymldump",

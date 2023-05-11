@@ -29,11 +29,18 @@ sequenceDiagram
     service->>cstub: OnStart()
     Note over cstub: 9833fa
     cstub->>agentps: -SCMStart
-    Note over agentps: Inst. 2 / 825fb1
+
+    rect rgb(43, 43, 43)
+    Note right of agentps: SCM Execution
     agentps->>agentps: -Service
-    Note over agentps: Inst. 3 / bba3224
+    rect rgb(60,60,60)
+    Note right of agentps: Service execution
     agentps->>agentps: -Run
-    Note over agentps: Inst. 4 / 9177b1b<br/>Suite execution loop
+    rect rgb(70,70,70)
+    Note right of agentps: Scheduler execution
+    end %%SCM
+    end %%Service
+    end %%Run
 ```
 
 ```

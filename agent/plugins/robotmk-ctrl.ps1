@@ -57,7 +57,8 @@ $argv0 = Get-Item $MyInvocation.MyCommand.Definition
 $script = $argv0.basename               # Ex: PSService
 $scriptName = $argv0.name               # Ex: PSService.ps1
 $scriptFullName = $argv0.fullname       # Ex: C:\Temp\PSService.ps1
-
+$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path   # Ex: C:\Temp
+$scriptVarfile = "$script.env"
 
 #$scriptname = (Get-Item -Path $MyInvocation.MyCommand.Path).PSChildName
 # read mode from args or set to 0
@@ -406,18 +407,22 @@ function RMKAgentServiceScriptNeedsUpdate {
 function RMKAgentInstall {
   # Install the service
   # Check if the Service uses an outdated script file
-  LogInfo "Installing Files for service $RMKAgentServiceName..."
+  LogInfo "Installing the following files for service $RMKAgentServiceName into $RMKAgentInstallDir :"
   if (!(Test-Path $RMKAgentInstallDir)) {
     New-Item -ItemType directory -Path $RMKAgentInstallDir | Out-Null
   }
   # RobotmkAgent.ps1: Copy the service script into the installation directory
   if ($ScriptFullName -ne $RMKAgentFullName) {
-    LogDebug "Installing $ScriptFullName as the Service Executable into $RMKAgentFullName"
+    LogInfo "- Copying myself to $ScriptName"
     Copy-Item $ScriptFullName $RMKAgentFullName
   }
+  # RobotmkAgent.ps1.env: store the environment variables because they are not known to the service
+  WriteRMKVars $RMKAgentInstallDir $RMKAgent
+
+
   # RobotmkAgent.exe: Generate the binary the C# source embedded in this script
   try {
-    LogDebug "Installing C# Service Stub $RMKAgentExeFullName"
+    LogDebug "- Installing C# Service Stub $RMKAgentExeName"
     # Uncomment the following line to debug the C# stub into a text file
     #$source | Out-File "${RMKAgentExeFullName}_csharp.txt"
     # The C code in $source contains variables which are replaced and
@@ -553,17 +558,15 @@ function RMKAgentRemove {
   finally {
     # Remove the installed files
     if (Test-Path $RMKAgentInstallDir) {
-      foreach ($ext in ("exe", "pdb", "ps1")) {
+      foreach ($ext in ("exe", "pdb", "ps1", "env")) {
         $file = "$RMKAgentInstallDir\$RMKAgentServiceName.$ext"
         if (Test-Path $file) {
-          LogDebug "Deleting file $file"
+          LogDebug "- Deleting file $file"
           Remove-Item $file
         }
       }
-      if (!(@(Get-ChildItem $RMKAgentInstallDir -ea SilentlyContinue)).Count) {
-        LogDebug "Removing Agent service directory $RMKAgentInstallDir"
-        Remove-Item $RMKAgentInstallDir
-      }
+      LogDebug "- Removing Agent service directory $RMKAgentInstallDir"
+      Remove-Item $RMKAgentInstallDir -Force -Recurse
     }
   }
 }
@@ -712,8 +715,7 @@ function RMKAgent {
     }
     else {
       # otherwise, try to create the environment
-      LogWarn "RCC environment is NOT ready to use."
-      LogWarn "Will now try to create a new RCC environment."
+      LogWarn "RCC environment is NOT (yet) ready to use; must create a new one."
       CreateRCCEnvironment $blueprint
     }
     # Run, Scheduler! (Starts the RCC task "scheduler")
@@ -958,16 +960,16 @@ function IsRCCEnvReady {
   )
 
   if ((CatalogContainsAgentBlueprint $blueprint) -and (HolotreeContainsAgentSpaces $blueprint)) {
-    if (IsFlagfilePresent $Flagfile_RCC_env_robotmk_ready) {
+    if (IsFlagfilePresent $Flagfile_RCC_env_robotmk_created) {
       return $true
     }
     else {
-      TouchFile $Flagfile_RCC_env_robotmk_ready	 "RCC env ready flagfile"
+      TouchFile $Flagfile_RCC_env_robotmk_created	 "RCC env ready flagfile"
       return $true
     }
   }
   else {
-    RemoveFlagfile $Flagfile_RCC_env_robotmk_ready
+    RemoveFlagfile $Flagfile_RCC_env_robotmk_created
     return $false
   }
 }
@@ -1094,15 +1096,14 @@ function RCCImportHololib {
     [string]$hololib_zip
   )
   $Arguments = "holotree import $hololib_zip"
-  $p = Start-Process -Wait -FilePath $RCCExe -ArgumentList $Arguments
+  $p = Start-Process -Wait -FilePath $RCCExe -ArgumentList $Arguments -NoNewWindow
   $p.StandardOutput
   $p.StandardError
 }
 
 function RCCDisableTelemetry {
   LogDebug "Disabling RCC telemetry..."
-  $Arguments = "configure identity --do-not-track"
-  Start-Process -Wait -FilePath $RCCExe -ArgumentList $Arguments
+  & $RCCExe "configure", "identity", "--do-not-track"
 }
 
 function RCCEnvNeedsUpdate {
@@ -1164,15 +1165,15 @@ function CreateRCCEnvironment {
     [Parameter(Mandatory = $True)]
     [string]$blueprint
   )
-  RemoveFlagfile $Flagfile_RCC_env_robotmk_ready
+  RemoveFlagfile $Flagfile_RCC_env_robotmk_created
   TouchFile $Flagfile_RCC_env_creation_in_progress "RCC creation state file"
-  if (Test-Path ($hololip_zip)) {
-    LogInfo "$hololip_zip found, importing it"
-    RCCImportHololib "$hololip_zip"
+  if (Test-Path ($hololib_zip)) {
+    LogInfo "$hololib_zip found, importing it"
+    RCCImportHololib "$hololib_zip"
     # TODO: after import, create spaces for agent /output
   }
   else {
-    LogInfo "Catalog must be created from network ($hololip_zip not found)"
+    LogInfo "No hololib found for this environment; creating from sources..."
     # Create a separate Holotree Space for agent and output
     RCCEnvironmentCreate $robot_yml $rcc_ctrl_rmk $rcc_space_rmk_scheduler
     RCCEnvironmentCreate $robot_yml $rcc_ctrl_rmk $rcc_space_rmk_output
@@ -1181,7 +1182,7 @@ function CreateRCCEnvironment {
   # Watch the progress with `rcc ht list` and `rcc ht catalogs`. First the catalog is created, then
   # both spaces.
   if (CatalogContainsAgentBlueprint $blueprint) {
-    TouchFile $Flagfile_RCC_env_robotmk_ready "RCC env ready flagfile"
+    TouchFile $Flagfile_RCC_env_robotmk_created "RCC env ready flagfile"
     RemoveFlagfile $Flagfile_RCC_env_creation_in_progress
     LogInfo "OK: Environments for Robotmk created and ready to use."
   }
@@ -1472,7 +1473,8 @@ function SetScriptVars {
   $Global:RMKAgentExeFullName = "$RMKAgentInstallDir\$RMKAgentExeName"
   $Global:RMKAgentPipeName = "Service_$RMKAgentServiceName"
 
-  # PDataCMKAgent is the "agent" dir below of the checkmk installation dir.
+  # if there is a varfile, read these ROBOTMK vars into env
+  ReadRMKVars
 
   if ($env:ROBOTMK_COMMON_path__prefix) {
     # DEVELOPER ZONE ===
@@ -1686,11 +1688,50 @@ function SetScriptVars {
     }
   }
 "@
-
-
 }
 
 
+function WriteRMKVars {
+  param(
+    [Parameter()]
+    [ValidateNotNullOrEmpty()]
+    [string]$Directory,
+    [Parameter()]
+    [ValidateNotNullOrEmpty()]
+    [string]$file
+  )
+  # Write all known ROBOTMK_ variables into a file (default: same location as the script).
+  $RMKVars = Get-ChildItem -Path env: | Where-Object { $_.Name -like "ROBOTMK_*" }
+
+
+  if ($RMKVars.Count -eq 0) {
+    LogDebug "No variables to store."
+  }
+  else {
+    LogInfo "- Writing $($RMKVars.Count) environment vars into ${file}.env"
+    $content = $RMKVars | ForEach-Object { "$($_.Name)=$($_.Value)" }
+    $file = "$Directory\${file}.env"
+    $content | Out-File -FilePath $file -Encoding ascii
+  }
+}
+
+function ReadRMKVars {
+  # Checks if there is a varfile at the same location as the script, and if so, reads it into the environment.
+  # The varfile is a PowerShell script that sets variables.
+  $file = $scriptDir + "\" + $scriptVarfile
+  if (Test-Path $file) {
+    $fileContent = Get-Content -Path $file
+    $fileContent | ForEach-Object {
+      # ROBOTMK_var_name=foobar
+      if ($_ -match "^\s*(?<varname>ROBOTMK_\w+)\s*=\s*(?<varvalue>.*)") {
+        $varname = $Matches["varname"]
+        $varvalue = $Matches["varvalue"]
+        #LogDebug "Setting $varname=$varvalue"
+        Set-Item -Path env:$varname -Value $varvalue
+      }
+    }
+  }
+}
 
 
 #   _      ____   _____
@@ -1747,25 +1788,19 @@ function LogInfo {
   param(
     [Parameter()]
     [ValidateNotNullOrEmpty()]
-    [string]$Message,
-    [Parameter()]
-    [ValidateNotNullOrEmpty()]
-    [string]$file = "$RMKLogfile"
+    [string]$Message
   )
-  Log "INFO" $Message $file
+  Log "INFO" $Message
 }
 
 function LogDebug {
   param(
     [Parameter()]
     [ValidateNotNullOrEmpty()]
-    [string]$Message,
-    [Parameter()]
-    [ValidateNotNullOrEmpty()]
-    [string]$file = "$RMKLogfile"
+    [string]$Message
   )
   if ($DEBUG) {
-    Log "DEBUG" $Message $file
+    Log "DEBUG" $Message
   }
 
 }
@@ -1774,34 +1809,25 @@ function LogError {
   param(
     [Parameter()]
     [ValidateNotNullOrEmpty()]
-    [string]$Message,
-    [Parameter()]
-    [ValidateNotNullOrEmpty()]
-    [string]$file = "$RMKLogfile"
+    [string]$Message
   )
-  Log "ERROR" $Message $file
+  Log "ERROR" $Message
 }
 
 function LogWarn {
   param(
     [Parameter()]
     [ValidateNotNullOrEmpty()]
-    [string]$Message,
-    [Parameter()]
-    [ValidateNotNullOrEmpty()]
-    [string]$file = "$RMKLogfile"
+    [string]$Message
   )
-  Log "WARN" $Message $file
+  Log "WARN" $Message
 }
 
 function LogConfiguration {
   param(
     [Parameter()]
     [ValidateNotNullOrEmpty()]
-    [string]$Message,
-    [Parameter()]
-    [ValidateNotNullOrEmpty()]
-    [string]$file = "$RMKLogfile"
+    [string]$Message
   )
   LogDebug "--- 8< --------------------"
   LogDebug "CONFIGURATION:"

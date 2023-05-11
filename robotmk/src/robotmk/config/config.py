@@ -37,6 +37,7 @@ from functools import wraps
 
 # from collections import namedtuple
 from pathlib import Path
+from robotmk.main import DIR_SUBPATHS
 
 # TODO: add YML config validation
 # from .yml import RobotmkConfigSchema
@@ -56,27 +57,27 @@ from pathlib import Path
 def add_path_prefix(method):
     """Decorator function for the get() method.
 
-    If the given key is one of (logdir, tmpdir, resultdir, robotdir),
-    AND the value does not start with a slash,
-    THEN the returned value is added at the end of the prefix.
-    A slash is added, if missing.
+    If the developer has set common.path_prefix (ROBOTMK_common_path__prefix),
+    then this folder becomes the path prefix for a standard set of folder inside.
+    The path settings for cfgdir, logdir etc. are ignored in that case.
+    See main.py, ref 5aa211
     """
 
     @wraps(method)
     def wrapper(self, *args, **kwargs):
         value = method(self, *args, **kwargs)
-        if args[0].split(".")[-1] in [
+        dir_el = args[0].split(".")[-1]
+
+        if dir_el in [
             "cfgdir",
             "logdir",
             "tmpdir",
             "resultdir",
             "robotdir",
-        ] and not os.path.isabs(value):
+        ]:
             prefix = self.get("common.path_prefix", None)
             if prefix:
-                if not prefix.endswith("/"):
-                    value = "/" + value
-                value = prefix + value
+                value = str(Path(prefix) / DIR_SUBPATHS[dir_el])
             else:
                 # no prefix given, so we use the value as is
                 pass
