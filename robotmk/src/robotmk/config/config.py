@@ -284,7 +284,7 @@ class Config:
                 # check if the value is a boolean and convert it to a boolean
                 if v.lower() in ("true", "false"):
                     v = v.lower() == "true"
-                vardict[k] = v
+                vardict[k.lower()] = v
         return vardict
 
     def _filevar2dict(self, file) -> dict:
