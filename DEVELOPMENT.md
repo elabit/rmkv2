@@ -17,14 +17,12 @@ sequenceDiagram
     autonumber
     participant agent as CMK Agent
     participant ctrlps as robotmk-ctrl.ps1
-    participant deadmanfile
     participant agentps as RobotmkAgent.ps1
     participant cstub as RobotmkAgent.exe
     participant service as RobotmkAgent service
 
     agent->>ctrlps:-Start
     Note over ctrlps: Instance 1
-    ctrlps->>+deadmanfile: touch
     ctrlps->>+agentps: copy self to
     ctrlps->>cstub: create stub
     ctrlps->>service: start
@@ -42,7 +40,7 @@ sequenceDiagram
 #(ADMIN)
 PS> robotmk-ctrl.ps1 -Status
 PS> robotmk-ctrl.ps1 -Remove
-PS> robotmk-ctrl.ps1 -Setup
+PS> robotmk-ctrl.ps1 -Install
 ```
 
 

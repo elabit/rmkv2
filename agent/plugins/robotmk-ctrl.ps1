@@ -19,8 +19,8 @@ Param(
   [Parameter(ParameterSetName = 'Restart', Mandatory = $true)]
   [Switch]$Restart, # Restart the service
   # Ref c8466e
-  [Parameter(ParameterSetName = 'Setup', Mandatory = $false)]
-  [Switch]$Setup,
+  [Parameter(ParameterSetName = 'Install', Mandatory = $false)]
+  [Switch]$Install,
   # Ref 863zb3
   [Parameter(ParameterSetName = 'Remove', Mandatory = $true)]
   [Switch]$Remove, # Uninstall the service
@@ -100,7 +100,7 @@ function main() {
   if ($scriptname -match ".*${RMK_ControllerName}$") {
     # Agent/User calls robotmk-ctrl.ps1:
     # - Monitor (default action if no arg)
-    #   -> Setup (installs/ensures Windows service 'RobotmkAgent')
+    #   -> Install (installs/ensures Windows service 'RobotmkAgent')
     #   -> Start
     #      -> Starts Windows Service 'RobotmkAgent'
     #         -> RobotmkAgent.exe (C# stub) - function OnStart()
@@ -108,7 +108,7 @@ function main() {
     # - produce Agent output
 
     # Other commandline actions are:
-    # - Setup
+    # - Install
     # - Start
     # - Test
     # - Stop
@@ -235,11 +235,11 @@ function CLIController {
   }
 
   # Ref c8466e
-  if ($Setup) {
+  if ($Install) {
     Write-Host "Installing service $RMKAgentServiceName"
     if (RMKAgentServiceScriptNeedsUpdate) {
       RMKAgentRemove
-      RMKAgentSetup
+      RMKAgentInstall
     }
 
     Write-ServiceStatus
@@ -341,7 +341,7 @@ function RMKAgentMonitor {
     LogDebug "Service $RMKAgentServiceName is $status. "
     if (RMKAgentServiceScriptNeedsUpdate) {
       RMKAgentRemove
-      RMKAgentSetup
+      RMKAgentInstall
     }
     RMKAgentStart
   }
@@ -403,7 +403,7 @@ function RMKAgentServiceScriptNeedsUpdate {
 }
 
 # Ref c8466e
-function RMKAgentSetup {
+function RMKAgentInstall {
   # Install the service
   # Check if the Service uses an outdated script file
   LogInfo "Installing Files for service $RMKAgentServiceName..."
@@ -489,7 +489,7 @@ function RMKAgentRestart {
   RMKAgentStop
   if (RMKAgentServiceScriptNeedsUpdate) {
     RMKAgentRemove
-    RMKAgentSetup
+    RMKAgentInstall
   }
   RMKAgentStart
 }
@@ -609,7 +609,6 @@ function RMKAgentSCMStop {
 # Ref bba3224
 function RMKAgentService {
   # Ref 8b0f1a: Param -Service
-  # RobotmkAgent.ps1 tells us to do the Service work
   Write-EventLog -LogName $WinEventLog -Source $RMKAgentServiceName -EventId 1005 -EntryType Information -Message "$scriptName -Service # Beginning background job"
   try {
     # Start the control pipe handler thread
@@ -617,12 +616,13 @@ function RMKAgentService {
     # execute this before you srtop the debugger: "Get-PSThread | Remove-PSThread"
     # This frees up the pipe handler thread.
     $pipeThread = Start-PipeHandlerThread $RMKAgentPipeName -Event "ControlMessage"
-    # Agent, your turn!
-    # Workload loop in subprocess, ref 9177b1b
+
+    # Lastly, as we are now within the service, call myself again with -Run to execute the scheduler.
+    # ref 9177b1b
     $process = Start-Process Powershell.exe -ArgumentList "-File", "$scriptFullName", "-Run" -NoNewWindow -PassThru
 
-    # We do not wait for the Agent process, but directly enter the main loop,
-    # where we must listen for "exit" events coming from RobotmkAgent.ps1 via Command Pipe
+    # After the scheduler has been started, we immediately come here (we do not wait),
+    # because we must listen for "exit" events coming from RobotmkAgent.ps1 via Command Pipe
     do {
       # Keep running until told to exit by the -Stop handler
       $evt = Wait-Event # Wait for the next incoming event
@@ -745,7 +745,7 @@ function ResetRMKAgentService {
     if ($agent_needs_update) {
       # Remove Agent, create Agent Service executables, install Agent Service
       RMKAgentRemove
-      RMKAgentSetup
+      RMKAgentInstall
     }
     RMKAgentStart
     # If RCC present, save current conda.yaml hash to cache file to prevent subsequent runs don't see a difference anymore.
