@@ -111,14 +111,11 @@ For development, the env variable `ROBOTMK_common_path__prefix` can be set. It d
   -
  `cfgdir`,`logdir`,`tmpdir` and `robotdir`), if they are set *relative*. (Absolute paths are always taken as they are).
 
-For local development you need to set these two environment variables:
+For local development you need to set this environment variable:
 
 ```
 # path prefix
 export ROBOTMK_common_path__prefix="/home/simonmeggle/Documents/01_dev/rmkv2/agent"
-# set relative path to robotmk.yml
-export ROBOTMK_common_cfgdir="config/robotmk"
-
 ```
 
 See `robotmk/.cli.env` for an example.
@@ -130,6 +127,17 @@ Hint: `agent` context of Robotmk requires a YML file to be loaded, where `suite`
 `.vscode/launch.json` contains debug configurations for every execution context.
 
 With the environment variables set in step 4, the YML configuration is always loaded from `./robotmk/tests/yml/robotmk.yml`.
+
+#### Step 6: Open tmuxp session
+
+The pipenv dev dependencies also contains `tmuxp` which opens a multipane view.
+
+To start a tmuxp session, you have to execute the following command from the project's root dir:
+
+    tmuxp load contrib/tmuxp.yaml
+
+
+
 
 ### Committing work
 
