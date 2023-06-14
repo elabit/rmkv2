@@ -100,6 +100,19 @@
             ]
         },
         {
+            "name": "l robotmk agent scheduler --foreground",
+            "type": "python",
+            "request": "launch",
+            "program": "robotmk/src/robotmk/cli/cli.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "args": [
+                "agent",
+                "scheduler",
+                "-F"
+            ]
+        },
+        {
             "name": "l robotmk suite ymldump",
             "type": "python",
             "request": "launch",

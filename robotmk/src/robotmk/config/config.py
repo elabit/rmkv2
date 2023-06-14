@@ -481,8 +481,10 @@ class Config:
                 d = str(d).lower()
             print(f"{varname}={d}")
             if environ is None:
+                # add variables to current environment
                 os.environ[varname] = str(d)
             else:
+                # add variables to given environment
                 environ[varname] = str(d)
 
     def to_yml(self, file=None) -> Union[str, None]:

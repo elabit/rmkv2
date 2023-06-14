@@ -42,8 +42,10 @@ def run(ctx, suite):
     (can also be set by env:ROBOTMK_common_suiteuname.)
     """
     if suite:
+        # suite was given as argment on CLI
         ctx.obj.config.set("common.suiteuname", suite)
     if bool(ctx.obj.config.get("common.suiteuname", None)):
+        # suite was set in environment
         ctx.obj.execute()
     else:
         click.secho("Suite '%s' not found in configuration" % suite, fg="red")

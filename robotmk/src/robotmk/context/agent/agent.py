@@ -50,7 +50,11 @@ class AgentContext(AbstractContext):
 
     def execute(self, *args, **kwargs):
         """Starts the scheduler."""
-        self.executor = Scheduler(self.config)
+        self.executor = Scheduler(
+            self.config,
+            foreground=kwargs.get("foreground", False),
+            max_deadman_file_age=kwargs.get("max_deadman_file_age", 300),
+        )
         self.executor.run()
         pass
 

@@ -34,10 +34,20 @@ def agent(ctx, yml):
 
 
 @agent.command()
+@click.option(
+    "-F",
+    "foreground",
+    default=False,
+    is_flag=True,
+    help="Forces the scheduler to run in foreground (only for testing)",
+)
+@click.option(
+    "-M", "max_deadman_file_age", default=0, help="Max age of deadman file (seconds)"
+)
 @click.pass_context
-def scheduler(ctx):
+def scheduler(ctx, foreground, max_deadman_file_age):
     """Starts the scheduler to execute tests repeatedly."""
-    ctx.obj.execute()
+    ctx.obj.execute(foreground=foreground, max_deadman_file_age=max_deadman_file_age)
 
 
 @agent.command()
