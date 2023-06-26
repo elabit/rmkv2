@@ -85,7 +85,7 @@ else {
 #  |_|  |_/_/    \_\_____|_| \_|
 # ==============================================================================
 
-# TODO: After RobotmkAgent has been copied, produce agent output!
+# TODO: After RobotmkScheduler has been copied, produce agent output!
 
 function main() {
   SetScriptVars
@@ -93,44 +93,33 @@ function main() {
   Ensure-Directory $RMKlogdir
   Ensure-Directory $RMKTmpDir
   Ensure-Directory $ROBOCORP_HOME
-  Ensure-Directory $RMKAgentInstallDir
+  Ensure-Directory $RMKSchedulerInstallDir
   # TODO: Test if LogConfiguration can be enabled
   LogConfiguration
 
 
   if ($scriptname -match ".*${RMK_ControllerName}$") {
-    # Agent/User calls robotmk-ctrl.ps1:
+    # CMK Agent/User calls robotmk-ctrl.ps1:
     # - Monitor (default action if no arg)
-    #   -> Install (installs/ensures Windows service 'RobotmkAgent')
+    #   -> Install (installs/ensures Windows service 'RobotmkScheduler')
     #   -> Start
-    #      -> Starts Windows Service 'RobotmkAgent'
-    #         -> RobotmkAgent.exe (C# stub) - function OnStart()
-    #            (-> RobotmkAgent.ps1 -SCMStart, see below [**])
+    #      -> Starts Windows Service 'RobotmkScheduler'
+    #         -> RobotmkScheduler.exe (C# stub) - function OnStart()
+    #            (-> RobotmkScheduler.ps1 -SCMStart, see below [**])
     # - produce Agent output
-
-    # Other commandline actions are:
-    # - Install
-    # - Start
-    # - Test
-    # - Stop
-    # - Restart
-    # - Status
-    # - Remove
-    # - Foreground
-    #   -> run the Robotmk Python Agent, process workload loop in FOREGROUNC
     CLIController
 
   }
-  elseif ($scriptname -match ".*${RMKAgentName}$") {
-    # (e.g. RobotmkAgent.ps1 -SCMStart/-SCMStop)
+  elseif ($scriptname -match ".*${RMKSchedulerName}$") {
+    # (e.g. RobotmkScheduler.ps1 -SCMStart/-SCMStop)
     # !Was started from Windows SCM via Robotmk.exe, C# stub (see above [**])
     # - SCMStart
-    #   -> Starts RobotmkAgent.ps1 -Service
-    #      -> run the Robotmk Python Agent, process workload loop
+    #   -> Starts RobotmkScheduler.ps1 -Service
+    #      -> run the Robotmk Python Scheduler, process workload loop
     # - Service (Start Service Routine, called by -SCMStart)
-    # - Run (Start Agent Routine directly, called by -Service)
+    # - Run (Start Scheduler Routine directly, called by -Service)
     # - SCMStop
-    #   -> Stops RobotmkAgent.ps1 -Service.
+    #   -> Stops RobotmkScheduler.ps1 -Service.
     SCMController
   }
   else {
@@ -174,12 +163,12 @@ function CLIController {
 
   # Ref bbc7b0e
   if ($Monitor) {
-    # The Checkmk Agent calls the script w/o args.
+    # -Monitor is the default mode and can be omitted (the Checkmk Agent calls the script w/o args).
     # On each call, renew the deadman file
     TouchFile $controller_deadman_file	"Controller deadman file"
 
     # This mode installs the service and starts it if not already running.
-    RMKAgentMonitor
+    RMKSchedulerMonitor
     return
   }
 
@@ -191,9 +180,9 @@ function CLIController {
 
   # Ref 2be2e2e
   if ($Start) {
-    # the user starts the ps.1 script with -Start
-    Write-Host "Starting service $RMKAgentServiceName"
-    RMKAgentStart
+    # Starts the service
+    Write-Host "Starting service $RMKSchedulerServiceName"
+    RMKSchedulerStart
     LogInfo "Waiting for Processes to start..."
     Start-Sleep  5
     Write-ServiceStatus
@@ -203,14 +192,14 @@ function CLIController {
   # Ref 3c3c3c3
   if ($Test) {
     # the user starts the ps.1 script with -Test (only for testing!!)
-    # (Agent runs without service, logs to foreground)
-    if (IsProcessRunning "%RobotmkAgent.exe") {
-      Write-Host "$RMKAgentServiceName seems to run. You cannot start another instance in foreground. Exiting."
+    # (Scheduler runs without service, logs to foreground)
+    if (IsProcessRunning "%RobotmkScheduler.exe") {
+      Write-Host "$RMKSchedulerServiceName seems to run. You cannot start another instance in foreground. Exiting."
       exit 1
     }
     else {
-      # Starts agent in foreground and logs to console and file
-      RMKAgentTester
+      # Starts scheduler in foreground and logs to console and file
+      RMKSchedulerTester
     }
     return
 
@@ -218,16 +207,16 @@ function CLIController {
 
   # Ref 9466b0
   if ($Stop) {
-    Write-Host "Stopping service $RMKAgentServiceName"
-    RMKAgentStop
+    Write-Host "Stopping service $RMKSchedulerServiceName"
+    RMKSchedulerStop
     Write-ServiceStatus
     return
   }
 
   # Ref 728a05
   if ($Restart) {
-    Write-Host "Restarting service $RMKAgentServiceName"
-    RMKAgentRestart
+    Write-Host "Restarting service $RMKSchedulerServiceName"
+    RMKSchedulerRestart
     # TODO: Replace sleep by some retry function?
     LogInfo "Waiting for Processes to start..."
     Start-Sleep  5
@@ -237,10 +226,10 @@ function CLIController {
 
   # Ref c8466e
   if ($Install) {
-    Write-Host "Installing service $RMKAgentServiceName"
-    if (RMKAgentServiceScriptNeedsUpdate) {
-      RMKAgentRemove
-      RMKAgentInstall
+    Write-Host "Installing service $RMKSchedulerServiceName"
+    if (RMKSchedulerServiceScriptNeedsUpdate) {
+      RMKSchedulerRemove
+      RMKSchedulerInstall
     }
 
     Write-ServiceStatus
@@ -249,10 +238,10 @@ function CLIController {
 
   # Ref 863zb3
   if ($Remove) {
-    Write-Host "Stopping service $RMKAgentServiceName"
-    RMKAgentStop
-    Write-Host "Removing service $RMKAgentServiceName"
-    RMKAgentRemove
+    Write-Host "Stopping service $RMKSchedulerServiceName"
+    RMKSchedulerStop
+    Write-Host "Removing service $RMKSchedulerServiceName"
+    RMKSchedulerRemove
     Write-ServiceStatus
     return
   }
@@ -268,32 +257,32 @@ function SCMController() {
   if ($SCMStart) {
     # Ref 22db44: the SCM calls OnStart() function in the C# stub.
     # This calls the ps1 with arg -Service (see below)
-    RMKAgentSCMStart
+    RMKSchedulerSCMStart
   }
   # Ref 4d4d4d4
   if ($Run) {
-    # (Same as -Test, but silent. Agent runs without service. This mode
-    # is called internally by the Servicescript 'RobotmkAgent.ps -Service'
+    # (Same as -Test, but silent. Scheduler runs without service. This mode
+    # is called internally by the Servicescript 'RobotmkScheduler.ps -Service'
     # to begin the actual workload loop.)
-    RMKAgentRunner
+    RMKSchedulerRunner
   }
   # Ref 765fb12
   if ($SCMStop) {
     # Ref 6e3aaf: the SCM calls OnStop() function in the C# stub.
     # This calls the ps1 with arg -SCMStop
-    RMKAgentSCMStop
+    RMKSchedulerSCMStop
   }
   # Ref bba3224
   if ($Service) {
-    # Called by 'RobotmkAgent.ps1 -SCMStart' (which was called from the C# stub.)
+    # Called by 'RobotmkScheduler.ps1 -SCMStart' (which was called from the C# stub.)
     # In this mode, the script starts the workload loop, but listens at the same
     # for control messages from the service stub (e.g. Stop)
-    RMKAgentService
+    RMKSchedulerService
   }
 
   if ($Control) {
     # Send a control message to the service (only for debugging)
-    Send-PipeMessage $RMKAgentPipeName $control
+    Send-PipeMessage $RMKSchedulerPipeName $control
     return
   }
 }
@@ -311,50 +300,51 @@ function SCMController() {
 # (Called from CLIController)
 
 # Ref bbc7b0e
-function RMKAgentMonitor {
+function RMKSchedulerMonitor {
   $out = @()
   $out += $CMKAgentSection
   #$out += $SubsecController.Replace("xxx", "begin")
-  $status = RMKAgentStatus
+  $status = RMKSchedulerStatus
   if ($status -ne "Stopped" -and $status -ne "Running" -and $status -ne "Not Installed") {
     # We have some undefined state.
     LogWarn "Trying to clean up everything."
-    RMKAgentStop
-    $status = RMKAgentStatus
+    RMKSchedulerStop
+    $status = RMKSchedulerStatus
     if ($status -ne "Stopped") {
-      LogWarn "Service $RMKAgentServiceName could not be stopped gracefully. Trying to force it."
-      RMKAgentStop
-      if ((RMKAgentStatus) -ne "Stopped") {
-        LogError "Fatal: Service $RMKAgentServiceName could not be forced to stop."
+      LogWarn "Service $RMKSchedulerServiceName could not be stopped gracefully. Trying to force it."
+      RMKSchedulerStop
+      if ((RMKSchedulerStatus) -ne "Stopped") {
+        LogError "Fatal: Service $RMKSchedulerServiceName could not be forced to stop."
         LogInfo "Exiting now."
         # TODO: Return status to Checkmk Agent?
-        $out += "Fatal: Service $RMKAgentServiceName could not be forced to stop."
+        $out += "Fatal: Service $RMKSchedulerServiceName could not be forced to stop."
         return ($out -join "`r`n" | Out-String)
       }
     }
 
   }
+  # Ref 521188
   # AT THIS POINT, the service is either
   # - Running
   # - Stopped  OR
   # - Not Installed
   if ($status -eq "Stopped" -or $status -eq "Not Installed") {
-    LogDebug "Service $RMKAgentServiceName is $status. "
-    if (RMKAgentServiceScriptNeedsUpdate) {
-      RMKAgentRemove
-      RMKAgentInstall
+    LogDebug "Service $RMKSchedulerServiceName is $status. "
+    if (RMKSchedulerServiceScriptNeedsUpdate) {
+      RMKSchedulerRemove
+      RMKSchedulerInstall
     }
-    RMKAgentStart
+    RMKSchedulerStart
   }
   elseif ($status -eq "Running") {
-    LogDebug "Service $RMKAgentServiceName is running."
+    LogDebug "Service $RMKSchedulerServiceName is running."
     # Re-Initializes the service if necessary (Stop/Start/SaveHash)
-    if ((RMKAgentServiceScriptNeedsUpdate) -or (RCCEnvNeedsUpdate)) {
-      ResetRMKAgentService
+    if ((RMKSchedulerServiceScriptNeedsUpdate) -or (RCCEnvNeedsUpdate)) {
+      ResetRMKSchedulerService
     }
     else {
       # No change ocurred. Nothing to do, we can leave
-      $out += "OK: Service $RMKAgentServiceName is running and up-to-date."
+      $out += "OK: Service $RMKSchedulerServiceName is running and up-to-date."
       return ($out -join "`r`n" | Out-String)
     }
   }
@@ -364,14 +354,14 @@ function RMKAgentMonitor {
   # TODO: Replace sleep by some retry function?
   LogInfo "Waiting for Processes to start..."
   Start-Sleep  5
-  $status = RMKAgentStatus
+  $status = RMKSchedulerStatus
   if ($status -ne "Running") {
-    LogError "Service $RMKAgentServiceName could not be started. "
+    LogError "Service $RMKSchedulerServiceName could not be started. "
     LogInfo "Exiting."
-    $out += "Service $RMKAgentServiceName could not be started."
+    $out += "Service $RMKSchedulerServiceName could not be started."
   }
   else {
-    $out += "OK: Service $RMKAgentServiceName was just started."
+    $out += "OK: Service $RMKSchedulerServiceName was just started."
   }
   return ($out -join "`r`n" | Out-String)
 
@@ -382,141 +372,142 @@ function RMKAgentMonitor {
 }
 
 
-function RMKAgentServiceScriptNeedsUpdate {
+function RMKSchedulerServiceScriptNeedsUpdate {
   # Check if the service script is up-to-date
   # If the Controller script is NEWER than the service script, the service must be removed and reinstalled.
   try {
-    if ((Get-Item $RMKAgentFullName -ea SilentlyContinue).LastWriteTime -lt (Get-Item $scriptFullName -ea SilentlyContinue).LastWriteTime) {
-      LogDebug "Service $RMKAgentServiceName is already installed, but $scriptName is newer than $RMKAgentName. Service requires upgrade"
+    if ((Get-Item $RMKSchedulerFullName -ea SilentlyContinue).LastWriteTime -lt (Get-Item $scriptFullName -ea SilentlyContinue).LastWriteTime) {
+      LogDebug "Service $RMKSchedulerServiceName is already installed, but $scriptName is newer than $RMKSchedulerName. Service requires upgrade"
       return $true
     }
     else {
-      LogDebug "Service $RMKAgentServiceName is up-to-date"
+      LogDebug "Service $RMKSchedulerServiceName is up-to-date"
       return $false
     }
   }
   catch {
     # This is the normal case here. Do not throw or write any error!
-    LogDebug "Installation of Service executables into $RMKAgentInstallDir is necessary" # Also avoids a ScriptAnalyzer warning
+    LogDebug "Installation of Service executables into $RMKSchedulerInstallDir is necessary" # Also avoids a ScriptAnalyzer warning
     return $true
   }
 
 }
 
 # Ref c8466e
-function RMKAgentInstall {
+function RMKSchedulerInstall {
   # Install the service
   # Check if the Service uses an outdated script file
-  LogInfo "Installing the following files for service $RMKAgentServiceName into $RMKAgentInstallDir :"
-  if (!(Test-Path $RMKAgentInstallDir)) {
-    New-Item -ItemType directory -Path $RMKAgentInstallDir | Out-Null
+  LogInfo "Installing the following files for service $RMKSchedulerServiceName into $RMKSchedulerInstallDir :"
+  if (!(Test-Path $RMKSchedulerInstallDir)) {
+    New-Item -ItemType directory -Path $RMKSchedulerInstallDir | Out-Null
   }
-  # RobotmkAgent.ps1: Copy the service script into the installation directory
-  if ($ScriptFullName -ne $RMKAgentFullName) {
+  # RobotmkScheduler.ps1: Copy the service script into the installation directory
+  if ($ScriptFullName -ne $RMKSchedulerFullName) {
     LogInfo "- Copying myself to $ScriptName"
-    Copy-Item $ScriptFullName $RMKAgentFullName
+    Copy-Item $ScriptFullName $RMKSchedulerFullName
   }
-  # RobotmkAgent.ps1.env: store the environment variables because they are not known to the service
-  WriteRMKVars $RMKAgentInstallDir $RMKAgent
+  # RobotmkScheduler.ps1.env: store the environment variables because they are not known to the service
+  WriteRMKVars $RMKSchedulerInstallDir $RMKScheduler
 
 
-  # RobotmkAgent.exe: Generate the binary the C# source embedded in this script
+  # RobotmkScheduler.exe: Generate the binary the C# source embedded in this script
   try {
-    LogDebug "- Installing C# Service Stub $RMKAgentExeName"
+    LogDebug "- Installing C# Service Stub $RMKSchedulerExeName"
     # Uncomment the following line to debug the C# stub into a text file
-    #$source | Out-File "${RMKAgentExeFullName}_csharp.txt"
+    #$source | Out-File "${RMKSchedulerExeFullName}_csharp.txt"
     # The C code in $source contains variables which are replaced and
     # written into the .exe File.
-    Add-Type -TypeDefinition $source -Language CSharp -OutputAssembly $RMKAgentExeFullName -OutputType ConsoleApplication -ReferencedAssemblies "System.ServiceProcess" -Debug:$false
+    Add-Type -TypeDefinition $source -Language CSharp -OutputAssembly $RMKSchedulerExeFullName -OutputType ConsoleApplication -ReferencedAssemblies "System.ServiceProcess" -Debug:$false
   }
   catch {
     $msg = $_.Exception.Message
-    LogError "Failed to create the $RMKAgentExeFullName service stub. $msg"
+    LogError "Failed to create the $RMKSchedulerExeFullName service stub. $msg"
     exit 1
   }
   # Register the service
-  LogInfo "Registering service $RMKAgentServiceName (user: LocalSystem)"
-  $pss = New-Service $RMKAgentServiceName $RMKAgentExeFullName -DisplayName $RMKAgentServiceDisplayName -Description $RMKAgentServiceDescription -StartupType $RMKAgentServiceStartupType
-  #$pss = New-Service $RMKAgentServiceName $RMKAgentExeFullName -DisplayName $RMKAgentServiceDisplayName -Description $RMKAgentServiceDescription -StartupType $RMKAgentServiceStartupType -DependsOn $RMKAgentServiceDependsOn
+  LogInfo "Registering service $RMKSchedulerServiceName (user: LocalSystem)"
+  $pss = New-Service $RMKSchedulerServiceName $RMKSchedulerExeFullName -DisplayName $RMKSchedulerServiceDisplayName -Description $RMKSchedulerServiceDescription -StartupType $RMKSchedulerServiceStartupType
+  #$pss = New-Service $RMKSchedulerServiceName $RMKSchedulerExeFullName -DisplayName $RMKSchedulerServiceDisplayName -Description $RMKSchedulerServiceDescription -StartupType $RMKSchedulerServiceStartupType -DependsOn $RMKSchedulerServiceDependsOn
 
 }
 
 # Ref 2be2e2e
-function RMKAgentStart {
+function RMKSchedulerStart {
   #
-  LogInfo "Starting service $RMKAgentServiceName"
-  Write-EventLog -LogName $WinEventLog -Source $RMKAgentServiceName -EventId 1002 -EntryType Information -Message "$scriptName -Start: Starting service $RMKAgentServiceName"
+  LogInfo "Starting service $RMKSchedulerServiceName"
+  Write-EventLog -LogName $WinEventLog -Source $RMKSchedulerServiceName -EventId 1002 -EntryType Information -Message "$scriptName -Start: Starting service $RMKSchedulerServiceName"
   # SCM starts the service now. This calls function OnStart() inside of the .exe stub.
   # See the C# code at ref 5f8dda
-  # Watch the Windows Application Event Log (Source: RobotmkAgent) for messages from this service stub.
-  Start-Service $RMKAgentServiceName
+  # Watch the Windows Application Event Log (Source: RobotmkScheduler) for messages from this service stub.
+  # TODO: This writes "Waiting for xxx to start.." on stdout. This is bad because this becomes Agent output!
+  Start-Service $RMKSchedulerServiceName
 }
 
 # Ref 3c3c3c3
-function RMKAgentTester {
-  # Starts agent in foreground and logs to console and file
-  RMKAgent
+function RMKSchedulerTester {
+  # Starts scheduler in foreground and logs to console and file
+  RMKScheduler
 }
 
 # Ref 4d4d4d4
-function RMKAgentRunner {
-  # STarted by RobotmkAgent.ps1 -Service
-  RMKAgent
+function RMKSchedulerRunner {
+  # STarted by RobotmkScheduler.ps1 -Service
+  RMKScheduler
 }
 
 # Ref 9466b0
-function RMKAgentStop {
+function RMKSchedulerStop {
   # Ref 6e3aaf
   # The user tells us to stop the service.
   try {
     # Stop the service
-    LogInfo "Stopping service $RMKAgentServiceName"
-    Write-EventLog -LogName $WinEventLog -Source $RMKAgentServiceName -EventId 1004 -EntryType Information -Message "$scriptName -Stop: Stopping service $RMKAgentServiceName"
-    Stop-Service $RMKAgentServiceName -ErrorAction SilentlyContinue
+    LogInfo "Stopping service $RMKSchedulerServiceName"
+    Write-EventLog -LogName $WinEventLog -Source $RMKSchedulerServiceName -EventId 1004 -EntryType Information -Message "$scriptName -Stop: Stopping service $RMKSchedulerServiceName"
+    Stop-Service $RMKSchedulerServiceName -ErrorAction SilentlyContinue
   }
   catch {
     # This is the normal case here. Do not throw or write any error!
-    LogDebug "Nothing to stop. Service $RMKAgentServiceName is not running" # Also avoids a ScriptAnalyzer warning
+    LogDebug "Nothing to stop. Service $RMKSchedulerServiceName is not running" # Also avoids a ScriptAnalyzer warning
   }
 
-  LogDebug "Killing all processes of service $RMKAgentServiceName ..."
-  KillProcessByCmdline "%$RMKAgentName%-SCMStart%"
-  KillProcessByCmdline "%$RMKAgentName%-Service%"
-  KillProcessByCmdline "%$RMKAgentName%-Run%"
+  LogDebug "Killing all processes of service $RMKSchedulerServiceName ..."
+  KillProcessByCmdline "%$RMKSchedulerName%-SCMStart%"
+  KillProcessByCmdline "%$RMKSchedulerName%-Service%"
+  KillProcessByCmdline "%$RMKSchedulerName%-Run%"
   KillProcessByCmdline "%robotmk.exe agent fg%"
   KillProcessByCmdline "%robotmk.exe agent scheduler%"
-  KillProcessByCmdline "%$RMKAgentExeName%"
-  # SCM will now call the OnStop() method of the service, which will call the Agent with -SCMStop
+  KillProcessByCmdline "%$RMKSchedulerExeName%"
+  # SCM will now call the OnStop() method of the service, which will call the Script with -SCMStop
 }
 
-function RMKAgentRestart {
+function RMKSchedulerRestart {
   # Restart the service
-  RMKAgentStop
-  if (RMKAgentServiceScriptNeedsUpdate) {
-    RMKAgentRemove
-    RMKAgentInstall
+  RMKSchedulerStop
+  if (RMKSchedulerServiceScriptNeedsUpdate) {
+    RMKSchedulerRemove
+    RMKSchedulerInstall
   }
-  RMKAgentStart
+  RMKSchedulerStart
 }
 
-function RMKAgentStatus {
+function RMKSchedulerStatus {
   # Get the current service status
   $spid = $null
-  $process_pattern = ".*$RMKAgentFullNameEscaped.*-Run"
-  # Search for RobotmkAgent.ps1 -Service (this is the process doing the actual service work)
+  $process_pattern = ".*$RMKSchedulerFullNameEscaped.*-Run"
+  # Search for RobotmkScheduler.ps1 -Service (this is the process doing the actual service work)
   # See Ref 8b0f1a
   $processes = @(Get-WmiObject Win32_Process -filter "Name = 'powershell.exe'" | Where-Object {
-      #$_.CommandLine -match ".*$RMKAgentFullNameEscaped.*-Service"
+      #$_.CommandLine -match ".*$RMKSchedulerFullNameEscaped.*-Service"
       $_.CommandLine -match $process_pattern
     })
   foreach ($process in $processes) {
     # There should be just one, but be prepared for surprises.
     $spid = $process.ProcessId
-    LogDebug "$RMKAgentServiceName is running (PID $spid)"
+    LogDebug "$RMKSchedulerServiceName is running (PID $spid)"
   }
-  # if (Test-Path "HKLM:\SYSTEM\CurrentControlSet\services\$RMKAgentServiceName") {}
+  # if (Test-Path "HKLM:\SYSTEM\CurrentControlSet\services\$RMKSchedulerServiceName") {}
   try {
-    $pss = Get-Service $RMKAgentServiceName -ea stop # Will error-out if not installed
+    $pss = Get-Service $RMKSchedulerServiceName -ea stop # Will error-out if not installed
   }
   catch {
     "Not Installed"
@@ -525,48 +516,48 @@ function RMKAgentStatus {
 
   if (($pss.Status -eq "Running") -and (!$spid)) {
     # This happened during the debugging phase
-    LogError "Undefined Service state: $RMKAgentServiceName is started in SCM, but no PID found for '$process_pattern'."
+    LogError "Undefined Service state: $RMKSchedulerServiceName is started in SCM, but no PID found for '$process_pattern'."
     return "noPID"
   }
   else {
     $status = [String]$pss.Status
-    #LogInfo "$RMKAgentServiceName is $status"
+    #LogInfo "$RMKSchedulerServiceName is $status"
     # return status as string
     return $status
   }
 }
 
 # Ref 863zb3
-function RMKAgentRemove {
+function RMKSchedulerRemove {
   # Uninstall the service
   # Check if it's necessary
-  # TODO: check if RobotmkAgent.exe is runnning; if so, kill it
-  LogInfo "Removing service $RMKAgentServiceName from SCM..."
+  # TODO: check if RobotmkScheduler.exe is runnning; if so, kill it
+  LogInfo "Removing service $RMKSchedulerServiceName from SCM..."
   try {
-    $pss = Get-Service $RMKAgentServiceName -ea stop # Will error-out if not installed
-    Stop-Service $RMKAgentServiceName # Make sure it's stopped
+    $pss = Get-Service $RMKSchedulerServiceName -ea stop # Will error-out if not installed
+    Stop-Service $RMKSchedulerServiceName # Make sure it's stopped
     # In the absence of a Remove-Service applet, use sc.exe instead.
-    $msg = sc.exe delete $RMKAgentServiceName
+    $msg = sc.exe delete $RMKSchedulerServiceName
     if ($LastExitCode) {
       LogError "Failed to remove the service ${serviceName}: $msg"
     }
   }
   catch {
-    LogDebug "Service ${RMKAgentServiceName} is already uninstalled"
+    LogDebug "Service ${RMKSchedulerServiceName} is already uninstalled"
     return
   }
   finally {
     # Remove the installed files
-    if (Test-Path $RMKAgentInstallDir) {
+    if (Test-Path $RMKSchedulerInstallDir) {
       foreach ($ext in ("exe", "pdb", "ps1", "env")) {
-        $file = "$RMKAgentInstallDir\$RMKAgentServiceName.$ext"
+        $file = "$RMKSchedulerInstallDir\$RMKSchedulerServiceName.$ext"
         if (Test-Path $file) {
           LogDebug "- Deleting file $file"
           Remove-Item $file
         }
       }
-      LogDebug "- Removing Agent service directory $RMKAgentInstallDir"
-      Remove-Item $RMKAgentInstallDir -Force -Recurse
+      LogDebug "- Removing Scheduler service directory $RMKSchedulerInstallDir"
+      Remove-Item $RMKSchedulerInstallDir -Force -Recurse
     }
   }
 }
@@ -581,51 +572,51 @@ function RMKAgentRemove {
 
 
 # The following functions are NOT meant to be called by the user.
-# They are called by the service stub RobotmkAgent.exe
-# Dispatching by SCMController (active when Script is ServiceScript = RobotmkAgent.ps1)
+# They are called by the service stub RobotmkScheduler.exe
+# Dispatching by SCMController (active when Script is ServiceScript = RobotmkScheduler.ps1)
 
 # Ref 825fb1
-function RMKAgentSCMStart {
+function RMKSchedulerSCMStart {
   # Ref 22db44: Param -SCMStart
   # The SCM tells us to START the service
   # Do whatever is necessary to start the service script instance
   LogInfo "$scriptFullName -SCMStart: Starting script '$scriptFullName' -Service"
-  Write-EventLog -LogName $WinEventLog -Source $RMKAgentServiceName -EventId 1001 -EntryType Information -Message "$scriptName -SCMStart: Starting script '$scriptFullName' -Service"
+  Write-EventLog -LogName $WinEventLog -Source $RMKSchedulerServiceName -EventId 1001 -EntryType Information -Message "$scriptName -SCMStart: Starting script '$scriptFullName' -Service"
   # Ref 8b0f1a
-  # This commandline is searched for in function RMKAgentStatus()
+  # This commandline is searched for in function RMKSchedulerStatus()
   Start-Process PowerShell.exe -ArgumentList ("-c & '$scriptFullName' -Service")
 }
 
 # Ref 765fb12
-function RMKAgentSCMStop {
+function RMKSchedulerSCMStop {
   # Ref 6e3aaf: Param -SCMStop
   # The SCM tells us to STOP the service
   # Do whatever is necessary to stop the service script instance
-  Write-EventLog -LogName $WinEventLog -Source $RMKAgentServiceName -EventId 1003 -EntryType Information -Message "$scriptName -SCMStop: Stopping script $scriptName -Service"
+  Write-EventLog -LogName $WinEventLog -Source $RMKSchedulerServiceName -EventId 1003 -EntryType Information -Message "$scriptName -SCMStop: Stopping script $scriptName -Service"
   LogInfo "$scriptName -SCMStop: Stopping script $scriptName -Service"
   # Send an exit message to the service instance
   # Ref 3399b1
-  LogDebug "$scriptName -SCMStop: 'Send-PipeMessage $RMKAgentPipeName exit'"
-  Send-PipeMessage $RMKAgentPipeName "exit"
+  LogDebug "$scriptName -SCMStop: 'Send-PipeMessage $RMKSchedulerPipeName exit'"
+  Send-PipeMessage $RMKSchedulerPipeName "exit"
 }
 
 # Ref bba3224
-function RMKAgentService {
+function RMKSchedulerService {
   # Ref 8b0f1a: Param -Service
-  Write-EventLog -LogName $WinEventLog -Source $RMKAgentServiceName -EventId 1005 -EntryType Information -Message "$scriptName -Service # Beginning background job"
+  Write-EventLog -LogName $WinEventLog -Source $RMKSchedulerServiceName -EventId 1005 -EntryType Information -Message "$scriptName -Service # Beginning background job"
   try {
     # Start the control pipe handler thread
     # !! TO AVOID NASTY ERROR MESSAGES WHILE DEBUGGING ABOUT PIPE HANDLER THREADS,
     # execute this before you srtop the debugger: "Get-PSThread | Remove-PSThread"
     # This frees up the pipe handler thread.
-    $pipeThread = Start-PipeHandlerThread $RMKAgentPipeName -Event "ControlMessage"
+    $pipeThread = Start-PipeHandlerThread $RMKSchedulerPipeName -Event "ControlMessage"
 
     # Lastly, as we are now within the service, call myself again with -Run to execute the scheduler.
     # ref 9177b1b
     $process = Start-Process Powershell.exe -ArgumentList "-File", "$scriptFullName", "-Run" -NoNewWindow -PassThru
 
     # After the scheduler has been started, we immediately come here (we do not wait),
-    # because we must listen for "exit" events coming from RobotmkAgent.ps1 via Command Pipe
+    # because we must listen for "exit" events coming from RobotmkScheduler.ps1 via Command Pipe
     do {
       # Keep running until told to exit by the -Stop handler
       $evt = Wait-Event # Wait for the next incoming event
@@ -655,7 +646,7 @@ function RMKAgentService {
               $threaderror = Receive-PipeHandlerThread $pipeThread
               LogInfo "$scriptName -Service # $source thread failed: $threaderror"
               Start-Sleep 1 # Avoid getting too many errors
-              $pipeThread = Start-PipeHandlerThread $RMKAgentPipeName -Event "ControlMessage" # Retry
+              $pipeThread = Start-PipeHandlerThread $RMKSchedulerPipeName -Event "ControlMessage" # Retry
             }
           }
         }
@@ -679,7 +670,7 @@ function RMKAgentService {
       Stop-Process -Id $process.Id
     }
 
-    # Remove controller deadman switch - should terminate the agent soon
+    # Remove controller deadman switch - should terminate the scheduler soon
     Remove-Item $controller_deadman_file -ErrorAction SilentlyContinue
     # Terminate the control pipe handler thread and cleanup any remaining threads
     if ($pipeThread -ne $null) {
@@ -689,7 +680,7 @@ function RMKAgentService {
     # Flush all leftover events (There may be some that arrived after we exited the while event loop, but before we unregistered the events)
     $events = Get-Event | Remove-Event
     # Log a termination event, no matter what the cause is.
-    Write-EventLog -LogName $WinEventLog -Source $RMKAgentServiceName -EventId 1006 -EntryType Information -Message "$script -Service # Exiting"
+    Write-EventLog -LogName $WinEventLog -Source $RMKSchedulerServiceName -EventId 1006 -EntryType Information -Message "$script -Service # Exiting"
     LogInfo "$scriptName -Service # Exiting"
   }
   return
@@ -698,18 +689,18 @@ function RMKAgentService {
 # Ref 3c3c3c3 (Tester)
 # Ref 4d4d4d4 (Runner)
 # Ref 9177b1b
-function RMKAgent {
+function RMKScheduler {
 
-  LogDebug "Entering RobotmkAgent Main Routine. Checking for Rcc..."
-  # This is the main Routine for the Robotmk Agent.
+  LogDebug "Entering RobotmkScheduler Main Routine. Checking for Rcc..."
+  # This is the main Routine for the Robotmk Scheduler.
   if (RCCIsAvailable) {
     $blueprint = GetCondaBlueprint $conda_yml
 
     if ( IsRCCEnvReady $blueprint) {
-      # if the RCC environment is ready, start the Agent if not yet running
+      # if the RCC environment is ready, start the Scheduler if not yet running
       LogInfo "Robotmk RCC environment is ready to use."
-      if (IsRobotmkPythonAgentRunning) {
-        LogInfo "Nothing to do, Robotmk Agent is already running."
+      if (IsSchedulerRunning) {
+        LogInfo "Nothing to do, Robotmk Scheduler is already running."
         return
       }
     }
@@ -725,7 +716,7 @@ function RMKAgent {
   else {
     # TODO: If no RCC, use native python execution
     $Binary = $PythonExe
-    $Arguments = "$PythonExe $RobotmkAgent"
+    $Arguments = "$PythonExe $RobotmkScheduler"
   }
 
 
@@ -734,22 +725,21 @@ function RMKAgent {
 
 
 # Ref 5887a1
-function ResetRMKAgentService {
+function ResetRMKSchedulerService {
   # There are two situations when a environment need tabula rasa:
   # 1. The PS script in /plugins is newer than the Service script.
-  $agent_needs_update = RMKAgentServiceScriptNeedsUpdate
+  $scheduler_script_needs_update = RMKSchedulerServiceScriptNeedsUpdate
   # 2. If RCC is used: Monitor detects that there is a newer conda.yml file than the one used in the RUNNING RCC env in use.
   $rcc_env_needs_update = RCCEnvNeedsUpdate
 
-  if ($agent_needs_update -or $rcc_env_needs_update) {
-    LogInfo "Updating the Agent Service..."
-    RMKAgentStop
-    if ($agent_needs_update) {
-      # Remove Agent, create Agent Service executables, install Agent Service
-      RMKAgentRemove
-      RMKAgentInstall
+  if ($scheduler_script_needs_update -or $rcc_env_needs_update) {
+    LogInfo "Updating the Scheduler Service..."
+    RMKSchedulerStop
+    if ($scheduler_script_needs_update) {
+      RMKSchedulerRemove
+      RMKSchedulerInstall
     }
-    RMKAgentStart
+    RMKSchedulerStart
     # If RCC present, save current conda.yaml hash to cache file to prevent subsequent runs don't see a difference anymore.
     SaveCondaFileHash $condahash_yml
   }
@@ -815,40 +805,40 @@ function Invoke-Process {
 
 
 
-function IsRobotmkAgentServiceRunning {
+function IsRobotmkSchedulerServiceRunning {
   # Check if Service is running
-  $service = Get-Service -Name $RMKAgentServiceName -ErrorAction SilentlyContinue
+  $service = Get-Service -Name $RMKSchedulerServiceName -ErrorAction SilentlyContinue
   if ($service -eq $null) {
-    #LogInfo "Service $RMKAgentServiceName not installed."
+    #LogInfo "Service $RMKSchedulerServiceName not installed."
     return $false
   }
   else {
     if ($service.Status -eq "Running") {
-      #LogDebug "Service $RMKAgentServiceName running."
+      #LogDebug "Service $RMKSchedulerServiceName running."
       return $true
     }
     else {
-      #LogInfo "Service $RMKAgentServiceName not running."
+      #LogInfo "Service $RMKSchedulerServiceName not running."
       return $false
     }
   }
 }
 
-function StartRobotmkAgentService {
+function StartRobotmkSchedulerService {
   # Check if Service is running
-  $service = Get-Service -Name $RMKAgentServiceName -ErrorAction SilentlyContinue
+  $service = Get-Service -Name $RMKSchedulerServiceName -ErrorAction SilentlyContinue
   if ($service -eq $null) {
-    LogInfo "Service $RMKAgentServiceName not installed."
+    LogInfo "Service $RMKSchedulerServiceName not installed."
     return $false
   }
   else {
     if ($service.Status -eq "Running") {
-      LogDebug "Service $RMKAgentServiceName already running."
+      LogDebug "Service $RMKSchedulerServiceName already running."
       return $true
     }
     else {
-      LogInfo "Starting service $RMKAgentServiceName."
-      Start-Service -Name $RMKAgentServiceName -ErrorAction SilentlyContinue
+      LogInfo "Starting service $RMKSchedulerServiceName."
+      Start-Service -Name $RMKSchedulerServiceName -ErrorAction SilentlyContinue
       return $true
     }
   }
@@ -857,14 +847,14 @@ function StartRobotmkAgentService {
 
 
 
-function IsRobotmkPythonAgentRunning {
+function IsSchedulerRunning {
   # TODO: command string must be updated, has changed meanwhile
   $processes = GetProcesses -Cmdline "%robotmk.exe agent scheduler"
   # if length of array is 0, no process is running
   if ($processes.Length -eq 0) {
-    if (Test-Path $agent_pidfile) {
-      LogInfo "No process 'robotmk.exe agent scheduler' is running, removing stale PID file $agent_pidfile."
-      Remove-Item $agent_pidfile -Force -ErrorAction SilentlyContinue
+    if (Test-Path $scheduler_pidfile) {
+      LogInfo "No process 'robotmk.exe agent scheduler' is running, removing stale PID file $scheduler_pidfile."
+      Remove-Item $scheduler_pidfile -Force -ErrorAction SilentlyContinue
     }
     else {
       LogDebug "No process 'robotmk.exe agent scheduler' is running."
@@ -872,35 +862,31 @@ function IsRobotmkPythonAgentRunning {
     return $false
   }
   else {
-    # --- Facade plugin only watches if there is a process running with the PID
-    # from the pidfile.
-    # --- agent.py will create a new pidfile for its own process.
-    # Ref: 5ea7ddc (agent.py)
     # Read PID from pidfile and check if THIS is still running
     # - PID from file is found: OK, go out
     # - PID from file not found: delete deadman file (forces the to also exit)
-    if (Test-path $agent_pidfile) {
-      $pidfromfile = Get-Content $agent_pidfile
+    if (Test-path $scheduler_pidfile) {
+      $pidfromfile = Get-Content $scheduler_pidfile
       # if pidfromfile is in the list of running processes, we are good
       if ($processes -contains $pidfromfile) {
-        LogDebug "The PID $pidfromfile is already running and in pidfile $agent_pidfile."
+        LogDebug "The PID $pidfromfile is already running and in pidfile $scheduler_pidfile."
         return $true
       }
       else {
-        LogError "The PID read from $agent_pidfile ($pidfromfile) des NOT seem to run."
+        LogError "The PID read from $scheduler_pidfile ($pidfromfile) des NOT seem to run."
         # option 1: kill all processes (favoured)
         LogWarn "Killing all processes matching the pattern '*robotmk*agent*(fg/bg)': $processes"
         $processes | ForEach-Object {
           Stop-Process -Id $_ -Force
         }
-        # option 2: only remove the deadman file (agent.py will exit; use this only if killing os not an option)
+        # option 2: only remove the deadman file (py-Robotmk will exit; use this only if killing os not an option)
         #Remove-Item $controller_deadman_file -Force -ErrorAction SilentlyContinue
         return $false
       }
     }
     else {
       LogWarn "Processes matching the pattern '*robotmk*agent*(fg/bg)' are running ($processes), but NO PID file found for."
-      LogWarn "Waiting for agent to create a PID file ($file) itself."
+      LogWarn "Waiting for scheduler to create a PID file ($file) itself."
     }
   }
 
@@ -959,7 +945,7 @@ function IsRCCEnvReady {
     [string]$blueprint
   )
 
-  if ((CatalogContainsAgentBlueprint $blueprint) -and (HolotreeContainsAgentSpaces $blueprint)) {
+  if ((RCCCatalogContainsBlueprint $blueprint) -and (RCCHolotreeHasSpacesForBlueprint $blueprint)) {
     if (IsFlagfilePresent $Flagfile_RCC_env_robotmk_created) {
       return $true
     }
@@ -1003,7 +989,7 @@ function GetCondaBlueprint {
   }
 }
 
-function CatalogContainsAgentBlueprint {
+function RCCCatalogContainsBlueprint {
   param (
     [Parameter(Mandatory = $True)]
     [string]$blueprint
@@ -1026,7 +1012,7 @@ function CatalogContainsAgentBlueprint {
   }
 }
 
-function HolotreeContainsAgentSpaces {
+function RCCHolotreeHasSpacesForBlueprint {
   # Checks if the RCC holotree spaces contain BOTH a line for SCHEDULER and OUTPUT space
   param (
     [Parameter(Mandatory = $True)]
@@ -1039,24 +1025,24 @@ function HolotreeContainsAgentSpaces {
   $holotree_spaces = $ret.Output
   $spaces_string = $holotree_spaces -join "\n"
   LogDebug "Holotree spaces: \n$spaces_string"
-  # AGENT SPACE
-  $agent_match = ($spaces_string -match "rcc.$rcc_ctrl_rmk\s+$rcc_space_rmk_scheduler\s+$blueprint")
-  if (-Not ($agent_match)) {
-    LogWarn "Conda hash '$blueprint' not found for holotree space 'rcc.$rcc_ctrl_rmk/$rcc_space_rmk_scheduler'."
+  # SCHEDULER SPACE
+  $scheduler_space_found = ($spaces_string -match "rcc.$rcc_robotmk_controller\s+$rcc_robotmk_space_scheduler\s+$blueprint")
+  if (-Not ($scheduler_space_found)) {
+    LogWarn "Conda hash '$blueprint' not found for holotree space 'rcc.$rcc_robotmk_controller/$rcc_robotmk_space_scheduler'."
   }
   else {
-    LogDebug "OK: Conda hash '$blueprint' found for holotree space 'rcc.$rcc_ctrl_rmk/$rcc_space_rmk_scheduler'."
+    LogDebug "OK: Conda hash '$blueprint' found for holotree space 'rcc.$rcc_robotmk_controller/$rcc_robotmk_space_scheduler'."
   }
   # OUTPUT SPACE
-  $output_match = ($spaces_string -match "rcc.$rcc_ctrl_rmk\s+$rcc_space_rmk_output\s+$blueprint")
-  if (-Not ($output_match)) {
-    LogWarn "Conda hash '$blueprint' not found for holotree space 'rcc.$rcc_ctrl_rmk/$rcc_space_rmk_output'."
+  $output_space_found = ($spaces_string -match "rcc.$rcc_robotmk_controller\s+$rcc_robotmk_space_output\s+$blueprint")
+  if (-Not ($output_space_found)) {
+    LogWarn "Conda hash '$blueprint' not found for holotree space 'rcc.$rcc_robotmk_controller/$rcc_robotmk_space_output'."
   }
   else {
-    LogDebug "OK: Conda hash '$blueprint' found for holotree space 'rcc.$rcc_ctrl_rmk/$rcc_space_rmk_output'."
+    LogDebug "OK: Conda hash '$blueprint' found for holotree space 'rcc.$rcc_robotmk_controller/$rcc_robotmk_space_output'."
   }
 
-  if ($agent_match -and $output_match) {
+  if ($scheduler_space_found -and $output_space_found) {
     return $true
   }
   else {
@@ -1075,17 +1061,17 @@ function RCCEnvironmentCreate {
     [Parameter(Mandatory = $True)]
     [string]$space
   )
-  LogInfo "Creating Holotree space '$controller/$space' for Robotmk agent."
+  LogInfo "Creating Holotree space '$controller/$space'."
   $Arguments = "holotree vars --controller $controller --space $space -r $robot_yml"
   LogInfo "!!  $RCCExe $Arguments"
   $ret = Invoke-Process -FilePath $RCCExe -ArgumentList $Arguments
   $rc = $ret.ExitCode
   LogDebug $ret.Output
   if ($rc -eq 0) {
-    LogInfo "RCC environment creation for Robotmk agent successful."
+    LogInfo "RCC environment creation for Robotmk successful."
   }
   else {
-    LogError "RCC environment creation for Robotmk agent FAILED for some reason."
+    LogError "RCC environment creation for Robotmk FAILED for some reason."
   }
 }
 
@@ -1113,8 +1099,8 @@ function RCCEnvNeedsUpdate {
   # Used in Ref 5887a1
   if (Test-Path $RCCExe) {
 
-    if (IsFlagfileYoungerThanMinutes $Flagfile_RCC_env_creation_in_progress $RCC_env_max_creation_minutes) {
-      LogInfo "Another Robotmk RCC environment creation is in progress (flagfile $Flagfile_RCC_env_creation_in_progress present and younger than $RCC_env_max_creation_minutes min)."
+    if (IsFlagfileYoungerThanMinutes $Flagfile_rcc_robotmk_env_creation_in_progress $RCC_robotmk_env_max_creation_minutes) {
+      LogInfo "Another Robotmk RCC environment creation is in progress (flagfile $Flagfile_rcc_robotmk_env_creation_in_progress present and younger than $RCC_robotmk_env_max_creation_minutes min)."
     }
 
     $condahash_yml = CalculateCondaFilehash
@@ -1160,35 +1146,35 @@ function RCCIsAvailable {
 }
 
 function CreateRCCEnvironment {
-  # Creates a RCC environment for Robotmk agent
+  # Creates a RCC environment for Robotmk
   Param (
     [Parameter(Mandatory = $True)]
     [string]$blueprint
   )
   RemoveFlagfile $Flagfile_RCC_env_robotmk_created
-  TouchFile $Flagfile_RCC_env_creation_in_progress "RCC creation state file"
+  TouchFile $Flagfile_rcc_robotmk_env_creation_in_progress "RCC creation state file"
   if (Test-Path ($hololib_zip)) {
     LogInfo "$hololib_zip found, importing it"
     RCCImportHololib "$hololib_zip"
-    # TODO: after import, create spaces for agent /output
+    # TODO: after import, create spaces for scheduler and output
   }
   else {
     LogInfo "No hololib found for this environment; creating from sources..."
-    # Create a separate Holotree Space for agent and output
-    RCCEnvironmentCreate $robot_yml $rcc_ctrl_rmk $rcc_space_rmk_scheduler
-    RCCEnvironmentCreate $robot_yml $rcc_ctrl_rmk $rcc_space_rmk_output
+    # Create a separate Holotree Space for scheduler and output
+    RCCEnvironmentCreate $robot_yml $rcc_robotmk_controller $rcc_robotmk_space_scheduler
+    RCCEnvironmentCreate $robot_yml $rcc_robotmk_controller $rcc_robotmk_space_output
   }
   # This takes some minutes...
   # Watch the progress with `rcc ht list` and `rcc ht catalogs`. First the catalog is created, then
   # both spaces.
-  if (CatalogContainsAgentBlueprint $blueprint) {
+  if (RCCCatalogContainsBlueprint $blueprint) {
     TouchFile $Flagfile_RCC_env_robotmk_created "RCC env ready flagfile"
-    RemoveFlagfile $Flagfile_RCC_env_creation_in_progress
+    RemoveFlagfile $Flagfile_rcc_robotmk_env_creation_in_progress
     LogInfo "OK: Environments for Robotmk created and ready to use."
   }
   else {
-    LogInfo "RCC environment creation for Robotmk agent failed for some reason. Exiting."
-    RemoveFlagfile $Flagfile_RCC_env_creation_in_progress
+    LogInfo "RCC environment creation for Robotmk failed for some reason. Exiting."
+    RemoveFlagfile $Flagfile_rcc_robotmk_env_creation_in_progress
   }
 }
 
@@ -1202,8 +1188,8 @@ function RunRobotmkTask {
 
   # Determine which holotree space to use (scheduler/output)
   $space = (Get-Variable -Name "rcc_space_rmk_$rmkmode").Value
-  LogDebug "Running Robotmk task '$rcctask' in Holotree space '$rcc_ctrl_rmk/$space'"
-  $Arguments = "task run --controller $rcc_ctrl_rmk --space $space -t $rcctask -r $robot_yml"
+  LogDebug "Running Robotmk task '$rcctask' in Holotree space '$rcc_robotmk_controller/$space'"
+  $Arguments = "task run --controller $rcc_robotmk_controller --space $space -t $rcctask -r $robot_yml"
   LogDebug "!!  $RCCExe $Arguments"
   $ret = Invoke-Process -FilePath $RCCExe -ArgumentList $Arguments
   # -----------------------------------------
@@ -1215,10 +1201,10 @@ function RunRobotmkTask {
   # We reach this point when the RCC task has been terminated.
   $rc = $ret.ExitCode
   # Read last exit code from file (RCC cannot return the exit code of the task. )
-  $robotmk_agent_lastexitcode = GetAgentLastExitCode
+  $robotmk_scheduler_lastexitcode = GetLastSchedulerExitCode
 
   LogInfo "Robotmk task '$rcctask' terminated."
-  LogInfo "Last Message was: '$robotmk_agent_lastexitcode'"
+  LogInfo "Last Message was: '$robotmk_scheduler_lastexitcode'"
 }
 
 
@@ -1232,13 +1218,13 @@ function RunRobotmkTask {
 #               | |
 #               |_|
 
-function GetAgentLastExitCode {
-  # Returns from file the last exit code of the Robotmk Agent
-  if (Test-Path $robotmk_agent_lastexitcode) {
-    $content = Get-Content $robotmk_agent_lastexitcode
+function GetLastSchedulerExitCode {
+  # Returns from file the last exit code of the Robotmk Scheduler
+  if (Test-Path $robotmk_scheduler_lastexitcode) {
+    $content = Get-Content $robotmk_scheduler_lastexitcode
   }
   else {
-    $content = "- Robotmk Agent did not write any exit code (file does not exist)"
+    $content = "- Robotmk Scheduler did not write any exit code (file does not exist)"
   }
   return $content
 }
@@ -1453,25 +1439,25 @@ function SetScriptVars {
   $Global:RMK_ControllerName = "${RMK_Controller}.ps1"
 
   # Windows Service vars
-  # RMKA = Robotmk Agent
-  $Global:RMKAgentServiceName = "RobotmkAgent"
-  $Global:RMKAgentServiceDisplayName = $RMKAgentServiceName
-  $Global:RMKAgentServiceDescription = "RobotmkAgent is a side agent of Checkmk Agent. It runs Robot Framework suites asynchronously and generates the required Python environments via RCC."
-  $Global:RMKAgentServiceStartupType = "Manual"
-  $Global:RMKAgentServiceDependsOn = @("CheckmkService")
+
+  $Global:RMKSchedulerServiceName = "RobotmkScheduler"
+  $Global:RMKSchedulerServiceDisplayName = $RMKSchedulerServiceName
+  $Global:RMKSchedulerServiceDescription = "RobotmkScheduler is a side agent of Checkmk Agent. It runs Robot Framework suites asynchronously and generates the required Python environments via RCC."
+  $Global:RMKSchedulerServiceStartupType = "Manual"
+  $Global:RMKSchedulerServiceDependsOn = @("CheckmkService")
 
   # Windows service executable vars
-  $Global:RMKAgentInstallDir = "${PDataCMK}\robotmk"
-  $Global:RMKAgent = $RMKAgentServiceName
-  $Global:RMKAgentName = "${RMKAgent}.ps1"
-  $Global:RMKAgentFullName = "$RMKAgentInstallDir\${RMKAgentName}"
-  $Global:RMKAgentFullNameEscaped = $RMKAgentFullName -replace "\\", "\\"
+  $Global:RMKSchedulerInstallDir = "${PDataCMK}\robotmk"
+  $Global:RMKScheduler = $RMKSchedulerServiceName
+  $Global:RMKSchedulerName = "${RMKScheduler}.ps1"
+  $Global:RMKSchedulerFullName = "$RMKSchedulerInstallDir\${RMKSchedulerName}"
+  $Global:RMKSchedulerFullNameEscaped = $RMKSchedulerFullName -replace "\\", "\\"
 
 
   # Where to install the service files
-  $Global:RMKAgentExeName = "$RMKAgentServiceName.exe"
-  $Global:RMKAgentExeFullName = "$RMKAgentInstallDir\$RMKAgentExeName"
-  $Global:RMKAgentPipeName = "Service_$RMKAgentServiceName"
+  $Global:RMKSchedulerExeName = "$RMKSchedulerServiceName.exe"
+  $Global:RMKSchedulerExeFullName = "$RMKSchedulerInstallDir\$RMKSchedulerExeName"
+  $Global:RMKSchedulerPipeName = "Service_$RMKSchedulerServiceName"
 
   # if there is a varfile, read these ROBOTMK vars into env
   ReadRMKVars
@@ -1504,31 +1490,29 @@ function SetScriptVars {
   # FILES ========================================
 
   $Global:RCCExe = $PDataCMKAgent + "\bin\rcc.exe"
-  # Ref 7e8b2c1 (agent.py)
-  $Global:agent_pidfile = $RMKTmpDir + "\robotmk_agent.pid"
+  $Global:scheduler_pidfile = $RMKTmpDir + "\robotmk_scheduler.pid"
 
   $Global:robot_yml = $RMKCfgDir + "\robot.yaml"
   $Global:conda_yml = $RMKCfgDir + "\conda.yaml"
   $Global:conda_yml_hashfile = $RMKTmpDir + "\robotmk_conda_yml_hash.txt"
   $Global:hololib_zip = $RMKCfgDir + "\hololib.zip"
-  # Ref 23ff2d1 (agent.py)
   $Global:controller_deadman_file = $RMKTmpDir + "\robotmk_controller_deadman_file"
   # This flagfile indicates that both there is a usable holotree space for "robotmk agent/output"
-  $Global:Flagfile_RCC_env_robotmk_ready = $RMKTmpDir + "\rcc_env_robotmk_agent_ready"
-  $Global:robotmk_agent_lastexitcode = $RMKTmpDir + "\robotmk_agent_lastexitcode"
+  $Global:Flagfile_rcc_robotmk_env_ready = $RMKTmpDir + "\rcc_robotmk_env_ready"
+  $Global:robotmk_scheduler_lastexitcode = $RMKTmpDir + "\robotmk_scheduler_lastexitcode"
   # IMPORTANT! All other Robot subprocesses must respect this file and not start if it is present!
   # (There is only ONE RCC creation allowed at a time.)
-  $Global:Flagfile_RCC_env_creation_in_progress = $RMKTmpDir + "\rcc_env_creation_in_progress.lock"
-  # how many minutes to wait for a/any single RCC env creation to be finished (maxage of $Flagfile_RCC_env_creation_in_progress)
-  $Global:RCC_env_max_creation_minutes = 1
+  $Global:Flagfile_rcc_robotmk_env_creation_in_progress = $RMKTmpDir + "\rcc_robotmk_env_creation_in_progress.lock"
+  # how many minutes to wait for a/any single RCC env creation to be finished (maxage of $Flagfile_rcc_robotmk_env_creation_in_progress)
+  $Global:RCC_robotmk_env_max_creation_minutes = 1
 
   # RCC namespaces make the RCC envs unique for each execution = suite run
   # see https://github.com/robocorp/rcc/blob/master/docs/recipes.md#how-to-control-holotree-environments
   # controller
-  $Global:rcc_ctrl_rmk = "robotmk"
+  $Global:rcc_robotmk_controller = "robotmk"
   # - space for scheduler and output
-  $Global:rcc_space_rmk_scheduler = "scheduler"
-  $Global:rcc_space_rmk_output = "output"
+  $Global:rcc_robotmk_space_scheduler = "scheduler"
+  $Global:rcc_robotmk_space_output = "output"
 
 
   # C# stub code
@@ -1576,12 +1560,12 @@ function SetScriptVars {
     ERROR_PROCESS_ABORTED = 1067,
   };
 
-  public class Service_$RMKAgentServiceName : ServiceBase { // $RMKAgentServiceName may begin with a digit; The class name must begin with a letter
+  public class Service_$RMKSchedulerServiceName : ServiceBase { // $RMKSchedulerServiceName may begin with a digit; The class name must begin with a letter
     private System.Diagnostics.EventLog eventLog;                       // EVENT LOG
     private ServiceStatus serviceStatus;                                // SET STATUS
 
-    public Service_$RMKAgentServiceName() {
-      ServiceName = "$RMKAgentServiceName";
+    public Service_$RMKSchedulerServiceName() {
+      ServiceName = "$RMKSchedulerServiceName";
       CanStop = true;
       CanPauseAndContinue = false;
       AutoLog = true;
@@ -1592,7 +1576,7 @@ function SetScriptVars {
       }
       eventLog.Source = ServiceName;
       eventLog.Log = "$WinEventLog";                                        // EVENT LOG ]
-      EventLog.WriteEntry(ServiceName, "$RMKAgentExeName $RMKAgentServiceName()");      // EVENT LOG
+      EventLog.WriteEntry(ServiceName, "$RMKSchedulerExeName $RMKSchedulerServiceName()");      // EVENT LOG
     }
 
     [DllImport("advapi32.dll", SetLastError=true)]                      // SET STATUS
@@ -1600,7 +1584,7 @@ function SetScriptVars {
 
     // 9833fa
     protected override void OnStart(string [] args) {
-      EventLog.WriteEntry(ServiceName, "$RMKAgentExeName OnStart() entrypoint. Now starting the agent service script '$RMKAgentFullNameEscaped' -SCMStart"); // EVENT LOG
+      EventLog.WriteEntry(ServiceName, "$RMKSchedulerExeName OnStart() entrypoint. Now starting the scheduler service script '$RMKSchedulerFullNameEscaped' -SCMStart"); // EVENT LOG
       // Set the service state to Start Pending.                        // SET STATUS [
       // Only useful if the startup time is long. Not really necessary here for a 2s startup time.
       serviceStatus.dwServiceType = ServiceType.SERVICE_WIN32_OWN_PROCESS;
@@ -1615,18 +1599,18 @@ function SetScriptVars {
         p.StartInfo.UseShellExecute = false;
         p.StartInfo.RedirectStandardOutput = true;
         p.StartInfo.FileName = "PowerShell.exe";
-        p.StartInfo.Arguments = "-ExecutionPolicy Bypass -c & '$RMKAgentFullNameEscaped' -SCMStart"; // Works if path has spaces, but not if it contains ' quotes.
+        p.StartInfo.Arguments = "-ExecutionPolicy Bypass -c & '$RMKSchedulerFullNameEscaped' -SCMStart"; // Works if path has spaces, but not if it contains ' quotes.
         p.Start();
         // Read the output stream first and then wait. (To avoid deadlocks says Microsoft!)
         string output = p.StandardOutput.ReadToEnd();
         // Wait for the completion of the script startup code, that launches the -Service instance
         p.WaitForExit();
-        EventLog.WriteEntry(ServiceName, "$RMKAgentExeName OnStart(): SCMStart came back with exit code " + p.ExitCode); // EVENT LOG
+        EventLog.WriteEntry(ServiceName, "$RMKSchedulerExeName OnStart(): SCMStart came back with exit code " + p.ExitCode); // EVENT LOG
         if (p.ExitCode != 0) throw new Win32Exception((int)(Win32Error.ERROR_APP_INIT_FAILURE));
         // Success. Set the service state to Running.                   // SET STATUS
         serviceStatus.dwCurrentState = ServiceState.SERVICE_RUNNING;    // SET STATUS
       } catch (Exception e) {
-        EventLog.WriteEntry(ServiceName, "$RMKAgentExeName OnStart() // Failed to start $RMKAgentFullNameEscaped. " + e.Message, EventLogEntryType.Error); // EVENT LOG
+        EventLog.WriteEntry(ServiceName, "$RMKSchedulerExeName OnStart() // Failed to start $RMKSchedulerFullNameEscaped. " + e.Message, EventLogEntryType.Error); // EVENT LOG
         // Change the service state back to Stopped.                    // SET STATUS [
         serviceStatus.dwCurrentState = ServiceState.SERVICE_STOPPED;
         Win32Exception w32ex = e as Win32Exception; // Try getting the WIN32 error code
@@ -1641,12 +1625,12 @@ function SetScriptVars {
       } finally {
         serviceStatus.dwWaitHint = 0;                                   // SET STATUS
         SetServiceStatus(ServiceHandle, ref serviceStatus);             // SET STATUS
-        EventLog.WriteEntry(ServiceName, "$RMKAgentExeName OnStart() // Exit"); // EVENT LOG
+        EventLog.WriteEntry(ServiceName, "$RMKSchedulerExeName OnStart() // Exit"); // EVENT LOG
       }
     }
 
     protected override void OnStop() {
-      EventLog.WriteEntry(ServiceName, "$RMKAgentExeName OnStop() // Entry");   // EVENT LOG
+      EventLog.WriteEntry(ServiceName, "$RMKSchedulerExeName OnStop() // Entry");   // EVENT LOG
       // Start a child process with another copy of ourselves
       try {
         Process p = new Process();
@@ -1654,7 +1638,7 @@ function SetScriptVars {
         p.StartInfo.UseShellExecute = false;
         p.StartInfo.RedirectStandardOutput = true;
         p.StartInfo.FileName = "PowerShell.exe";
-        p.StartInfo.Arguments = "-ExecutionPolicy Bypass -c & '$RMKAgentFullNameEscaped' -SCMStop"; // Works if path has spaces, but not if it contains ' quotes.
+        p.StartInfo.Arguments = "-ExecutionPolicy Bypass -c & '$RMKSchedulerFullNameEscaped' -SCMStop"; // Works if path has spaces, but not if it contains ' quotes.
         p.Start();
         // Read the output stream first and then wait. (To avoid deadlocks says Microsoft!)
         string output = p.StandardOutput.ReadToEnd();
@@ -1664,7 +1648,7 @@ function SetScriptVars {
         // Success. Set the service state to Stopped.                   // SET STATUS
         serviceStatus.dwCurrentState = ServiceState.SERVICE_STOPPED;      // SET STATUS
       } catch (Exception e) {
-        EventLog.WriteEntry(ServiceName, "$RMKAgentExeName OnStop() // Failed to stop $RMKAgentFullNameEscaped. " + e.Message, EventLogEntryType.Error); // EVENT LOG
+        EventLog.WriteEntry(ServiceName, "$RMKSchedulerExeName OnStop() // Failed to stop $RMKSchedulerFullNameEscaped. " + e.Message, EventLogEntryType.Error); // EVENT LOG
         // Change the service state back to Started.                    // SET STATUS [
         serviceStatus.dwCurrentState = ServiceState.SERVICE_RUNNING;
         Win32Exception w32ex = e as Win32Exception; // Try getting the WIN32 error code
@@ -1679,12 +1663,12 @@ function SetScriptVars {
       } finally {
         serviceStatus.dwWaitHint = 0;                                   // SET STATUS
         SetServiceStatus(ServiceHandle, ref serviceStatus);             // SET STATUS
-        EventLog.WriteEntry(ServiceName, "$RMKAgentExeName OnStop() // Exit"); // EVENT LOG
+        EventLog.WriteEntry(ServiceName, "$RMKSchedulerExeName OnStop() // Exit"); // EVENT LOG
       }
     }
 
     public static void Main() {
-      System.ServiceProcess.ServiceBase.Run(new Service_$RMKAgentServiceName());
+      System.ServiceProcess.ServiceBase.Run(new Service_$RMKSchedulerServiceName());
     }
   }
 "@
@@ -1832,7 +1816,7 @@ function LogConfiguration {
   LogDebug "--- 8< --------------------"
   LogDebug "CONFIGURATION:"
   LogDebug "- this script: $scriptFullName"
-  LogDebug "- Agent Service Scriptname: $RMKAgent"
+  LogDebug "- Scheduler Service Scriptname: $RMKScheduler"
   LogDebug "- PID: $PID"
   LogDebug "- RMKLogDir: $RMKLogDir"
   LogDebug "- RMKTmpDir: $RMKTmpDir"
@@ -1850,13 +1834,13 @@ function LogRCCConfig {
   LogDebug "- RCCEXE: $RCCEXE"
   LogDebug "- RMKCfgDir: $RMKCfgDir"
   LogDebug "- Robotmk RCC holotree spaces:"
-  LogDebug "  - Robotmk agent scheduler: rcc.$rcc_ctrl_rmk/$rcc_space_rmk_scheduler"
-  LogDebug "  - Robotmk agent output: rcc.$rcc_ctrl_rmk/$rcc_space_rmk_output"
+  LogDebug "  - Robotmk agent scheduler: rcc.$rcc_robotmk_controller/$rcc_robotmk_space_scheduler"
+  LogDebug "  - Robotmk agent output: rcc.$rcc_robotmk_controller/$rcc_robotmk_space_output"
 }
 
 function Write-ServiceStatus {
-  $status = RMKAgentStatus
-  Write-Host "$RMKAgentServiceName is $status"
+  $status = RMKSchedulerStatus
+  Write-Host "$RMKSchedulerServiceName is $status"
 }
 
 #   _____   _____ _____ ______ _______      _______ _____ ______
@@ -2024,7 +2008,7 @@ Function Remove-PSThread () {
 Function Send-PipeMessage () {
   Param(
     [Parameter(Mandatory = $true)]
-    [String]$RMKAgentPipeName, # Named pipe name
+    [String]$RMKSchedulerPipeName, # Named pipe name
     [Parameter(Mandatory = $true)]
     [String]$Message            # Message string
   )
@@ -2034,17 +2018,17 @@ Function Send-PipeMessage () {
   $pipe = $null # Named pipe stream
   $sw = $null   # Stream Writer
   try {
-    $pipe = new-object System.IO.Pipes.NamedPipeClientStream(".", $RMKAgentPipeName, $PipeDir, $PipeOpt)
+    $pipe = new-object System.IO.Pipes.NamedPipeClientStream(".", $RMKSchedulerPipeName, $PipeDir, $PipeOpt)
     $sw = new-object System.IO.StreamWriter($pipe)
     $pipe.Connect(1000)
     if (!$pipe.IsConnected) {
-      throw "Failed to connect client to pipe $RMKAgentPipeName"
+      throw "Failed to connect client to pipe $RMKSchedulerPipeName"
     }
     $sw.AutoFlush = $true
     $sw.WriteLine($Message)
   }
   catch {
-    LogError "Error sending pipe $RMKAgentPipeName message: $_"
+    LogError "Error sending pipe $RMKSchedulerPipeName message: $_"
   }
   finally {
     if ($sw) {
@@ -2076,7 +2060,7 @@ Function Send-PipeMessage () {
 Function Receive-PipeMessage () {
   Param(
     [Parameter(Mandatory = $true)]
-    [String]$RMKAgentPipeName           # Named pipe name
+    [String]$RMKSchedulerPipeName           # Named pipe name
   )
   $PipeDir = [System.IO.Pipes.PipeDirection]::In
   $PipeOpt = [System.IO.Pipes.PipeOptions]::Asynchronous
@@ -2084,7 +2068,7 @@ Function Receive-PipeMessage () {
 
   try {
     $pipe = $null       # Named pipe stream
-    $pipe = New-Object system.IO.Pipes.NamedPipeServerStream($RMKAgentPipeName, $PipeDir, 1, $PipeMode, $PipeOpt)
+    $pipe = New-Object system.IO.Pipes.NamedPipeServerStream($RMKSchedulerPipeName, $PipeDir, 1, $PipeMode, $PipeOpt)
     $sr = $null         # Stream Reader
     $sr = new-object System.IO.StreamReader($pipe)
     $pipe.WaitForConnection()
@@ -2127,7 +2111,7 @@ $pipeThreadName = "Control Pipe Handler"
 Function Start-PipeHandlerThread () {
   Param(
     [Parameter(Mandatory = $true)]
-    [String]$RMKAgentPipeName, # Named pipe name
+    [String]$RMKSchedulerPipeName, # Named pipe name
     [Parameter(Mandatory = $false)]
     [String]$Event = "ControlMessage"   # Event message
   )
@@ -2138,15 +2122,15 @@ Function Start-PipeHandlerThread () {
     logFile         = $RMKLogfile
     currentUserName = $currentUserName
   } -Functions Now, Log, Receive-PipeMessage -ScriptBlock {
-    Param($RMKAgentPipeName, $pipeThreadName)
+    Param($RMKSchedulerPipeName, $pipeThreadName)
     try {
-      Receive-PipeMessage "$RMKAgentPipeName" # Blocks the thread until the next message is received from the pipe
+      Receive-PipeMessage "$RMKSchedulerPipeName" # Blocks the thread until the next message is received from the pipe
     }
     catch {
       LogInfo "$pipeThreadName # Error: $_"
       throw $_ # Push the error back to the main thread
     }
-  } -Name $pipeThreadName -Event $Event -Arguments $RMKAgentPipeName, $pipeThreadName
+  } -Name $pipeThreadName -Event $Event -Arguments $RMKSchedulerPipeName, $pipeThreadName
 }
 
 #-----------------------------------------------------------------------------#
